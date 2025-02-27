@@ -8,7 +8,7 @@ import java.awt.event.MouseEvent
 import javax.swing.JLabel
 
 class ArrivalLabel(
-    val arrival: Arrival
+    var arrival: Arrival
 ) : JLabel(arrival.callSign) {
 
     init {

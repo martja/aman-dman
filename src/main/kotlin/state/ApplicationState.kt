@@ -4,7 +4,6 @@ import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.time.Instant
 import javax.swing.Timer
-import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -20,15 +19,22 @@ data class Arrival(
     val callSign: String,
     val icaoType: String,
     val wakeCategory: Char,
-    val remainingDistance: Int,
+    val remainingDistance: Float,
     val eta: Instant,
     val assignedRunway: String,
-    val feederFix: String,
+    val assignedStar: String,
     val timeToLoseOrGain: Duration,
-    val arrivalAirportIcao: String
+    val arrivalAirportIcao: String,
+    val finalFix: String,
+    val flightLevel: Int,
+    val pressureAltitude: Int,
+    val groundSpeed: Int,
+    val secondsBehindPreceeding: Int,
+    val isAboveTransAlt: Boolean,
+    val trackedByMe: Boolean,
 )
 
-class TimelineState {
+class ApplicationState {
 
     private val pcs = PropertyChangeSupport(this)
 
@@ -69,13 +75,12 @@ class TimelineState {
             pcs.firePropertyChange("delaysChanged", old, value)
         }
 
-    val randoms = Random(11223)
-    var arrivals = (0..100).toList().map { index ->
-        makeFakeArrival(
-            "NAX00" + index,
-            Instant.now().plusSeconds(randoms.nextLong(-60*120, 60*120))
-        )
-    }
+    var arrivals: List<Arrival> = emptyList()
+        set(value) {
+            val old = field
+            field = value
+            pcs.firePropertyChange("arrivalsChanged", old, value)
+        }
 
     fun addListener(listener: PropertyChangeListener) {
         pcs.addPropertyChangeListener(listener)
@@ -99,10 +104,17 @@ fun makeFakeArrival(callsign: String, eta: Instant): Arrival {
         timeToLoseOrGain = 1.seconds,
         icaoType = "B738",
         wakeCategory = 'M',
-        feederFix = "TITLA",
         assignedRunway = "19R",
-        remainingDistance = 10,
+        remainingDistance = 10.0f,
         callSign = callsign,
         arrivalAirportIcao = "ENGM",
+        finalFix = "TITLA",
+        flightLevel = 350,
+        pressureAltitude = 350,
+        groundSpeed = 350,
+        secondsBehindPreceeding = 0,
+        isAboveTransAlt = false,
+        trackedByMe = false,
+        assignedStar = "TITLA"
     )
 }

@@ -1,12 +1,9 @@
-import org.example.state.TimelineState
+import org.example.state.ApplicationState
 import java.awt.*
 import java.awt.event.*
-import java.time.Instant
 import javax.swing.*
-import kotlin.math.max
-import kotlin.math.min
 
-class TimeRangeScrollBar(val state: TimelineState) : JComponent() {
+class TimeRangeScrollBar(val state: ApplicationState) : JComponent() {
     private var dragging = false
     private var resizingTop = false
     private var resizingBottom = false

@@ -1,7 +1,6 @@
 package org.example
 
 import org.example.presentation.AmanDman
-import java.awt.Color
 import javax.swing.*
 
 fun main() {

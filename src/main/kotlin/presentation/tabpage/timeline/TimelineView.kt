@@ -1,8 +1,8 @@
 package org.example.presentation.tabpage.timeline
 
-import org.example.state.TimelineState
+import domain.TimelineConfig
+import org.example.state.ApplicationState
 import presentation.tabpage.timeline.OverlayView
-import java.awt.Color
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Rectangle
@@ -10,16 +10,15 @@ import java.time.Instant
 import javax.swing.JLayeredPane
 import javax.swing.JPanel
 
-class TimelineView(val state: TimelineState) : JLayeredPane(), ITimelineView {
+class TimelineView(private val state: ApplicationState, private val timelineConfig: TimelineConfig) : JLayeredPane(), ITimelineView {
 
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
-    private val indicatorsPanel = OverlayView(state, this)
+    private val indicatorsPanel = OverlayView(state, timelineConfig, this)
 
     private val ruler = Ruler(this, state)
 
     init {
         layout = null // JLayeredPane requires explicit bounds for components
-        basePanel.setBounds(0, 0, 800, 600) // Set initial size (adjust dynamically)
         add(basePanel)
         add(indicatorsPanel)
         setLayer(basePanel, DEFAULT_LAYER)
@@ -36,7 +35,7 @@ class TimelineView(val state: TimelineState) : JLayeredPane(), ITimelineView {
 
         // Ruler
         gbc.gridx = 1
-        gbc.weightx = 0.3
+        gbc.weightx = 0.2
         basePanel.add(ruler, gbc)
 
         // Right TrafficSequenceView

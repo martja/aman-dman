@@ -1,12 +1,12 @@
 package org.example.presentation.tabpage.timeline
 
-import org.example.state.TimelineState
+import org.example.state.ApplicationState
 import java.awt.Color
 import java.awt.Graphics
 import javax.swing.JPanel
 import kotlin.time.Duration.Companion.seconds
 
-class TrafficSequenceView(val timelineView: ITimelineView, val timelineState: TimelineState, val alignment: TimelineAlignment) : JPanel() {
+class TrafficSequenceView(val timelineView: ITimelineView, val applicationState: ApplicationState, val alignment: TimelineAlignment) : JPanel() {
 
     private val lineLength = 30
     private val lineToLabel = 10
@@ -18,7 +18,7 @@ class TrafficSequenceView(val timelineView: ITimelineView, val timelineState: Ti
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
-        timelineState.delays.forEach {
+        applicationState.delays.forEach {
             val y = timelineView.calculateYPositionForInstant(it.from)
             val duration = (it.to.epochSecond - it.from.epochSecond).seconds
             duration.toComponents { hours, minutes, seconds, nanoseconds ->

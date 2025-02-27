@@ -1,7 +1,7 @@
 package org.example.presentation.tabpage.timeline
 
 import org.example.state.DelayDefinition
-import org.example.state.TimelineState
+import org.example.state.ApplicationState
 import java.awt.*
 import java.time.Instant
 import java.time.ZoneId
@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter
 import javax.swing.JPanel
 
 
-class Ruler(val timelineView: ITimelineView, val state: TimelineState) : JPanel(null) {
+class Ruler(val timelineView: ITimelineView, val state: ApplicationState) : JPanel(null) {
     private val TICK_WIDTH_1_MIN = 5
     private val TICK_WIDTH_5_MIN = 10
 
