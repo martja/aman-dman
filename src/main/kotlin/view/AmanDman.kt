@@ -4,6 +4,8 @@ import integration.AtcClientEuroScope
 import TimeRangeScrollBar
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import model.entities.json.DataPackageJson
+import org.example.integration.entities.TimelineAircraftJson
+import org.example.integration.entities.TimelineUpdate
 import org.example.model.entities.json.RegisterTimelineJson
 import org.example.presentation.tabpage.Footer
 import org.example.presentation.tabpage.TimelineScrollPane
@@ -49,30 +51,31 @@ class AmanDman : JFrame("AMAN / DMAN") {
             )
         )
 
-        AtcClientEuroScope("127.0.0.1", 12345, timelinesToRegister) { message ->
-            val dataPackage = jacksonObjectMapper().readValue(message, DataPackageJson::class.java)
-
-            applicationState.arrivals = dataPackage.arrivals.map { jsonData ->
-                Arrival(
-                    id = jsonData.callsign,
-                    callSign = jsonData.callsign,
-                    icaoType = jsonData.icaoType,
-                    wakeCategory =  jsonData.wtc,
-                    assignedRunway = jsonData.runway,
-                    assignedStar =  jsonData.star,
-                    eta = Instant.ofEpochSecond(jsonData.eta),
-                    remainingDistance = jsonData.remainingDist,
-                    finalFix = jsonData.finalFix,
-                    flightLevel = jsonData.flightLevel,
-                    pressureAltitude = jsonData.pressureAltitude,
-                    groundSpeed = jsonData.groundSpeed,
-                    secondsBehindPreceeding = jsonData.secondsBehindPreceeding,
-                    isAboveTransAlt = jsonData.isAboveTransAlt,
-                    trackedByMe = jsonData.trackedByMe,
-                    timeToLoseOrGain = 0.seconds,
-                    arrivalAirportIcao = "N/A",
-                    viaFix = jsonData.viaFix
-                )
+        AtcClientEuroScope("127.0.0.1", 12345, timelinesToRegister) { dataPackage ->
+            when (dataPackage) {
+                is TimelineUpdate ->
+                    applicationState.arrivals = dataPackage.arrivals.map { jsonData ->
+                        Arrival(
+                            id = jsonData.callsign,
+                            callSign = jsonData.callsign,
+                            icaoType = jsonData.icaoType,
+                            wakeCategory =  jsonData.wtc,
+                            assignedRunway = jsonData.runway,
+                            assignedStar =  jsonData.star,
+                            eta = Instant.ofEpochSecond(jsonData.eta),
+                            remainingDistance = jsonData.remainingDist,
+                            finalFix = jsonData.finalFix,
+                            flightLevel = jsonData.flightLevel,
+                            pressureAltitude = jsonData.pressureAltitude,
+                            groundSpeed = jsonData.groundSpeed,
+                            secondsBehindPreceeding = jsonData.secondsBehindPreceeding,
+                            isAboveTransAlt = jsonData.isAboveTransAlt,
+                            trackedByMe = jsonData.trackedByMe,
+                            timeToLoseOrGain = 0.seconds,
+                            arrivalAirportIcao = "N/A",
+                            viaFix = jsonData.viaFix
+                        )
+                    }
             }
         }
 

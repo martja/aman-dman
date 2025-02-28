@@ -5,8 +5,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.example.integration.AtcClient
+import org.example.integration.entities.IncomingMessageJson
 import org.example.integration.entities.MessageToServer
-import org.example.integration.entities.RegisterTimeline
 import org.example.model.entities.json.RegisterTimelineJson
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -17,7 +17,7 @@ class AtcClientEuroScope(
     private val host: String,
     private val port: Int,
     private val timelinesToRegister: List<RegisterTimelineJson>,
-    private val onMessageReceived: (String) -> Unit // Callback that gets triggered when a message is received){}
+    private val onMessageReceived: (IncomingMessageJson) -> Unit // Callback that gets triggered when a message is received){}
 ) : AtcClient(timelinesToRegister) {
     private var socket: Socket? = null
     private var writer: OutputStreamWriter? = null
@@ -66,8 +66,9 @@ class AtcClientEuroScope(
             val bufferedReader = BufferedReader(reader)
             while (true) {
                 val message = bufferedReader.readLine()
+                val dataPackage = objectMapper.readValue(message, IncomingMessageJson::class.java)
                 if (message != null) {
-                    onMessageReceived(message) // Trigger the callback
+                    onMessageReceived(dataPackage) // Trigger the callback
                 } else {
                     break
                 }

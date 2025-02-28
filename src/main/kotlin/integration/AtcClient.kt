@@ -10,10 +10,6 @@ abstract class AtcClient(
 ) {
     abstract fun sendMessage(message: MessageToServer)
 
-    private fun setupConnection(timelinesToRegister: List<RegisterTimelineJson>) {
-        // Connect to the server and register timelines
-    }
-
     fun registerTimeline(timelineId: Long, targetFixes: List<String>, viaFixes: List<String>, destinationAirports: List<String>) {
         sendMessage(
             RegisterTimeline(
