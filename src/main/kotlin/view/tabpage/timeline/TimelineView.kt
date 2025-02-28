@@ -1,8 +1,8 @@
 package org.example.presentation.tabpage.timeline
 
-import domain.TimelineConfig
+import model.entities.TimelineConfig
 import org.example.state.ApplicationState
-import presentation.tabpage.timeline.OverlayView
+import view.tabpage.timeline.OverlayView
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Rectangle

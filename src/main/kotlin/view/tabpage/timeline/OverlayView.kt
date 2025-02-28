@@ -1,6 +1,6 @@
-package presentation.tabpage.timeline
+package view.tabpage.timeline
 
-import domain.TimelineConfig
+import model.entities.TimelineConfig
 import org.example.presentation.tabpage.timeline.ITimelineView
 import org.example.state.Arrival
 import org.example.state.ApplicationState
@@ -21,8 +21,8 @@ class OverlayView(
     val timelineView: ITimelineView
 ) : JPanel(null) {
     private val pointDiameter = 6
-    private val labelRectPadding = 5
     private val rulerMargin = 30
+    private val labelWidth = 285
 
     private val allLabels: MutableList<ArrivalLabel> = mutableListOf()
 
@@ -46,16 +46,16 @@ class OverlayView(
 
         val ruler = timelineView.getRulerBounds()
 
-        val leftSideLabels = allLabels.filter { it.arrival.finalFix == timelineConfig.finalFixes[0] }
-        val rightSideLabels = allLabels.filter { it.arrival.finalFix == timelineConfig.finalFixes[1] }
+        val leftSideLabels = allLabels.filter { it.arrival.finalFix == timelineConfig.targetFixes[0] }
+        val rightSideLabels = allLabels.filter { it.arrival.finalFix == timelineConfig.targetFixes[1] }
 
-        placeLabels(leftSideLabels, ruler.x - 250 - rulerMargin)
-        placeLabels(rightSideLabels, ruler.x + rulerMargin + ruler.width)
+        rearrangeLabel(leftSideLabels, ruler.x - labelWidth - rulerMargin)
+        rearrangeLabel(rightSideLabels, ruler.x + rulerMargin + ruler.width)
 
         timelineNameLabel.setBounds(ruler.x - 10, ruler.y + ruler.height - 20, 100, 20)
     }
 
-    private fun placeLabels(selectedLabels: List<ArrivalLabel>, x: Int) {
+    private fun rearrangeLabel(selectedLabels: List<ArrivalLabel>, x: Int) {
         var previousTop: Int? = null
         selectedLabels.sortedBy { it.arrival.eta }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.arrival.eta) - 10
@@ -65,7 +65,7 @@ class OverlayView(
                 else
                     min(previousTop!! - 3, dotY)
 
-            label.setBounds(x, labelY, 250, 20)
+            label.setBounds(x, labelY, labelWidth, 20)
             previousTop = label.y - label.height
         }
     }
@@ -76,7 +76,7 @@ class OverlayView(
         val ruler = timelineView.getRulerBounds()
 
         allLabels.forEach {
-            val leftSide = timelineConfig.finalFixes[0] == it.arrival.finalFix
+            val leftSide = timelineConfig.targetFixes[0] == it.arrival.finalFix
 
             val dotX = if (leftSide) ruler.x else ruler.x + ruler.width
             val dotY = timelineView.calculateYPositionForInstant(it.arrival.eta)
@@ -119,6 +119,7 @@ class OverlayView(
         output += ac.callSign.padEnd(9)
         output += ac.icaoType.padEnd(5)
         output += ac.wakeCategory.toString().padEnd(2)
+        output += ac.viaFix.padEnd(6)
         output += ac.remainingDistance.roundToInt().toString().padStart(6)
 
         return output

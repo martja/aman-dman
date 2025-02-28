@@ -1,13 +1,24 @@
-import java.io.*
-import java.net.*
-import kotlinx.coroutines.*
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+package integration
 
-class TCPJsonClient(
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.example.integration.AtcClient
+import org.example.integration.entities.MessageToServer
+import org.example.integration.entities.RegisterTimeline
+import org.example.model.entities.json.RegisterTimelineJson
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.net.Socket
+
+class AtcClientEuroScope(
     private val host: String,
     private val port: Int,
-    private val onMessageReceived: (String) -> Unit // Callback that gets triggered when a message is received
-) {
+    private val timelinesToRegister: List<RegisterTimelineJson>,
+    private val onMessageReceived: (String) -> Unit // Callback that gets triggered when a message is received){}
+) : AtcClient(timelinesToRegister) {
     private var socket: Socket? = null
     private var writer: OutputStreamWriter? = null
     private var reader: InputStreamReader? = null
@@ -16,6 +27,17 @@ class TCPJsonClient(
 
     init {
         connect()
+    }
+
+    // Method to send a message to the server
+    override fun sendMessage(message: MessageToServer) {
+        try {
+            val jsonMessage = objectMapper.writeValueAsString(message)
+            writer?.write(jsonMessage + "\n")
+            writer?.flush()
+        } catch (e: Exception) {
+            println("Error sending message: ${e.message}")
+        }
     }
 
     private fun connect() {
@@ -29,19 +51,12 @@ class TCPJsonClient(
                 receiveMessages()
             }
 
+            timelinesToRegister.forEach {
+                registerTimeline(it.timelineId, it.targetFixes, it.viaFixes, it.destinationAirports)
+            }
+
         } catch (e: Exception) {
             println("Error connecting to server: ${e.message}")
-        }
-    }
-
-    // Method to send a message to the server
-    fun sendMessage(message: Any) {
-        try {
-            val jsonMessage = objectMapper.writeValueAsString(message)
-            writer?.write(jsonMessage)
-            writer?.flush()
-        } catch (e: Exception) {
-            println("Error sending message: ${e.message}")
         }
     }
 

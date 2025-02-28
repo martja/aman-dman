@@ -1,10 +1,6 @@
-package domain
+package org.example.integration.entities
 
-data class DataPackageJson(
-    val arrivals: List<AircraftInboundJson>
-)
-
-data class AircraftInboundJson(
+data class TimelineAircraftJson(
     val callsign: String,
     val icaoType: String,
     val wtc: Char,
@@ -13,6 +9,7 @@ data class AircraftInboundJson(
     val eta: Long,
     val remainingDist: Float,
     val finalFix: String,
+    val viaFix: String,
     val flightLevel: Int,
     val pressureAltitude: Int,
     val groundSpeed: Int,

@@ -1,4 +1,4 @@
-package presentation.tabpage.timeline
+package view.tabpage.timeline
 
 import org.example.state.Arrival
 import java.awt.Color

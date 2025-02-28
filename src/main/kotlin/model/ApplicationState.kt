@@ -32,6 +32,7 @@ data class Arrival(
     val secondsBehindPreceeding: Int,
     val isAboveTransAlt: Boolean,
     val trackedByMe: Boolean,
+    val viaFix: String,
 )
 
 class ApplicationState {
@@ -115,6 +116,7 @@ fun makeFakeArrival(callsign: String, eta: Instant): Arrival {
         secondsBehindPreceeding = 0,
         isAboveTransAlt = false,
         trackedByMe = false,
-        assignedStar = "TITLA"
+        assignedStar = "TITLA",
+        viaFix = "TITLA"
     )
 }
