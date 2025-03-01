@@ -1,28 +1,29 @@
 package view.tabpage.timeline
 
 import model.entities.TimelineConfig
+import org.example.model.TimelineState
 import org.example.presentation.tabpage.timeline.ITimelineView
 import org.example.state.Arrival
-import org.example.state.ApplicationState
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics
 import java.awt.Polygon
-import java.time.Instant
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.min
 import kotlin.math.roundToInt
 
 class OverlayView(
-    val applicationState: ApplicationState,
+    val timelineState: TimelineState,
     val timelineConfig: TimelineConfig,
     val timelineView: ITimelineView
 ) : JPanel(null) {
     private val pointDiameter = 6
     private val rulerMargin = 30
-    private val labelWidth = 285
+    private val labelWidth = 320
 
     private val allLabels: MutableList<ArrivalLabel> = mutableListOf()
 
@@ -35,6 +36,13 @@ class OverlayView(
 
     init {
         isOpaque = false
+
+        timelineState.addListener {
+            if (it.propertyName == "sequence") {
+                updateLabels()
+                repaint()
+            }
+        }
 
         add(timelineNameLabel)
     }
@@ -57,8 +65,8 @@ class OverlayView(
 
     private fun rearrangeLabel(selectedLabels: List<ArrivalLabel>, x: Int) {
         var previousTop: Int? = null
-        selectedLabels.sortedBy { it.arrival.eta }.forEach { label ->
-            val dotY = timelineView.calculateYPositionForInstant(label.arrival.eta) - 10
+        selectedLabels.sortedBy { it.arrival.finalFixEta }.forEach { label ->
+            val dotY = timelineView.calculateYPositionForInstant(label.arrival.finalFixEta) - 10
             val labelY =
                 if (previousTop == null)
                     dotY
@@ -79,7 +87,7 @@ class OverlayView(
             val leftSide = timelineConfig.targetFixes[0] == it.arrival.finalFix
 
             val dotX = if (leftSide) ruler.x else ruler.x + ruler.width
-            val dotY = timelineView.calculateYPositionForInstant(it.arrival.eta)
+            val dotY = timelineView.calculateYPositionForInstant(it.arrival.finalFixEta)
             val labelX = if (leftSide) it.x + it.width else it.x
             g.drawLine(labelX, it.y + it.height / 2, dotX, dotY)
             g.fillOval(
@@ -95,11 +103,11 @@ class OverlayView(
     }
 
     private fun updateLabels() {
-        applicationState.arrivals.forEach { arrival ->
+        timelineState.arrivals.forEach { arrival ->
             val label = allLabels.find { it.arrival.callSign == arrival.callSign }
             if (label != null) {
                 label.arrival = arrival
-                label.text = createLabelText(arrival)
+                label.updateText(timelineState)
             } else {
                 val newLabel = ArrivalLabel(arrival)
                 // set monospace font:
@@ -112,21 +120,10 @@ class OverlayView(
         }
     }
 
-    private fun createLabelText(ac: Arrival): String {
-        var output = "";
-        output += ac.assignedRunway.padEnd(4)
-        output += ac.finalFix.padEnd(8)
-        output += ac.callSign.padEnd(9)
-        output += ac.icaoType.padEnd(5)
-        output += ac.wakeCategory.toString().padEnd(2)
-        output += ac.viaFix.padEnd(6)
-        output += ac.remainingDistance.roundToInt().toString().padStart(6)
 
-        return output
-    }
 
     private fun paintHourglass(g: Graphics, xPosition: Int) {
-        val nowY = timelineView.calculateYPositionForInstant(Instant.now())
+        val nowY = timelineView.calculateYPositionForInstant(timelineState.timeNow)
         g.color = Color.WHITE
         val hourglassSize = 6
 

@@ -1,8 +1,9 @@
 package org.example.state
 
+import kotlinx.datetime.Instant
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
-import java.time.Instant
+import kotlinx.datetime.Clock
 import javax.swing.Timer
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -20,6 +21,7 @@ data class Arrival(
     val icaoType: String,
     val wakeCategory: Char,
     val remainingDistance: Float,
+    val finalFixEta: Instant,
     val eta: Instant,
     val assignedRunway: String,
     val assignedStar: String,
@@ -39,34 +41,11 @@ class ApplicationState {
 
     private val pcs = PropertyChangeSupport(this)
 
-    var timeNow: Instant = Instant.now()
-
-    var selectedViewMax: Instant = Instant.now().plusSeconds(60 * 30)
+    var timeNow: Instant = Clock.System.now()
         set(value) {
             val old = field
             field = value
-            pcs.firePropertyChange("selectedViewEnd", old, value)
-        }
-
-    var selectedViewMin: Instant = Instant.now().minusSeconds(60 * 10)
-        set(value) {
-            val old = field
-            field = value
-            pcs.firePropertyChange("selectedViewStart", old, value)
-        }
-
-    var timelineMaxTime: Instant = Instant.now().plusSeconds(60 * 60 * 2)
-        set(value) {
-            val old = field
-            field = value
-            pcs.firePropertyChange("latestAvailableTime", old, value)
-        }
-
-    var timelineMinTime: Instant = Instant.now().minusSeconds(60 * 60)
-        set(value) {
-            val old = field
-            field = value
-            pcs.firePropertyChange("oldestAvailableTime", old, value)
+            pcs.firePropertyChange("timeNow", old, value)
         }
 
     var delays: List<DelayDefinition> = listOf()
@@ -76,7 +55,7 @@ class ApplicationState {
             pcs.firePropertyChange("delaysChanged", old, value)
         }
 
-    var arrivals: List<Arrival> = emptyList()
+    var arrivals: HashMap<Long, List<Arrival>> = hashMapOf()
         set(value) {
             val old = field
             field = value
@@ -89,11 +68,7 @@ class ApplicationState {
 
     init {
         Timer(1000) {
-            timeNow = Instant.now()
-            selectedViewMax = selectedViewMax.plusSeconds(1)
-            selectedViewMin = selectedViewMin.plusSeconds(1)
-            timelineMaxTime = timelineMaxTime.plusSeconds(1)
-            timelineMinTime = timelineMinTime.plusSeconds(1)
+            timeNow = Clock.System.now()
         }.start()
     }
 }
@@ -117,6 +92,7 @@ fun makeFakeArrival(callsign: String, eta: Instant): Arrival {
         isAboveTransAlt = false,
         trackedByMe = false,
         assignedStar = "TITLA",
-        viaFix = "TITLA"
+        viaFix = "TITLA",
+        finalFixEta = eta
     )
 }

@@ -7,6 +7,7 @@ data class TimelineAircraftJson(
     val runway: String,
     val star: String,
     val eta: Long,
+    val finalFixEta: Long,
     val remainingDist: Float,
     val finalFix: String,
     val viaFix: String,

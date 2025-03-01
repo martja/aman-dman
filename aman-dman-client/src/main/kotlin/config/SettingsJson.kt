@@ -1,12 +1,12 @@
-package org.example.model.entities.json
+package org.example.config
 
-data class AmanDmanSettings(
+data class AmanDmanSettingsJson(
     val openAutomatically: Boolean,
-    val timelines: Map<String, Timeline>,
-    val tagLayouts: Map<String, List<TagLayoutElement>>
+    val timelines: Map<String, TimelineJson>,
+    val tagLayouts: Map<String, List<TagLayoutElementJson>>
 )
 
-data class Timeline(
+data class TimelineJson(
     val targetFixes: List<String>,
     val viaFixes: List<String>,
     val tagLayout: String,
@@ -14,7 +14,7 @@ data class Timeline(
     val defaultTimeSpan: Int? = null
 )
 
-data class TagLayoutElement(
+data class TagLayoutElementJson(
     val source: String,
     val width: Int,
     val defaultValue: String? = null,

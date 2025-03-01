@@ -40,14 +40,10 @@ AmanPlugIn::~AmanPlugIn() {
 }
 
 void AmanPlugIn::OnTimer(int Counter) {
-    std::vector<std::string> viaFixes({ "VALPU", "INSUV" });
-    std::vector<std::string> destinationAirports({"ENGM"});
-
-
     for each(auto & timeline in timelines) {
         auto inbounds = getAircraftForTimeline(timeline);
         auto inboundsJson = jsonSerializer.getJsonOfAircraft(timeline->identifier, inbounds);
-        sendData(inboundsJson);
+        enqueueMessage(inboundsJson);
     }
 }
 

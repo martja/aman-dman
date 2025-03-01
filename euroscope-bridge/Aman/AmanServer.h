@@ -18,8 +18,7 @@ public:
 protected:
     void startServer();
     void stop();
-    void sendData(const std::string& data);
-    void sendDataToClient(const std::string& message);
+    void enqueueMessage(const std::string& data);
 
 private:
     void serverLoop();

@@ -1,9 +1,15 @@
-import org.example.state.ApplicationState
+import org.example.controller.TabController
+import org.example.model.TabState
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
-class TimeRangeScrollBar(val state: ApplicationState) : JComponent() {
+class TimeRangeScrollBar(
+    mainController: TabController,
+    val tabState: TabState
+) : JComponent() {
     private var dragging = false
     private var resizingTop = false
     private var resizingBottom = false
@@ -19,13 +25,13 @@ class TimeRangeScrollBar(val state: ApplicationState) : JComponent() {
         preferredSize = Dimension(28, 0) // Fixed width, vertical height
 
         // Update the scrollbar values when the state changes
-        state.addListener { evt ->
-            totalRangeSeconds = state.selectedViewMax.epochSecond - state.timelineMinTime.epochSecond
-            availableTimelineSeconds = state.timelineMaxTime.epochSecond - state.timelineMinTime.epochSecond
+        tabState.addListener { evt ->
+            totalRangeSeconds = tabState.selectedViewMax.epochSeconds - tabState.timelineMinTime.epochSeconds
+            availableTimelineSeconds = tabState.timelineMaxTime.epochSeconds - tabState.timelineMinTime.epochSeconds
 
-            val startPositionOffset = state.selectedViewMin.epochSecond - state.timelineMinTime.epochSecond
-            val endPositionOffset = state.selectedViewMax.epochSecond - state.timelineMinTime.epochSecond
-            val nowTimePositionOffset = state.timeNow.epochSecond - state.timelineMinTime.epochSecond
+            val startPositionOffset = tabState.selectedViewMin.epochSeconds - tabState.timelineMinTime.epochSeconds
+            val endPositionOffset = tabState.selectedViewMax.epochSeconds - tabState.timelineMinTime.epochSeconds
+            val nowTimePositionOffset = tabState.timeNow.epochSeconds - tabState.timelineMinTime.epochSeconds
 
             relativeTimeEnd = 1 - endPositionOffset.toFloat() / availableTimelineSeconds.toFloat()
             relativeTimeStart = 1 - startPositionOffset.toFloat() / availableTimelineSeconds.toFloat()
@@ -62,44 +68,23 @@ class TimeRangeScrollBar(val state: ApplicationState) : JComponent() {
 
         addMouseMotionListener(object : MouseMotionAdapter() {
             override fun mouseDragged(e: MouseEvent) {
-                val minRangeSec = 60L * 10L
                 val deltaY = e.y - lastMouseY
                 lastMouseY = e.y
 
                 val secondsPerPixel = availableTimelineSeconds / height.toFloat()
-                val deltaSeconds = -(deltaY * secondsPerPixel).toLong()
+                val delta: Duration = (- deltaY * secondsPerPixel).toInt().seconds
 
                 when {
                     dragging -> {
-                        // Move entire range up/down (scrolling)
-                        val newMin = state.selectedViewMin.plusSeconds(deltaSeconds)
-                        val newMax = state.selectedViewMax.plusSeconds(deltaSeconds)
-
-                        if (newMin.isAfter(state.timelineMinTime) && newMax.isBefore(state.timelineMaxTime)) {
-                            state.selectedViewMin = state.selectedViewMin.plusSeconds(deltaSeconds)
-                            state.selectedViewMax = state.selectedViewMax.plusSeconds(deltaSeconds)
-                        }
+                        mainController.moveTimeRange(delta)
                     }
                     resizingTop -> {
-                        // Adjust only the start position (stretching)
-                        val newMaxTime = state.selectedViewMax.plusSeconds(deltaSeconds)
-
-                        // Ensure the new start time is within bounds
-                        if (newMaxTime.isBefore(state.timelineMaxTime) && newMaxTime.isAfter(state.selectedViewMin.plusSeconds(minRangeSec))) {
-                            state.selectedViewMax = newMaxTime
-                        }
+                        mainController.moveTimeRangeEnd(delta)
                     }
                     resizingBottom -> {
-                        // Adjust only the end position (stretching)
-                        val newMinTime = state.selectedViewMin.plusSeconds(deltaSeconds)
-
-                        // Ensure the new end time is within bounds
-                        if (newMinTime.isAfter(state.timelineMinTime) && newMinTime.isBefore(state.selectedViewMax.minusSeconds(minRangeSec))) {
-                            state.selectedViewMin = newMinTime
-                        }
+                        mainController.moveTimeRangeStart(delta)
                     }
                 }
-                repaint()
             }
         })
     }
@@ -135,8 +120,8 @@ class TimeRangeScrollBar(val state: ApplicationState) : JComponent() {
         g2.fillRoundRect(scrollHandleMargin, barBottom - resizeHandleThickness, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
 
         // Draw one line per arrival
-        state.arrivals.forEach { arrival ->
-            val etaOffset = arrival.eta.epochSecond - state.timelineMinTime.epochSecond
+        tabState.arrivals.flatMap { it.value }.forEach { arrival ->
+            val etaOffset = arrival.finalFixEta.epochSeconds - tabState.timelineMinTime.epochSeconds
             val yPos = (1 - etaOffset.toFloat() /  availableTimelineSeconds.toFloat())*height
             g2.drawLine(scrollHandleMargin * 2, yPos.toInt(), width - scrollHandleMargin * 2 - 1, yPos.toInt())
         }

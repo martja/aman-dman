@@ -1,7 +1,7 @@
 package org.example.presentation.tabpage.timeline
 
+import kotlinx.datetime.Instant
 import java.awt.Rectangle
-import java.time.Instant
 
 interface ITimelineView {
     fun calculateYPositionForInstant(instant: Instant): Int

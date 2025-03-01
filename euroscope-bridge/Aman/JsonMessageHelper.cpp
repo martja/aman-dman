@@ -24,6 +24,7 @@ const std::string JsonMessageHelper::getJsonOfAircraft(long timelineId, const st
         arrivalObject.AddMember("wtc", inbound.wtc, allocator);
         arrivalObject.AddMember("runway", inbound.arrivalRunway, allocator);
         arrivalObject.AddMember("star", inbound.assignedStar, allocator);
+        arrivalObject.AddMember("finalFixEta", inbound.targetFixEta, allocator);
         arrivalObject.AddMember("eta", inbound.destinationEta, allocator);
         arrivalObject.AddMember("remainingDist", inbound.distLeft, allocator);
         arrivalObject.AddMember("viaFix", inbound.viaFix, allocator);

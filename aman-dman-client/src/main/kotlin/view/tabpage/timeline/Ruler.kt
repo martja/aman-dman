@@ -1,15 +1,15 @@
 package org.example.presentation.tabpage.timeline
 
+import kotlinx.datetime.*
+import kotlinx.datetime.format.FormatStringsInDatetimeFormats
+import kotlinx.datetime.format.byUnicodePattern
+import org.example.model.TimelineState
 import org.example.state.DelayDefinition
-import org.example.state.ApplicationState
 import java.awt.*
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import javax.swing.JPanel
 
 
-class Ruler(val timelineView: ITimelineView, val state: ApplicationState) : JPanel(null) {
+class Ruler(val timelineView: ITimelineView, val timelineState: TimelineState) : JPanel(null) {
     private val TICK_WIDTH_1_MIN = 5
     private val TICK_WIDTH_5_MIN = 10
 
@@ -23,11 +23,10 @@ class Ruler(val timelineView: ITimelineView, val state: ApplicationState) : JPan
 
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
-        val timeNow = Instant.now()
-        val timespanSeconds = state.selectedViewMax.epochSecond - state.selectedViewMin.epochSecond
+        val timespanSeconds = timelineState.selectedViewMax.epochSeconds - timelineState.selectedViewMin.epochSeconds
 
         // Set background color of time that has passed
-        val currentTimeYpos = timelineView.calculateYPositionForInstant(timeNow)
+        val currentTimeYpos = timelineView.calculateYPositionForInstant(timelineState.timeNow)
         g.color = pastColor
         g.fillRect(0, currentTimeYpos, width, height - currentTimeYpos)
 
@@ -37,9 +36,9 @@ class Ruler(val timelineView: ITimelineView, val state: ApplicationState) : JPan
         g.drawLine(width-1, 0, width-1, height)
 
         for (timestep in 0 .. timespanSeconds) {
-            val accInstant = Instant.ofEpochSecond(state.selectedViewMin.epochSecond + timestep)
-            val accSeconds = accInstant.epochSecond
-            val yPos = timelineView.calculateYPositionForInstant(Instant.ofEpochSecond(accSeconds))
+            val accInstant = Instant.fromEpochSeconds(timelineState.selectedViewMin.epochSeconds + timestep)
+            val accSeconds = accInstant.epochSeconds
+            val yPos = timelineView.calculateYPositionForInstant(Instant.fromEpochSeconds(accSeconds))
 
             if (accSeconds % (60L * 5L) == 0L) {
                 g.drawLine(0, yPos, TICK_WIDTH_5_MIN, yPos)
@@ -55,7 +54,7 @@ class Ruler(val timelineView: ITimelineView, val state: ApplicationState) : JPan
                 g.drawLine(width, yPos, width - TICK_WIDTH_1_MIN, yPos)
             }
         }
-        drawDelays(g, state.delays)
+        drawDelays(g, timelineState.delays)
     }
 
     private fun drawDelays(g: Graphics, delays: List<DelayDefinition>) {
@@ -67,9 +66,10 @@ class Ruler(val timelineView: ITimelineView, val state: ApplicationState) : JPan
         }
     }
 
+    @OptIn(FormatStringsInDatetimeFormats::class)
     private fun Instant.format(pattern: String): String {
-        val formatter = DateTimeFormatter.ofPattern(pattern)
-        return this.atZone(ZoneId.of("UTC")).format(formatter)
+        val dateTimeFormat = LocalDateTime.Format { byUnicodePattern(pattern) }
+        return dateTimeFormat.format(this.toLocalDateTime(TimeZone.UTC))
     }
 
     private fun Graphics.drawCenteredString(text: String, rect: Rectangle, font: Font) {

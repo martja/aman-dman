@@ -1,0 +1,70 @@
+{
+  "openAutomatically": false,
+  "timelines": {
+    "GM 19R/19L": {
+      "targetFixes": [ "GSW40", "GME40" ],
+      "viaFixes": [ "ADOPI", "LUNIP", "ESEBA", "INREX", "RIPAM", "BELGU" ],
+      "tagLayout": "DualrunwayLayout",
+      "destinationAirports": [ "ENGM" ]
+    },
+    "GM 01L/01R": {
+      "targetFixes": [ "OBW40", "ONE40" ],
+      "viaFixes": [ "ADOPI", "LUNIP", "ESEBA", "INREX", "RIPAM", "BELGU" ],
+      "tagLayout": "DualrunwayLayout",
+      "destinationAirports": [ "ENGM" ]
+    },
+    "VALPU | INSUV": {
+      "targetFixes": [ "VALPU", "INSUV" ],
+      "viaFixes": [ "ADOPI", "LUNIP", "ESEBA", "INREX", "RIPAM", "BELGU" ],
+      "tagLayout": "DualrunwayLayout",
+      "destinationAirports": [ "ENGM" ]
+    },
+    "ENBR": {
+      "targetFixes": [ "ENBR" ],
+      "viaFixes": [ "NIDGI", "LUNUR", "ETNOR", "PESUR", "MODNI", "GENVU", "ALUVA", "BADAB" ],
+      "tagLayout": "SinglerunwayLayout",
+      "destinationAirports": [ "ENBR" ]
+    },
+    "ENVA": {
+      "targetFixes": [ "ENVA" ],
+      "viaFixes": [ "VEVOD", "NELSU", "NUPGO", "MISVO" ],
+      "tagLayout": "SinglerunwayLayout",
+      "destinationAirports": [ "ENVA" ]
+    },
+    "ENZV":{
+      "targetFixes": [ "ENZV" ],
+      "viaFixes": [ "BEGOD", "KUNEM", "UNBUD", "RIVEX", "IDIPI", "ROPNO", "UPDER"  ],
+      "tagLayout": "SinglerunwayLayout",
+      "destinationAirports": [ "ENZV" ]
+    }
+  },
+  "tagLayouts": {
+    "DualrunwayLayout": [
+      { "source": "assignedRunway", "width": 4 },
+      { "source": "callsign", "width": 8 },
+      { "source": "static", "defaultValue": "�", "width": 2, "isViaFixIndicator": true },
+      { "source": "aircraftType", "width": 5 },
+      { "source": "aircraftWtc", "width": 2 },
+      { "source": "timeBehindPreceeding", "width": 5, "rightAligned": true },
+      { "source": "remainingDistance", "width": 4, "rightAligned": true },
+      { "source": "static", "width": 1 },
+      { "source": "directRouting", "width": 5, "rightAligned": true, "defaultValue": "-----" },
+      { "source": "static", "width": 1 }
+    ],
+    "SinglerunwayLayout": [
+      { "source": "callsign", "width": 8 },
+      { "source": "static", "defaultValue": "�", "width": 2, "isViaFixIndicator": true },
+      { "source": "aircraftType", "width": 5 },
+      { "source": "aircraftWtc", "width": 2 },
+      { "source": "timeBehindPreceeding", "width": 5, "rightAligned": true },
+      { "source": "remainingDistance", "width": 4, "rightAligned": true },
+      { "source": "static", "width": 1 },
+      { "source": "directRouting", "width": 5, "rightAligned": true, "defaultValue": "-----" },
+      { "source": "static", "width": 1 }
+    ],
+    "simpleLayout": [
+      { "source": "assignedRunway", "width": 4, "isViaFixIndicator": true },
+      { "source": "callsign", "width": 8 }
+    ]
+  }
+}

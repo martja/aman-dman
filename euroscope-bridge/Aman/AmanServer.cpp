@@ -146,17 +146,9 @@ void AmanServer::serverLoop() {
     }
 }
 
-void AmanServer::sendData(const std::string& data) {
+void AmanServer::enqueueMessage(const std::string& data) {
     std::lock_guard<std::mutex> lock(queueMutex);
     messageQueue.push(data);
     queueCondition.notify_one();
 }
 
-void AmanServer::sendDataToClient(const std::string& message) {
-    if (clientSocket != INVALID_SOCKET) {
-        int bytesSent = send(clientSocket, message.c_str(), static_cast<int>(message.length()), 0);
-        if (bytesSent == SOCKET_ERROR) {
-            std::cerr << "Send failed" << std::endl;
-        }
-    }
-}
