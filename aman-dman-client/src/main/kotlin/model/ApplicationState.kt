@@ -37,6 +37,16 @@ data class Arrival(
     val viaFix: String,
 )
 
+data class Departure(
+    val id: String,
+    val callsign: String,
+    val sid: String?,
+    val runway: String?,
+    val icaoType: String?,
+    val wakeCategory: Char?,
+    val estimatedDepartureTime: Instant,
+)
+
 class ApplicationState {
 
     private val pcs = PropertyChangeSupport(this)
@@ -60,6 +70,13 @@ class ApplicationState {
             val old = field
             field = value
             pcs.firePropertyChange("arrivalsChanged", old, value)
+        }
+
+    var departures: HashMap<Long, List<Departure>> = hashMapOf()
+        set(value) {
+            val old = field
+            field = value
+            pcs.firePropertyChange("departuresChanged", old, value)
         }
 
     fun addListener(listener: PropertyChangeListener) {

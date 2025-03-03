@@ -40,10 +40,14 @@ private:
     double findRemainingDist(CRadarTarget radarTarget, CFlightPlanExtractedRoute extractedRoute, int fixIndex);
 
     std::vector<AmanAircraft> getInboundsForFix(const std::string& fixName, std::vector<std::string> viaFixes, std::vector<std::string> destinationAirports);
+    std::vector<DmanAircraft> getOutboundsFromAirport(const std::string& airport);
+
+    long processDepartureTime(const std::string& departureTime);
     
     static std::vector<std::string> splitString(const std::string& string, const char delim);
 
     // Server methods
     void onRegisterTimeline(long timelineId, const std::vector<std::string>& viaFixes, const std::vector<std::string>& destinationFixes, const std::vector<std::string>& destinationAirports) override;
     void onUnregisterTimeline(long timelineId) override;
+    void onSetCtot(const std::string& callSign, long ctot) override;
 };

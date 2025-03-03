@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
 import org.example.state.Arrival
 import org.example.state.DelayDefinition
+import org.example.state.Departure
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import kotlin.time.Duration
@@ -25,12 +26,16 @@ class TimelineState(
                 "selectedViewEnd" -> pcs.firePropertyChange("selectedViewEnd", evt.oldValue, evt.newValue)
                 "latestAvailableTime" -> pcs.firePropertyChange("latestAvailableTime", evt.oldValue, evt.newValue)
                 "oldestAvailableTime" -> pcs.firePropertyChange("oldestAvailableTime", evt.oldValue, evt.newValue)
+                "departures" -> pcs.firePropertyChange("departures", evt.oldValue, evt.newValue)
             }
         }
     }
 
     val arrivals: List<Arrival>
         get() = tabState.arrivals[timelineConfig.id] ?: listOf()
+
+    val departures: List<Departure>
+        get() = tabState.departures[timelineConfig.id] ?: listOf()
 
     val delays: List<DelayDefinition>
         get() = tabState.delays

@@ -33,5 +33,9 @@ void MessageProcessor::processMessage(const std::string& message) {
         long timelineId = document["timelineId"].GetInt64();
 
         onUnregisterTimeline(timelineId);
+    } else if (type == "setCtot") {
+        std::string callsign = document["callsign"].GetString();
+        long ctot = document["ctot"].GetInt64();
+        onSetCtot(callsign, ctot);
     }
 }

@@ -51,3 +51,33 @@ const std::string JsonMessageHelper::getJsonOfAircraft(long timelineId, const st
 
     return sb.GetString();
 }
+
+const std::string JsonMessageHelper::getJsonOfDepartingAircraft(long timelineId, const std::vector<DmanAircraft>& aircraftList) {
+    Document document;
+    document.SetObject();
+    Value departuresArray(kArrayType);
+
+    Document::AllocatorType& allocator = document.GetAllocator();
+
+    for (auto& outbound : aircraftList) {
+        Value departureObject(kObjectType);
+        departureObject.AddMember("callsign", outbound.callsign, allocator);
+        departureObject.AddMember("sid", outbound.sid, allocator);
+        departureObject.AddMember("runway", outbound.runway, allocator);
+        departureObject.AddMember("estimatedDepartureTime", outbound.estimatedDepartureTime, allocator);
+        departureObject.AddMember("icaoType", outbound.icaoType, allocator);
+        departureObject.AddMember("wakeCategory", outbound.wakeCategory, allocator);
+
+        departuresArray.PushBack(departureObject, allocator);
+    }
+
+    document.AddMember("type", "departuresUpdate", allocator);
+    document.AddMember("timelineId", timelineId, allocator);
+    document.AddMember("departures", departuresArray, allocator);
+
+    StringBuffer sb;
+    Writer<StringBuffer> writer(sb);
+    document.Accept(writer);
+
+    return sb.GetString();
+}

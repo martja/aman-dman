@@ -3,7 +3,7 @@ package view.tabpage.timeline
 import model.entities.TimelineConfig
 import org.example.model.TimelineState
 import org.example.presentation.tabpage.timeline.ITimelineView
-import org.example.state.Arrival
+import org.example.view.tabpage.timeline.DepartureLabel
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics
@@ -11,10 +11,7 @@ import java.awt.Polygon
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
-import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 class OverlayView(
     val timelineState: TimelineState,
@@ -25,7 +22,8 @@ class OverlayView(
     private val rulerMargin = 30
     private val labelWidth = 320
 
-    private val allLabels: MutableList<ArrivalLabel> = mutableListOf()
+    private val allArrivalLabels: MutableList<ArrivalLabel> = mutableListOf()
+    private val allDepartureLabels: MutableList<DepartureLabel> = mutableListOf()
 
     private val timelineNameLabel = JLabel(timelineConfig.label, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -54,16 +52,18 @@ class OverlayView(
 
         val ruler = timelineView.getRulerBounds()
 
-        val leftSideLabels = allLabels.filter { it.arrival.finalFix == timelineConfig.targetFixes[0] }
-        val rightSideLabels = allLabels.filter { it.arrival.finalFix == timelineConfig.targetFixes[1] }
+        val leftSideLabels = allArrivalLabels.filter { it.arrival.finalFix == timelineConfig.targetFixes[0] }
+        val rightSideLabels = allArrivalLabels.filter { it.arrival.finalFix == timelineConfig.targetFixes[1] }
 
-        rearrangeLabel(leftSideLabels, ruler.x - labelWidth - rulerMargin)
-        rearrangeLabel(rightSideLabels, ruler.x + rulerMargin + ruler.width)
+        rearrangeLabels(leftSideLabels, ruler.x - labelWidth - rulerMargin)
+        rearrangeLabels(rightSideLabels, ruler.x + rulerMargin + ruler.width)
+
+        rearrangeLabels(allDepartureLabels)
 
         timelineNameLabel.setBounds(ruler.x - 10, ruler.y + ruler.height - 20, 100, 20)
     }
 
-    private fun rearrangeLabel(selectedLabels: List<ArrivalLabel>, x: Int) {
+    private fun rearrangeLabels(selectedLabels: List<ArrivalLabel>, x: Int) {
         var previousTop: Int? = null
         selectedLabels.sortedBy { it.arrival.finalFixEta }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.arrival.finalFixEta) - 10
@@ -78,12 +78,29 @@ class OverlayView(
         }
     }
 
+    private fun rearrangeLabels(selectedLabels: List<DepartureLabel>) {
+        var previousTop: Int? = null
+        selectedLabels
+            .filter { it.departure.estimatedDepartureTime.epochSeconds > -1 }
+            .sortedBy { it.departure.estimatedDepartureTime }.forEach { label ->
+                val dotY = timelineView.calculateYPositionForInstant(label.departure.estimatedDepartureTime) - 10
+                val labelY =
+                    if (previousTop == null)
+                        dotY
+                    else
+                        min(previousTop!! - 3, dotY)
+
+                label.setBounds(10, labelY, labelWidth, 20)
+                previousTop = label.y - label.height
+            }
+    }
+
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
         doLayout()
         val ruler = timelineView.getRulerBounds()
 
-        allLabels.forEach {
+        allArrivalLabels.forEach {
             val leftSide = timelineConfig.targetFixes[0] == it.arrival.finalFix
 
             val dotX = if (leftSide) ruler.x else ruler.x + ruler.width
@@ -104,7 +121,7 @@ class OverlayView(
 
     private fun updateLabels() {
         timelineState.arrivals.forEach { arrival ->
-            val label = allLabels.find { it.arrival.callSign == arrival.callSign }
+            val label = allArrivalLabels.find { it.arrival.callSign == arrival.callSign }
             if (label != null) {
                 label.arrival = arrival
                 label.updateText(timelineState)
@@ -114,7 +131,23 @@ class OverlayView(
                 newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
                 newLabel.foreground = Color.WHITE
 
-                allLabels.add(newLabel)
+                allArrivalLabels.add(newLabel)
+                add(newLabel)
+            }
+        }
+
+        timelineState.departures.forEach { departure ->
+            val label = allDepartureLabels.find { it.departure.callsign == departure.callsign }
+            if (label != null) {
+                label.departure = departure
+                label.updateText()
+            } else {
+                val newLabel = DepartureLabel(departure)
+                // set monospace font:
+                newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
+                newLabel.foreground = Color.WHITE
+
+                allDepartureLabels.add(newLabel)
                 add(newLabel)
             }
         }

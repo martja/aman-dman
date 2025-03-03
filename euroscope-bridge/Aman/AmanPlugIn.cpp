@@ -44,6 +44,10 @@ void AmanPlugIn::OnTimer(int Counter) {
         auto inbounds = getAircraftForTimeline(timeline);
         auto inboundsJson = jsonSerializer.getJsonOfAircraft(timeline->identifier, inbounds);
         enqueueMessage(inboundsJson);
+
+        auto departures = getOutboundsFromAirport(timeline->destinationAirports[0]);
+        auto departuresJson = jsonSerializer.getJsonOfDepartingAircraft(timeline->identifier, departures);
+        enqueueMessage(departuresJson);
     }
 }
 
@@ -133,6 +137,21 @@ void AmanPlugIn::onUnregisterTimeline(long timelineId) {
         if ((*it)->identifier == timelineId) {
             timelines.erase(it);
             break;
+        }
+    }
+}
+
+void AmanPlugIn::onSetCtot(const std::string& callSign, long ctot) {
+    CRadarTarget rt = RadarTargetSelect(callSign.c_str());
+    if (rt.IsValid()) {
+        CFlightPlan fp = rt.GetCorrelatedFlightPlan();
+        if (fp.IsValid()) {
+            // Format ctot (unix ts) to HH:MM
+            time_t ctotTime = ctot;
+            struct tm* ctotTm = gmtime(&ctotTime);
+            char ctotStr[6];
+            strftime(ctotStr, sizeof(ctotStr), "%H:%M", ctotTm);
+            fp.GetFlightPlanData().SetEstimatedDepartureTime(ctotStr);
         }
     }
 }
@@ -229,4 +248,71 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForFix(const std::string& fixNa
     }
 
     return aircraftList;
+}
+
+std::vector<DmanAircraft> AmanPlugIn::getOutboundsFromAirport(const std::string& airport) {
+
+    auto departures = std::vector<DmanAircraft>();
+
+    // Get every flight plan
+    for (CFlightPlan fp = FlightPlanSelectFirst(); fp.IsValid(); fp = FlightPlanSelectNext(fp)) {
+
+        auto fpd = fp.GetFlightPlanData();
+
+        // Check if the flight plan is a departure
+        if (fp.GetFlightPlanData().GetOrigin() == airport) {
+            DmanAircraft ac;
+            ac.callsign = fp.GetCallsign();
+            ac.sid = fpd.GetSidName();
+            ac.runway = fpd.GetDepartureRwy();
+            const char* departureTime = fpd.GetEstimatedDepartureTime();
+            ac.estimatedDepartureTime = processDepartureTime(departureTime);
+            ac.icaoType = fpd.GetAircraftFPType();
+            ac.wakeCategory = fpd.GetAircraftWtc();
+
+            departures.push_back(ac);
+        }
+    }
+
+    return departures;
+}
+
+
+// HHMM to epoch time
+long AmanPlugIn::processDepartureTime(const std::string& departureTime) {
+    // Validate length (should be exactly 4 characters)
+    if (departureTime.length() != 4) {
+        std::cerr << "Invalid departure time format: " << departureTime << std::endl;
+        return -1;
+    }
+
+    try {
+        // Parse hour and minute
+        int hour = std::stoi(departureTime.substr(0, 2));
+        int minute = std::stoi(departureTime.substr(2, 2));
+
+        // Validate hour and minute range
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            throw std::out_of_range("Hour or minute out of range");
+        }
+
+        // Get current UTC date
+        struct tm tm {};
+        time_t now;
+        time(&now);
+        gmtime_s(&tm, &now);  // Use UTC time
+
+        // Set parsed values (keeping the same date)
+        tm.tm_hour = hour;
+        tm.tm_min = minute;
+        tm.tm_sec = 0;
+
+        // Convert to epoch time (UTC)
+        time_t t = _mkgmtime(&tm); // Windows-specific function for UTC conversion
+
+        return static_cast<long>(t);
+    } catch (const std::exception& e) {
+        std::cerr << "Error parsing departure time: " << e.what() << std::endl;
+        return -1;
+    }
 }

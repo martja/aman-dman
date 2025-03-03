@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 import org.example.state.ApplicationState
 import org.example.state.Arrival
 import org.example.state.DelayDefinition
+import org.example.state.Departure
 import java.beans.PropertyChangeSupport
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -18,6 +19,7 @@ class TabState(private val applicationState: ApplicationState) {
                 "timeNow" -> pcs.firePropertyChange("timeNow", evt.oldValue, evt.newValue)
                 "arrivals" -> pcs.firePropertyChange("arrivals", evt.oldValue, evt.newValue)
                 "delays" -> pcs.firePropertyChange("delays", evt.oldValue, evt.newValue)
+                "departures" -> pcs.firePropertyChange("departures", evt.oldValue, evt.newValue)
             }
         }
     }
@@ -30,6 +32,9 @@ class TabState(private val applicationState: ApplicationState) {
 
     val delays: List<DelayDefinition>
         get() = applicationState.delays
+
+    val departures: HashMap<Long, List<Departure>>
+        get() = applicationState.departures.filter { it.key in activeTimelines }.toMutableMap() as HashMap<Long, List<Departure>>
 
     var activeTimelines: List<Long> = listOf()
         set(value) {

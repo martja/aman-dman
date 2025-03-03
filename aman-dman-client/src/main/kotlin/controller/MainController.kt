@@ -3,13 +3,12 @@ package org.example.controller
 import integration.AtcClientEuroScope
 import kotlinx.datetime.Instant
 import org.example.integration.AtcClient
-import org.example.integration.entities.IncomingMessageJson
-import org.example.integration.entities.TimelineAircraftJson
-import org.example.integration.entities.TimelineUpdate
+import org.example.integration.entities.*
 import org.example.model.TabState
 import org.example.presentation.AmanDman
 import org.example.state.ApplicationState
 import org.example.state.Arrival
+import org.example.state.Departure
 import org.example.view.TabView
 import kotlin.time.Duration.Companion.seconds
 
@@ -39,7 +38,12 @@ class MainController {
     private fun handleDataPackage(incomingMessageJson: IncomingMessageJson) {
         when (incomingMessageJson) {
             is TimelineUpdate -> {
-                applicationState.arrivals[incomingMessageJson.timelineId] = incomingMessageJson.arrivals.map { it.toArrival() }
+                applicationState.arrivals[incomingMessageJson.timelineId] =
+                    incomingMessageJson.arrivals.map { it.toArrival() }
+            }
+            is DmanUpdate -> {
+                applicationState.departures[incomingMessageJson.timelineId] =
+                    incomingMessageJson.departures.map { it.toDeparture() }
             }
         }
     }
@@ -67,4 +71,14 @@ class MainController {
             finalFixEta = Instant.fromEpochSeconds(this.finalFixEta)
         )
 
+    private fun DmanAircraftJson.toDeparture() =
+        Departure(
+            id = this.callsign,
+            callsign = this.callsign,
+            sid = this.sid,
+            runway = this.runway,
+            icaoType = this.icaoType,
+            wakeCategory = this.wakeCategory,
+            estimatedDepartureTime = Instant.fromEpochSeconds(this.estimatedDepartureTime)
+        )
 }
