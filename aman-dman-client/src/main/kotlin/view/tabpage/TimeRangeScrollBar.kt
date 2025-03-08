@@ -1,14 +1,16 @@
+import kotlinx.datetime.Instant
 import org.example.controller.TabController
-import org.example.model.TabState
+import org.example.model.*
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
+import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class TimeRangeScrollBar(
-    mainController: TabController,
-    val tabState: TabState
+    private val tabController: TabController,
+    private val tabState: TabState
 ) : JComponent() {
     private var dragging = false
     private var resizingTop = false
@@ -76,13 +78,13 @@ class TimeRangeScrollBar(
 
                 when {
                     dragging -> {
-                        mainController.moveTimeRange(delta)
+                        tabController.moveTimeRange(delta)
                     }
                     resizingTop -> {
-                        mainController.moveTimeRangeEnd(delta)
+                        tabController.moveTimeRangeEnd(delta)
                     }
                     resizingBottom -> {
-                        mainController.moveTimeRangeStart(delta)
+                        tabController.moveTimeRangeStart(delta)
                     }
                 }
             }
@@ -119,11 +121,34 @@ class TimeRangeScrollBar(
         g2.fillRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
         g2.fillRoundRect(scrollHandleMargin, barBottom - resizeHandleThickness, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
 
-        // Draw one line per arrival
-        tabState.arrivals.flatMap { it.value }.forEach { arrival ->
-            val etaOffset = arrival.finalFixEta.epochSeconds - tabState.timelineMinTime.epochSeconds
-            val yPos = (1 - etaOffset.toFloat() /  availableTimelineSeconds.toFloat())*height
-            g2.drawLine(scrollHandleMargin * 2, yPos.toInt(), width - scrollHandleMargin * 2 - 1, yPos.toInt())
+        // Draw one line per item
+        tabController.getAllTimelineOccurrences().forEach { item ->
+            when (item) {
+                is RunwayDelayOccurrence ->
+                    drawVerticalBar(g2, item.time, item.delay, Color.RED)
+                is DepartureOccurrence ->
+                    drawHorizontalBar(g2, item.time, Color.decode("#83989B"))
+                else ->
+                    drawHorizontalBar(g2, item.time, Color.WHITE)
+            }
         }
+    }
+
+    private fun drawHorizontalBar(g: Graphics, instant: Instant, color: Color) {
+        val etaOffset = instant.epochSeconds - tabState.timelineMinTime.epochSeconds
+        val yPos = (1 - etaOffset.toFloat() /  availableTimelineSeconds.toFloat())*height
+
+        g.color = color
+        g.drawLine(scrollHandleMargin * 2, yPos.toInt(), width - scrollHandleMargin * 2 - 1, yPos.toInt())
+    }
+
+    private fun drawVerticalBar(g: Graphics, instant: Instant, duration: Duration, color: Color) {
+        val etaStartOffset = instant.epochSeconds - tabState.timelineMinTime.epochSeconds
+        val etaEndOffset = (instant + duration).epochSeconds - tabState.timelineMinTime.epochSeconds
+        val yStartPos = (1 - etaStartOffset.toFloat() / availableTimelineSeconds.toFloat()) * height
+        val yEndPos = (1 - etaEndOffset.toFloat() / availableTimelineSeconds.toFloat()) * height
+
+        g.color = Color.RED
+        g.fillRect(1, yEndPos.roundToInt(), 3, (yStartPos - yEndPos).roundToInt())
     }
 }

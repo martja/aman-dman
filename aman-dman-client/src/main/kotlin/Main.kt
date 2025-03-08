@@ -1,11 +1,14 @@
 package org.example
 
-import com.jtattoo.plaf.hifi.HiFiLookAndFeel
 import org.example.controller.MainController
-import org.example.presentation.AmanDman
 import javax.swing.*
 
+
 fun main() {
+
+    // Disable hardware acceleration to prevent artifacts with popup menus
+    System.setProperty("sun.java2d.d3d", "false");
+
     try {
         UIManager.setLookAndFeel("com.jtattoo.plaf.hifi.HiFiLookAndFeel")
         //HiFiLookAndFeel.setTheme("Default", "", "")

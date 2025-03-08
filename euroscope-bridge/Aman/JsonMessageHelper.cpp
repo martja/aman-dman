@@ -9,7 +9,7 @@
 
 using namespace rapidjson;
 
-const std::string JsonMessageHelper::getJsonOfAircraft(long timelineId, const std::vector<AmanAircraft>& aircraftList) {
+const std::string JsonMessageHelper::getJsonOfFixInbounds(long requestId, const std::vector<AmanAircraft>& aircraftList) {
     Document document;
     document.SetObject();
     Value arrivalsArray(kArrayType);
@@ -41,9 +41,9 @@ const std::string JsonMessageHelper::getJsonOfAircraft(long timelineId, const st
         arrivalsArray.PushBack(arrivalObject, allocator);
     }
 
-    document.AddMember("type", "timelineUpdate", allocator);
-    document.AddMember("timelineId", timelineId, allocator);
-    document.AddMember("arrivals", arrivalsArray, allocator);
+    document.AddMember("type", "fixInboundList", allocator);
+    document.AddMember("requestId", requestId, allocator);
+    document.AddMember("inbounds", arrivalsArray, allocator);
 
     StringBuffer sb;
     Writer<StringBuffer> writer(sb);
@@ -52,7 +52,7 @@ const std::string JsonMessageHelper::getJsonOfAircraft(long timelineId, const st
     return sb.GetString();
 }
 
-const std::string JsonMessageHelper::getJsonOfDepartingAircraft(long timelineId, const std::vector<DmanAircraft>& aircraftList) {
+const std::string JsonMessageHelper::getJsonOfDepartures(long requestId, const std::vector<DmanAircraft>& aircraftList) {
     Document document;
     document.SetObject();
     Value departuresArray(kArrayType);
@@ -71,9 +71,9 @@ const std::string JsonMessageHelper::getJsonOfDepartingAircraft(long timelineId,
         departuresArray.PushBack(departureObject, allocator);
     }
 
-    document.AddMember("type", "departuresUpdate", allocator);
-    document.AddMember("timelineId", timelineId, allocator);
-    document.AddMember("departures", departuresArray, allocator);
+    document.AddMember("type", "departureList", allocator);
+    document.AddMember("requestId", requestId, allocator);
+    document.AddMember("outbounds", departuresArray, allocator);
 
     StringBuffer sb;
     Writer<StringBuffer> writer(sb);

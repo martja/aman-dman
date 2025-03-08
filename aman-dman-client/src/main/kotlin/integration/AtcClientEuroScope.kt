@@ -16,9 +16,7 @@ import java.net.Socket
 class AtcClientEuroScope(
     private val host: String,
     private val port: Int,
-    private val timelinesToRegister: List<RegisterTimelineJson>,
-    private val onMessageReceived: (IncomingMessageJson) -> Unit // Callback that gets triggered when a message is received){}
-) : AtcClient(timelinesToRegister) {
+) : AtcClient() {
     private var socket: Socket? = null
     private var writer: OutputStreamWriter? = null
     private var reader: InputStreamReader? = null
@@ -50,11 +48,6 @@ class AtcClientEuroScope(
             CoroutineScope(Dispatchers.IO).launch {
                 receiveMessages()
             }
-
-            timelinesToRegister.forEach {
-                registerTimeline(it.timelineId, it.targetFixes, it.viaFixes, it.destinationAirports)
-            }
-
         } catch (e: Exception) {
             println("Error connecting to server: ${e.message}")
         }
@@ -68,7 +61,7 @@ class AtcClientEuroScope(
                 val message = bufferedReader.readLine()
                 val dataPackage = objectMapper.readValue(message, IncomingMessageJson::class.java)
                 if (message != null) {
-                    onMessageReceived(dataPackage) // Trigger the callback
+                    super.handleMessage(dataPackage)
                 } else {
                     break
                 }

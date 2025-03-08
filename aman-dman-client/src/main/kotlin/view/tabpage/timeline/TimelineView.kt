@@ -2,9 +2,8 @@ package org.example.presentation.tabpage.timeline
 
 import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
-import org.example.controller.TimelineController
 import org.example.model.TimelineState
-import view.tabpage.timeline.OverlayView
+import view.tabpage.timeline.TimelineOverlay
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Rectangle
@@ -13,12 +12,11 @@ import javax.swing.JPanel
 
 class TimelineView(
     private val timelineState: TimelineState,
-    private val timelineController: TimelineController,
     private val timelineConfig: TimelineConfig
-) : JLayeredPane(), ITimelineView {
+) : JLayeredPane() {
 
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
-    private val indicatorsPanel = OverlayView(timelineState, timelineConfig, this)
+    private val indicatorsPanel = TimelineOverlay(timelineState, timelineConfig, this)
 
     private val ruler = Ruler(this, timelineState)
 
@@ -49,19 +47,19 @@ class TimelineView(
         basePanel.add(TrafficSequenceView(this, timelineState, TimelineAlignment.LEFT), gbc)
 
         timelineState.addListener { evt ->
-            if (evt.propertyName == "selectedViewEnd" || evt.propertyName == "selectedViewStart" || evt.propertyName == "delaysChanged") {
+            if (evt.propertyName == "selectedViewMax" || evt.propertyName == "selectedViewMin" || evt.propertyName == "timelineDataChanged") {
                 repaint()
             }
         }
     }
 
-    override fun calculateYPositionForInstant(instant: Instant): Int {
+    fun calculateYPositionForInstant(instant: Instant): Int {
         val timespanSeconds = timelineState.selectedViewMax.epochSeconds - timelineState.selectedViewMin.epochSeconds
         val pixelsPerSecond = height.toFloat() / timespanSeconds.toFloat()
         return (height - pixelsPerSecond * (instant.epochSeconds - timelineState.selectedViewMin.epochSeconds)).toInt()
     }
 
-    override fun getRulerBounds(): Rectangle {
+    fun getRulerBounds(): Rectangle {
         return ruler.bounds
     }
 

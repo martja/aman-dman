@@ -5,17 +5,19 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = TimelineUpdate::class, name = "timelineUpdate"),
-    JsonSubTypes.Type(value = DmanUpdate::class, name = "departuresUpdate"),
+    JsonSubTypes.Type(value = FixInboundsUpdate::class, name = "fixInboundList"),
+    JsonSubTypes.Type(value = DeparturesUpdate::class, name = "departureList"),
 )
-sealed class IncomingMessageJson
+sealed class IncomingMessageJson(
+    open val requestId: Int,
+)
 
-data class TimelineUpdate(
-    val timelineId: Long,
-    val arrivals: List<TimelineAircraftJson>
-) : IncomingMessageJson()
+data class FixInboundsUpdate(
+    override val requestId: Int,
+    val inbounds: List<FixInboundJson>
+) : IncomingMessageJson(requestId)
 
-data class DmanUpdate(
-    val timelineId: Long,
-    val departures: List<DmanAircraftJson>
-) : IncomingMessageJson()
+data class DeparturesUpdate(
+    override val requestId: Int,
+    val outbounds: List<DepartureJson>
+) : IncomingMessageJson(requestId)

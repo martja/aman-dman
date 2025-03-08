@@ -1,6 +1,6 @@
 package org.example.integration.entities
 
-data class DmanAircraftJson(
+data class DepartureJson(
     val callsign: String,
     val sid: String,
     val runway: String,

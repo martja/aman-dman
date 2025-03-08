@@ -1,19 +1,32 @@
 package org.example.integration
 
-import org.example.integration.entities.MessageToServer
-import org.example.integration.entities.RegisterTimeline
-import org.example.integration.entities.UnregisterTimeline
-import org.example.model.entities.json.RegisterTimelineJson
+import kotlinx.datetime.Instant
+import org.example.integration.entities.*
+import org.example.model.DepartureOccurrence
+import org.example.model.FixInboundOccurrence
 
-abstract class AtcClient(
-    timelinesToRegister: List<RegisterTimelineJson>
-) {
+abstract class AtcClient {
     abstract fun sendMessage(message: MessageToServer)
 
-    fun registerTimeline(timelineId: Long, targetFixes: List<String>, viaFixes: List<String>, destinationAirports: List<String>) {
+    private val fixInboundCallbacks = mutableMapOf<Int, (List<FixInboundOccurrence>) -> Unit>()
+    private val departureCallbacks = mutableMapOf<Int, (List<DepartureOccurrence>) -> Unit>()
+
+    private var nextRequestId = 0
+        get() {
+            return field++
+        }
+
+    fun collectInboundsForFix(
+        targetFixes: List<String>,
+        viaFixes: List<String>,
+        destinationAirports: List<String>,
+        onDataReceived: (List<FixInboundOccurrence>) -> Unit
+    ) {
+        val timelineId = nextRequestId
+        fixInboundCallbacks[timelineId] = onDataReceived
         sendMessage(
-            RegisterTimeline(
-                timelineId = timelineId,
+            RegisterFixInboundsMessage(
+                requestId = timelineId,
                 targetFixes = targetFixes,
                 viaFixes = viaFixes,
                 destinationAirports = destinationAirports
@@ -21,11 +34,70 @@ abstract class AtcClient(
         )
     }
 
-    fun unregisterTimeline(timelineId: Long) {
+    fun collectDeparturesFrom(
+        airportIcao: String,
+        onDataReceived: (List<DepartureOccurrence>) -> Unit
+    ) {
+        val timelineId = nextRequestId
+        departureCallbacks[timelineId] = onDataReceived
         sendMessage(
-            UnregisterTimeline(
-                timelineId = timelineId
+            RegisterDeparturesMessage(
+                requestId = timelineId,
+                airportIcao = airportIcao,
             )
         )
     }
+
+    protected fun handleMessage(incomingMessageJson: IncomingMessageJson) {
+        when (incomingMessageJson) {
+            is FixInboundsUpdate -> {
+                val arrivals = incomingMessageJson.inbounds.map { it.toFixInboundOccurrence(incomingMessageJson.requestId) }
+                fixInboundCallbacks[incomingMessageJson.requestId]?.invoke(arrivals)
+            }
+            is DeparturesUpdate -> {
+                val departures = incomingMessageJson.outbounds.map { it.toDepartureOccurrence(incomingMessageJson.requestId) }
+                departureCallbacks[incomingMessageJson.requestId]?.invoke(departures)
+            }
+        }
+    }
+
+    fun unregisterTimeline(timelineId: Int) {
+        sendMessage(
+            UnregisterTimelineMessage(
+                requestId = timelineId
+            )
+        )
+    }
+
+    private fun FixInboundJson.toFixInboundOccurrence(timelineId: Int) =
+        FixInboundOccurrence(
+            timelineId = timelineId,
+            callsign = this.callsign,
+            icaoType = this.icaoType,
+            wakeCategory =  this.wtc,
+            runway = this.runway,
+            assignedStar =  this.star,
+            time = Instant.fromEpochSeconds(this.eta),
+            remainingDistance = this.remainingDist,
+            finalFix = this.finalFix,
+            flightLevel = this.flightLevel,
+            pressureAltitude = this.pressureAltitude,
+            groundSpeed = this.groundSpeed,
+            isAboveTransAlt = this.isAboveTransAlt,
+            trackedByMe = this.trackedByMe,
+            arrivalAirportIcao = "N/A",
+            viaFix = this.viaFix,
+            finalFixEta = Instant.fromEpochSeconds(this.finalFixEta),
+        )
+
+    private fun DepartureJson.toDepartureOccurrence(timelineId: Int) =
+        DepartureOccurrence(
+            timelineId = timelineId,
+            callsign = this.callsign,
+            sid = this.sid,
+            runway = this.runway,
+            icaoType = this.icaoType,
+            wakeCategory = this.wakeCategory,
+            time = Instant.fromEpochSeconds(this.estimatedDepartureTime),
+        )
 }

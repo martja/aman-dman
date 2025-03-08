@@ -28,8 +28,8 @@ class TimelineScrollPane(
         viewport.add(items)
     }
 
-    fun insertTimeline(timelineConfig: TimelineConfig, timelineState: TimelineState, timelineController: TimelineController) {
-        val tl = TimelineView(timelineState, timelineController, timelineConfig)
+    fun insertTimeline(timelineConfig: TimelineConfig, timelineState: TimelineState) {
+        val tl = TimelineView(timelineState, timelineConfig)
         tl.preferredSize = Dimension(800, 0)
         val gbc = GridBagConstraints()
         gbc.weighty = 1.0

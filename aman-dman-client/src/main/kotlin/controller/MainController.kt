@@ -1,27 +1,22 @@
 package org.example.controller
 
 import integration.AtcClientEuroScope
-import kotlinx.datetime.Instant
 import org.example.integration.AtcClient
-import org.example.integration.entities.*
 import org.example.model.TabState
-import org.example.presentation.AmanDman
+import org.example.presentation.AmanDmanMainFrame
 import org.example.state.ApplicationState
-import org.example.state.Arrival
-import org.example.state.Departure
 import org.example.view.TabView
-import kotlin.time.Duration.Companion.seconds
 
 class MainController {
 
     private var atcClient: AtcClient? = null
-    private var mainWindow: AmanDman? = null
+    private var mainWindow: AmanDmanMainFrame? = null
     private val applicationState = ApplicationState()
 
     fun startApplication() {
-        mainWindow = AmanDman(applicationState, this)
+        mainWindow = AmanDmanMainFrame(applicationState, this)
         mainWindow?.isVisible = true
-        atcClient = AtcClientEuroScope("127.0.0.1", 12345, listOf(), this::handleDataPackage)
+        atcClient = AtcClientEuroScope("127.0.0.1", 12345)
 
         createNewTab("Tab 1")
         createNewTab("Tab 2")
@@ -34,51 +29,4 @@ class MainController {
         tabController.setView(tabView)
         mainWindow?.addTab(name, tabView)
     }
-
-    private fun handleDataPackage(incomingMessageJson: IncomingMessageJson) {
-        when (incomingMessageJson) {
-            is TimelineUpdate -> {
-                applicationState.arrivals[incomingMessageJson.timelineId] =
-                    incomingMessageJson.arrivals.map { it.toArrival() }
-            }
-            is DmanUpdate -> {
-                applicationState.departures[incomingMessageJson.timelineId] =
-                    incomingMessageJson.departures.map { it.toDeparture() }
-            }
-        }
-    }
-
-    private fun TimelineAircraftJson.toArrival() =
-        Arrival(
-            id = this.callsign,
-            callSign = this.callsign,
-            icaoType = this.icaoType,
-            wakeCategory =  this.wtc,
-            assignedRunway = this.runway,
-            assignedStar =  this.star,
-            eta = Instant.fromEpochSeconds(this.eta),
-            remainingDistance = this.remainingDist,
-            finalFix = this.finalFix,
-            flightLevel = this.flightLevel,
-            pressureAltitude = this.pressureAltitude,
-            groundSpeed = this.groundSpeed,
-            secondsBehindPreceeding = this.secondsBehindPreceeding,
-            isAboveTransAlt = this.isAboveTransAlt,
-            trackedByMe = this.trackedByMe,
-            timeToLoseOrGain = 0.seconds,
-            arrivalAirportIcao = "N/A",
-            viaFix = this.viaFix,
-            finalFixEta = Instant.fromEpochSeconds(this.finalFixEta)
-        )
-
-    private fun DmanAircraftJson.toDeparture() =
-        Departure(
-            id = this.callsign,
-            callsign = this.callsign,
-            sid = this.sid,
-            runway = this.runway,
-            icaoType = this.icaoType,
-            wakeCategory = this.wakeCategory,
-            estimatedDepartureTime = Instant.fromEpochSeconds(this.estimatedDepartureTime)
-        )
 }

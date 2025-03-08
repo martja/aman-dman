@@ -1,13 +1,13 @@
 package org.example.presentation.tabpage.timeline
 
+import org.example.model.RunwayDelayOccurrence
 import org.example.model.TimelineState
 import java.awt.Color
 import java.awt.Graphics
 import javax.swing.JPanel
-import kotlin.time.Duration.Companion.seconds
 
 class TrafficSequenceView(
-    val timelineView: ITimelineView,
+    val timelineView: TimelineView,
     val timelineState: TimelineState,
     val alignment: TimelineAlignment
 ) : JPanel() {
@@ -22,15 +22,15 @@ class TrafficSequenceView(
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
-        timelineState.delays.forEach {
-            val y = timelineView.calculateYPositionForInstant(it.from)
-            val duration = (it.to.epochSeconds - it.from.epochSeconds).seconds
-            duration.toComponents { hours, minutes, seconds, nanoseconds ->
+        val delays = timelineState.timelineOccurrences.filterIsInstance<RunwayDelayOccurrence>()
+
+        delays.forEach {
+            val y = timelineView.calculateYPositionForInstant(it.time)
+            it.delay.toComponents { hours, minutes, seconds, nanoseconds ->
                 "$hours:$minutes:$seconds"
             }
 
-            val text = it.name.uppercase() + "  " + duration
-
+            val text = it.name.uppercase() + "  " + it.delay
 
             when (alignment) {
                 TimelineAlignment.LEFT -> {

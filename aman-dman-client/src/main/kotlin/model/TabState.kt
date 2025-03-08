@@ -2,9 +2,6 @@ package org.example.model
 
 import kotlinx.datetime.Instant
 import org.example.state.ApplicationState
-import org.example.state.Arrival
-import org.example.state.DelayDefinition
-import org.example.state.Departure
 import java.beans.PropertyChangeSupport
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -27,48 +24,32 @@ class TabState(private val applicationState: ApplicationState) {
     val timeNow: Instant
         get() = applicationState.timeNow
 
-    val arrivals: HashMap<Long, List<Arrival>>
-        get() = applicationState.arrivals.filter { it.key in activeTimelines }.toMutableMap() as HashMap<Long, List<Arrival>>
-
-    val delays: List<DelayDefinition>
-        get() = applicationState.delays
-
-    val departures: HashMap<Long, List<Departure>>
-        get() = applicationState.departures.filter { it.key in activeTimelines }.toMutableMap() as HashMap<Long, List<Departure>>
-
-    var activeTimelines: List<Long> = listOf()
-        set(value) {
-            val old = field
-            field = value
-            pcs.firePropertyChange("activeTimelines", old, value)
-        }
-
     var selectedViewMax: Instant = timeNow.plus(30.minutes)
         set(value) {
             val old = field
             field = value
-            pcs.firePropertyChange("selectedViewEnd", old, value)
+            pcs.firePropertyChange("selectedViewMax", old, value)
         }
 
     var selectedViewMin: Instant = timeNow.minus(10.minutes)
         set(value) {
             val old = field
             field = value
-            pcs.firePropertyChange("selectedViewStart", old, value)
+            pcs.firePropertyChange("selectedViewMin", old, value)
         }
 
     var timelineMaxTime: Instant = timeNow.plus(2.hours)
         set(value) {
             val old = field
             field = value
-            pcs.firePropertyChange("latestAvailableTime", old, value)
+            pcs.firePropertyChange("timelineMaxTime", old, value)
         }
 
     var timelineMinTime: Instant = timeNow.minus(1.hours)
         set(value) {
             val old = field
             field = value
-            pcs.firePropertyChange("oldestAvailableTime", old, value)
+            pcs.firePropertyChange("timelineMinTime", old, value)
         }
 
     fun addListener(listener: java.beans.PropertyChangeListener) {

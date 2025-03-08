@@ -4,11 +4,11 @@
 #include <vector>
 
 struct RegisterTimeline {
-    long timelineId;
+    long requestId;
     std::vector<std::string> viaFixes;
     std::vector<std::string> targetFixes;
 };
 
 struct UnregisterTimeline {
-    long timelineId;
+    long requestId;
 };

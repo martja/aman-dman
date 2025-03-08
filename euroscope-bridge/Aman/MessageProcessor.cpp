@@ -13,8 +13,8 @@ void MessageProcessor::processMessage(const std::string& message) {
 
     auto type = std::string(document["type"].GetString());
 
-    if (type == "registerTimeline") {
-        long timelineId = document["timelineId"].GetInt64();
+    if (type == "requestInboundsForFix") {
+        long requestId = document["requestId"].GetInt64();
         std::vector<std::string> viaFixes;
         std::vector<std::string> targetFixes;
         for (const auto& viaFix : document["viaFixes"].GetArray()) {
@@ -28,11 +28,16 @@ void MessageProcessor::processMessage(const std::string& message) {
             destinationAirports.push_back(destinationAirport.GetString());
         }
 
-        onRegisterTimeline(timelineId, viaFixes, targetFixes, destinationAirports);
-    } else if (type == "unregisterTimeline") {
-        long timelineId = document["timelineId"].GetInt64();
+        onRequestInboundsForFix(requestId, viaFixes, targetFixes, destinationAirports);
+    } else if (type == "requestOutbounds") {
+        long requestId = document["requestId"].GetInt64();
+        std::string icao = document["airportIcao"].GetString();
 
-        onUnregisterTimeline(timelineId);
+        onRequestOutboundsFromAirport(requestId, icao);
+    } else if (type == "unregisterTimeline") {
+        long requestId = document["requestId"].GetInt64();
+
+        onUnsubscribe(requestId);
     } else if (type == "setCtot") {
         std::string callsign = document["callsign"].GetString();
         long ctot = document["ctot"].GetInt64();

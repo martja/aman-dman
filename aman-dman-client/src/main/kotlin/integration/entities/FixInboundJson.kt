@@ -1,6 +1,6 @@
 package org.example.integration.entities
 
-data class TimelineAircraftJson(
+data class FixInboundJson(
     val callsign: String,
     val icaoType: String,
     val wtc: Char,

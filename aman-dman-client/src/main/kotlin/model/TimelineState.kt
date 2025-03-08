@@ -2,9 +2,6 @@ package org.example.model
 
 import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
-import org.example.state.Arrival
-import org.example.state.DelayDefinition
-import org.example.state.Departure
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import kotlin.time.Duration
@@ -20,25 +17,32 @@ class TimelineState(
         tabState.addListener { evt ->
             when (evt.propertyName) {
                 "timeNow" -> pcs.firePropertyChange("timeNow", evt.oldValue, evt.newValue)
-                "arrivals" -> pcs.firePropertyChange("arrivals", evt.oldValue, evt.newValue)
-                "delays" -> pcs.firePropertyChange("delays", evt.oldValue, evt.newValue)
-                "selectedViewStart" -> pcs.firePropertyChange("selectedViewStart", evt.oldValue, evt.newValue)
-                "selectedViewEnd" -> pcs.firePropertyChange("selectedViewEnd", evt.oldValue, evt.newValue)
-                "latestAvailableTime" -> pcs.firePropertyChange("latestAvailableTime", evt.oldValue, evt.newValue)
-                "oldestAvailableTime" -> pcs.firePropertyChange("oldestAvailableTime", evt.oldValue, evt.newValue)
-                "departures" -> pcs.firePropertyChange("departures", evt.oldValue, evt.newValue)
+                "selectedViewMin" -> pcs.firePropertyChange("selectedViewMin", evt.oldValue, evt.newValue)
+                "selectedViewMax" -> pcs.firePropertyChange("selectedViewMax", evt.oldValue, evt.newValue)
+                "timelineMaxTime" -> pcs.firePropertyChange("timelineMaxTime", evt.oldValue, evt.newValue)
+                "timelineMinTime" -> pcs.firePropertyChange("timelineMinTime", evt.oldValue, evt.newValue)
             }
         }
     }
 
-    val arrivals: List<Arrival>
-        get() = tabState.arrivals[timelineConfig.id] ?: listOf()
+    var arrivalOccurrences: List<TimelineOccurrence> = listOf()
+        set(value) {
+            val old = field
+            field = value
+            pcs.firePropertyChange("arrivalOccurences", old, value)
+        }
 
-    val departures: List<Departure>
-        get() = tabState.departures[timelineConfig.id] ?: listOf()
+    var departureOccurrences: List<DepartureOccurrence> = listOf()
+        set(value) {
+            val old = field
+            field = value
+            pcs.firePropertyChange("departureOccurrences", old, value)
+        }
 
-    val delays: List<DelayDefinition>
-        get() = tabState.delays
+    val runwayDelayOccurrence: MutableList<RunwayDelayOccurrence> = mutableListOf()
+
+    val timelineOccurrences: List<TimelineOccurrence>
+        get() = arrivalOccurrences + departureOccurrences + runwayDelayOccurrence
 
     val timeNow: Instant
         get() = tabState.timeNow
@@ -49,16 +53,6 @@ class TimelineState(
     val selectedViewMin: Instant
         get() = tabState.selectedViewMin
 
-    val timelineMaxTime: Instant
-        get() = tabState.timelineMaxTime
-
-    var activeTimelines: List<Long> = listOf()
-        set(value) {
-            val old = field
-            field = value
-            pcs.firePropertyChange("activeTimelines", old, value)
-        }
-
     var sequence: HashMap<String, Duration> = hashMapOf()
         set(value) {
             val old = field
@@ -68,5 +62,15 @@ class TimelineState(
 
     fun addListener(listener: PropertyChangeListener) {
         pcs.addPropertyChangeListener(listener)
+    }
+
+    fun addDelayDefinition(name: String, from: Instant, duration: Duration, runway: String) {
+        runwayDelayOccurrence.add(RunwayDelayOccurrence(
+            timelineId = 123,
+            name = name,
+            time = from,
+            delay = duration,
+            runway = runway
+        ))
     }
 }

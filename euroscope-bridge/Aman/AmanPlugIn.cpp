@@ -40,14 +40,16 @@ AmanPlugIn::~AmanPlugIn() {
 }
 
 void AmanPlugIn::OnTimer(int Counter) {
-    for each(auto & timeline in timelines) {
-        auto inbounds = getAircraftForTimeline(timeline);
-        auto inboundsJson = jsonSerializer.getJsonOfAircraft(timeline->identifier, inbounds);
+    for each(auto & timeline in inboundsSubscriptions) {
+        auto inbounds = collectResponseToInboundsSubscription(timeline);
+        auto inboundsJson = jsonSerializer.getJsonOfFixInbounds(timeline->requestId, inbounds);
         enqueueMessage(inboundsJson);
+    }
 
-        auto departures = getOutboundsFromAirport(timeline->destinationAirports[0]);
-        auto departuresJson = jsonSerializer.getJsonOfDepartingAircraft(timeline->identifier, departures);
-        enqueueMessage(departuresJson);
+    for each(auto & timeline in outboundsSubscriptions) {
+        auto outbounds = collectResponseToOutboundsSubscription(timeline);
+        auto outboundsJson = jsonSerializer.getJsonOfDepartures(timeline->requestId, outbounds);
+        enqueueMessage(outboundsJson);
     }
 }
 
@@ -89,7 +91,7 @@ double AmanPlugIn::findRemainingDist(CRadarTarget radarTarget, CFlightPlanExtrac
     return totalDistance;
 }
 
-std::vector<AmanAircraft> AmanPlugIn::getAircraftForTimeline(std::shared_ptr<AmanTimeline> timeline) {
+std::vector<AmanAircraft> AmanPlugIn::collectResponseToInboundsSubscription(std::shared_ptr<InboundsToFixSubscription> timeline) {
     auto pAircraftList = std::vector<AmanAircraft>();
 
     for each (auto finalFix in timeline->destinationFixes) {
@@ -98,6 +100,10 @@ std::vector<AmanAircraft> AmanPlugIn::getAircraftForTimeline(std::shared_ptr<Ama
     }
 
     return pAircraftList;
+}
+
+std::vector<DmanAircraft> AmanPlugIn::collectResponseToOutboundsSubscription(std::shared_ptr<OutboundsSubscription> subscription) {
+    return getOutboundsFromAirport(subscription->airport);
 }
 
 std::vector<std::string> AmanPlugIn::splitString(const std::string& string, const char delim) {
@@ -111,31 +117,46 @@ std::vector<std::string> AmanPlugIn::splitString(const std::string& string, cons
     return output;
 }
 
-void AmanPlugIn::onRegisterTimeline(long timelineId, const std::vector<std::string>& viaFixes, const std::vector<std::string>& destinationFixes, const std::vector<std::string>& destinationAirports) {
+void AmanPlugIn::onRequestInboundsForFix(long requestId, const std::vector<std::string>& viaFixes, const std::vector<std::string>& destinationFixes, const std::vector<std::string>& destinationAirports) {
 
-    // If id exists, update the timeline
-    for (auto& timeline : timelines) {
-        if (timeline->identifier == timelineId) {
-            timeline->viaFixes = viaFixes;
-            timeline->destinationFixes = destinationFixes;
-            timeline->destinationAirports = destinationAirports;
+    // If id exists, update the subscription
+    for (auto& sub : inboundsSubscriptions) {
+        if (sub->requestId == requestId) {
+            sub->viaFixes = viaFixes;
+            sub->destinationFixes = destinationFixes;
+            sub->destinationAirports = destinationAirports;
             return;
         }
     }
 
     // Else create a new timeline
-    std::shared_ptr<AmanTimeline> timeline = std::make_shared<AmanTimeline>();
-    timeline->identifier = timelineId;
-    timeline->viaFixes = viaFixes;
-    timeline->destinationFixes = destinationFixes;
-    timeline->destinationAirports = destinationAirports;
-    timelines.push_back(timeline);
+    std::shared_ptr<InboundsToFixSubscription> sub = std::make_shared<InboundsToFixSubscription>();
+    sub->requestId = requestId;
+    sub->viaFixes = viaFixes;
+    sub->destinationFixes = destinationFixes;
+    sub->destinationAirports = destinationAirports;
+    inboundsSubscriptions.push_back(sub);
 }
 
-void AmanPlugIn::onUnregisterTimeline(long timelineId) {
-    for (auto it = timelines.begin(); it != timelines.end(); ++it) {
-        if ((*it)->identifier == timelineId) {
-            timelines.erase(it);
+void AmanPlugIn::onRequestOutboundsFromAirport(long requestId, const std::string& icao) {
+    // If id exists, update the subscription
+    for (auto& sub : outboundsSubscriptions) {
+        if (sub->requestId == requestId) {
+            sub->airport = icao;
+            return;
+        }
+    }
+    // Else create a new timeline
+    std::shared_ptr<OutboundsSubscription> sub = std::make_shared<OutboundsSubscription>();
+    sub->requestId = requestId;
+    sub->airport = icao;
+    outboundsSubscriptions.push_back(sub);
+}
+
+void AmanPlugIn::onUnsubscribe(long requestId) {
+    for (auto it = inboundsSubscriptions.begin(); it != inboundsSubscriptions.end(); ++it) {
+        if ((*it)->requestId == requestId) {
+            inboundsSubscriptions.erase(it);
             break;
         }
     }

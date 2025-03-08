@@ -3,13 +3,13 @@ package org.example.presentation.tabpage.timeline
 import kotlinx.datetime.*
 import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.format.byUnicodePattern
+import org.example.model.RunwayDelayOccurrence
 import org.example.model.TimelineState
-import org.example.state.DelayDefinition
 import java.awt.*
 import javax.swing.JPanel
 
 
-class Ruler(val timelineView: ITimelineView, val timelineState: TimelineState) : JPanel(null) {
+class Ruler(val timelineView: TimelineView, val timelineState: TimelineState) : JPanel(null) {
     private val TICK_WIDTH_1_MIN = 5
     private val TICK_WIDTH_5_MIN = 10
 
@@ -54,13 +54,13 @@ class Ruler(val timelineView: ITimelineView, val timelineState: TimelineState) :
                 g.drawLine(width, yPos, width - TICK_WIDTH_1_MIN, yPos)
             }
         }
-        drawDelays(g, timelineState.delays)
+        drawDelays(g, timelineState.timelineOccurrences.filterIsInstance<RunwayDelayOccurrence>())
     }
 
-    private fun drawDelays(g: Graphics, delays: List<DelayDefinition>) {
+    private fun drawDelays(g: Graphics, delays: List<RunwayDelayOccurrence>) {
         delays.forEach {
-            val topY = timelineView.calculateYPositionForInstant(it.to)
-            val height = timelineView.calculateYPositionForInstant(it.from) - topY
+            val topY = timelineView.calculateYPositionForInstant(it.time + it.delay)
+            val height = timelineView.calculateYPositionForInstant(it.time) - topY
             g.color = Color.RED
             g.fillRect(0, topY, 2, height)
         }

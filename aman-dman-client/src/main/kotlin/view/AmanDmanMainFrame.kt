@@ -1,6 +1,7 @@
 package org.example.presentation
 
 import org.example.controller.MainController
+import org.example.controller.TabController
 import org.example.presentation.tabpage.Footer
 import org.example.state.ApplicationState
 import org.example.view.TabView
@@ -8,7 +9,7 @@ import java.awt.BorderLayout
 import javax.swing.*
 
 
-class AmanDman(
+class AmanDmanMainFrame(
     private val applicationState: ApplicationState,
     private val mainController: MainController
 ) : JFrame("AMAN / DMAN") {
@@ -26,23 +27,6 @@ class AmanDman(
         add(tabPane, BorderLayout.CENTER)
         add(Footer(), BorderLayout.SOUTH)
 
-        // Create a menubar
-        val menuBar = JMenuBar().apply {
-            add(JMenu("Timelines").apply {
-                add(JMenuItem("Add Timeline").apply {
-                    addActionListener { println("Add Timeline clicked") }
-                })
-                add(JMenuItem("Remove Timeline").apply {
-                    addActionListener { println("Remove Timeline clicked") }
-                })
-                addSeparator()
-                add(JMenuItem("Settings").apply {
-                    addActionListener { println("Settings clicked") }
-                })
-            })
-        }
-
-        jMenuBar = menuBar
         isVisible = true // Show the frame
     }
 
