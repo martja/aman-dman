@@ -1,13 +1,12 @@
-package org.example.presentation.tabpage.timeline
+package org.example.view.tabpage.timeline
 
 import kotlinx.datetime.*
-import kotlinx.datetime.format.FormatStringsInDatetimeFormats
-import kotlinx.datetime.format.byUnicodePattern
+import org.example.format
 import org.example.model.RunwayDelayOccurrence
 import org.example.model.TimelineState
+import org.example.presentation.tabpage.timeline.TimelineView
 import java.awt.*
 import javax.swing.JPanel
-
 
 class Ruler(val timelineView: TimelineView, val timelineState: TimelineState) : JPanel(null) {
     private val TICK_WIDTH_1_MIN = 5
@@ -64,12 +63,6 @@ class Ruler(val timelineView: TimelineView, val timelineState: TimelineState) : 
             g.color = Color.RED
             g.fillRect(0, topY, 2, height)
         }
-    }
-
-    @OptIn(FormatStringsInDatetimeFormats::class)
-    private fun Instant.format(pattern: String): String {
-        val dateTimeFormat = LocalDateTime.Format { byUnicodePattern(pattern) }
-        return dateTimeFormat.format(this.toLocalDateTime(TimeZone.UTC))
     }
 
     private fun Graphics.drawCenteredString(text: String, rect: Rectangle, font: Font) {

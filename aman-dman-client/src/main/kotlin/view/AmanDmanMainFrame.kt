@@ -1,7 +1,6 @@
 package org.example.presentation
 
 import org.example.controller.MainController
-import org.example.controller.TabController
 import org.example.presentation.tabpage.Footer
 import org.example.state.ApplicationState
 import org.example.view.TabView
@@ -25,7 +24,7 @@ class AmanDmanMainFrame(
         layout = BorderLayout()
 
         add(tabPane, BorderLayout.CENTER)
-        add(Footer(), BorderLayout.SOUTH)
+        add(Footer(mainController), BorderLayout.SOUTH)
 
         isVisible = true // Show the frame
     }

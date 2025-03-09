@@ -6,12 +6,15 @@ import org.example.model.TabState
 import org.example.presentation.AmanDmanMainFrame
 import org.example.state.ApplicationState
 import org.example.view.TabView
+import org.example.view.weatherWindow.VerticalWindView
+import javax.swing.JDialog
 
 class MainController {
 
     private var atcClient: AtcClient? = null
     private var mainWindow: AmanDmanMainFrame? = null
     private val applicationState = ApplicationState()
+    private var metWindow: JDialog? = null
 
     fun startApplication() {
         mainWindow = AmanDmanMainFrame(applicationState, this)
@@ -28,5 +31,16 @@ class MainController {
         val tabView = TabView(tabController, tabState)
         tabController.setView(tabView)
         mainWindow?.addTab(name, tabView)
+    }
+
+    fun openMetWindow() {
+        if (metWindow == null) {
+            metWindow = JDialog(mainWindow, "Vertical wind profile")
+            metWindow!!.setSize(150, 600)
+            metWindow!!.add(VerticalWindView())
+        }
+
+        metWindow!!.isVisible = true
+        metWindow!!.isAlwaysOnTop = true
     }
 }

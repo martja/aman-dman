@@ -117,10 +117,6 @@ class TimeRangeScrollBar(
 
         val scrollHandleWidth = width - scrollHandleMargin * 2 - 1
 
-        g2.drawRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, barBottom - barTop, cornerRadius, cornerRadius)
-        g2.fillRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
-        g2.fillRoundRect(scrollHandleMargin, barBottom - resizeHandleThickness, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
-
         // Draw one line per item
         tabController.getAllTimelineOccurrences().forEach { item ->
             when (item) {
@@ -132,6 +128,13 @@ class TimeRangeScrollBar(
                     drawHorizontalBar(g2, item.time, Color.WHITE)
             }
         }
+
+        g2.color = Color(0, 0, 0, 50)
+        g2.fillRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, barBottom - barTop, cornerRadius, cornerRadius)
+        g2.color = Color.WHITE
+        g2.drawRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, barBottom - barTop, cornerRadius, cornerRadius)
+        g2.fillRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
+        g2.fillRoundRect(scrollHandleMargin, barBottom - resizeHandleThickness, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
     }
 
     private fun drawHorizontalBar(g: Graphics, instant: Instant, color: Color) {

@@ -3,6 +3,7 @@ package org.example.presentation.tabpage.timeline
 import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
 import org.example.model.TimelineState
+import org.example.view.tabpage.timeline.Ruler
 import view.tabpage.timeline.TimelineOverlay
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
