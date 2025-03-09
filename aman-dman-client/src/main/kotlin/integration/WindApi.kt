@@ -90,7 +90,7 @@ class WindApi {
                     // Temperature dimension order: [time][isobaric][lat][lon]
                     val temp = (tempData.getDouble(tempData.index.set(i, a, j, k)) - 272.15).roundToInt()
 
-                    val flightLevel = (pressureToAltitudeInFeet(isobaric) / 100).roundToInt()
+                    val flightLevel = pressureToAltitudeInFeet(isobaric).roundToInt()
 
                     val forecastTime = publishTime.plus(timeData.getLong(i).hours)
 
@@ -133,34 +133,35 @@ class WindApi {
         val formattedForecastHour = forecastTime.format("HH")
         val hoursOffsetFormatted = hourOffset.toString().padStart(3, '0')
 
+        // https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p50.pl?dir=%2Fgfs.20250309%2F12%2Fatmos&file=gfs.t12z.pgrb2full.0p50.f000&all_var=on&all_lev=on
+        // https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25_1hr.pl?dir=%2Fgfs.20250309%2F12%2Fatmos&file=gfs.t12z.pgrb2.0p25.f000&all_var=on&all_lev=on
         val fileUrl =
-            "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p50.pl" +
+            "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25_1hr.pl" +
                     "?dir=%2Fgfs.${formattedForecastDate}%2F${formattedForecastHour}%2Fatmos" +
-                    "&file=gfs.t${formattedForecastHour}z.pgrb2full.0p50.f$hoursOffsetFormatted" +
+                    "&file=gfs.t${formattedForecastHour}z.pgrb2.0p25.f$hoursOffsetFormatted" +
                     "&subregion=" +
                     "&toplat=${bbox.topLat}" +
                     "&leftlon=${bbox.leftLon}" +
                     "&rightlon=${bbox.rightLon}" +
                     "&bottomlat=${bbox.bottomLat}" +
-                    "&lev_1000_mb" +
-                    "&lev_850_mb" +
-                    "&lev_700_mb" +
-                    "&lev_650_mb" +
-                    "&lev_600_mb" +
-                    "&lev_550_mb" +
-                    "&lev_500_mb" +
-                    "&lev_450_mb" +
-                    "&lev_400_mb" +
-                    "&lev_375_mb" +
-                    "&lev_350_mb" +
-                    "&lev_325_mb" +
-                    "&lev_300_mb" +
-                    "&lev_275_mb" +
-                    "&lev_250_mb" +
-                    "&lev_225_mb" +
-                    "&lev_200_mb" +
-                    "&lev_175_mb" +
-                    "&var_TMP=on" +
+                    "&lev_1000_mb=on" +
+                    "&lev_950_mb=on" +
+                    "&lev_900_mb=on" +
+                    "&lev_850_mb=on" +
+                    "&lev_800_mb=on" +
+                    "&lev_750_mb=on" +
+                    "&lev_700_mb=on" +
+                    "&lev_650_mb=on" +
+                    "&lev_600_mb=on" +
+                    "&lev_550_mb=on" +
+                    "&lev_500_mb=on" +
+                    "&lev_450_mb=on" +
+                    "&lev_400_mb=on" +
+                    "&lev_350_mb=on" +
+                    "&lev_300_mb=on" +
+                    "&lev_250_mb=on" +
+                    "&lev_200_mb=on" +
+                    "&lev_150_mb=on"
                     "&var_UGRD=on" +
                     "&var_VGRD=on"
 

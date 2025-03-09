@@ -68,6 +68,7 @@ class AtcClientEuroScope(
             }
         } catch (e: Exception) {
             println("Error receiving message: ${e.message}")
+            e.printStackTrace()
         }
     }
 

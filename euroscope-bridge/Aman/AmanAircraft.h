@@ -1,6 +1,15 @@
 #pragma once
 
 #include <string>
+#include <map>
+
+struct VerticalProfileSection {
+    int maxAltitude;
+    int minAltitude;
+    int secDuration;
+    int averageHeading;
+    float distance;
+};
 
 class AmanAircraft {
 public:
@@ -12,6 +21,7 @@ public:
     std::string nextFix;
     std::string scratchPad;
     std::string viaFix;
+    std::map<int, VerticalProfileSection> altitudesAndDuration;
 
     bool trackedByMe;
     bool isAboveTransAlt;
@@ -25,6 +35,7 @@ public:
     int groundSpeed;
     int pressureAltitude;
     int flightLevel;
+
 
     bool operator< (const AmanAircraft& other) const {
         return targetFixEta < other.targetFixEta;

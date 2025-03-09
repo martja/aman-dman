@@ -230,6 +230,47 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForFix(const std::string& fixNa
                 timeToFix = predIndexBeforeWp * 60.0 + ratio * 60.0;
             }
 
+            // Calculate the time spent at different altitudes and the average heading. Altitudes are in 5000 ft intervals
+            auto altitudesAndDuration = std::map<int, VerticalProfileSection>();
+            int altIntervalRestTime = -1;
+            float altIntervalRestDistance = -1;
+            for (int p = 0; p < predictions.GetPointsNumber() - 1; p++) {
+                int alt = predictions.GetAltitude(p);
+                int heading = predictions.GetPosition(p).DirectionTo(predictions.GetPosition(p + 1));
+                float distanceToNext = predictions.GetPosition(p).DistanceTo(predictions.GetPosition(p + 1));
+
+                int nextAlt = predictions.GetAltitude(p + 1);
+
+                // Floor altitude to nearest 5000 ft
+                int currentAltFloor = (alt / 5000) * 5000;
+
+                int secondsToNext = 60; // There is 1 minute between each prediction
+
+                if (nextAlt < currentAltFloor) {
+                    // Calculate accurate reamining time inside the current 5000 ft interval
+                    float ratio = (float)(alt - currentAltFloor) / (float)(alt - nextAlt);
+                    secondsToNext = ratio * 60.0;
+                    float distanceToNextAltInterval = distanceToNext * ratio;
+                    altIntervalRestTime = 60 - secondsToNext;
+                    altIntervalRestDistance = distanceToNext - distanceToNextAltInterval;
+                    distanceToNext = distanceToNextAltInterval;
+                } else if (altIntervalRestTime > 0) {
+                    // The rest of the time is spent at the next altitude interval
+                    secondsToNext = altIntervalRestTime;
+                    distanceToNext = altIntervalRestDistance;
+                    altIntervalRestTime = -1;
+                    altIntervalRestDistance = -1;
+                }
+
+                if (altitudesAndDuration.find(currentAltFloor) == altitudesAndDuration.end()) {
+                    altitudesAndDuration[currentAltFloor] = VerticalProfileSection{ currentAltFloor + 5000, currentAltFloor, secondsToNext, heading, distanceToNext };
+                } else {
+                    altitudesAndDuration[currentAltFloor].secDuration += secondsToNext;
+                    altitudesAndDuration[currentAltFloor].averageHeading = (altitudesAndDuration[currentAltFloor].averageHeading + heading) / 2;
+                    altitudesAndDuration[currentAltFloor].distance += distanceToNext;
+                }
+            }
+
             if (timeToFix > 0) {
                 int viaFixIndex = getFirstViaFixIndex(route, viaFixes);
 
@@ -253,6 +294,7 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForFix(const std::string& fixNa
                 ac.pressureAltitude = rt.GetPosition().GetPressureAltitude();
                 ac.flightLevel = rt.GetPosition().GetFlightLevel();
                 ac.isAboveTransAlt = ac.pressureAltitude > transAlt;
+                ac.altitudesAndDuration = altitudesAndDuration;
                 aircraftList.push_back(ac);
             }
         }

@@ -1,5 +1,13 @@
 package org.example.integration.entities
 
+data class DescentProfileJson(
+    val minAltitude: Int,
+    val maxAltitude: Int,
+    val averageHeading: Int,
+    val secDuration: Int,
+    val distance: Float
+)
+
 data class FixInboundJson(
     val callsign: String,
     val icaoType: String,
@@ -19,4 +27,5 @@ data class FixInboundJson(
     val trackedByMe: Boolean,
     val direct: String,
     val scratchPad: String,
+    val descentProfile: List<DescentProfileJson>
 )

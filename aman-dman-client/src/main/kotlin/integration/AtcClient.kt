@@ -3,7 +3,9 @@ package org.example.integration
 import kotlinx.datetime.Instant
 import org.example.integration.entities.*
 import org.example.model.DepartureOccurrence
+import org.example.model.DescentProfileSegment
 import org.example.model.FixInboundOccurrence
+import kotlin.time.Duration.Companion.seconds
 
 abstract class AtcClient {
     abstract fun sendMessage(message: MessageToServer)
@@ -88,6 +90,15 @@ abstract class AtcClient {
             arrivalAirportIcao = "N/A",
             viaFix = this.viaFix,
             finalFixEta = Instant.fromEpochSeconds(this.finalFixEta),
+            descentProfile = this.descentProfile.map {
+                DescentProfileSegment(
+                    minAltitude = it.minAltitude,
+                    maxAltitude = it.maxAltitude,
+                    averageHeading = it.averageHeading,
+                    duration = it.secDuration.seconds,
+                    distance = it.distance
+                )
+            }
         )
 
     private fun DepartureJson.toDepartureOccurrence(timelineId: Int) =

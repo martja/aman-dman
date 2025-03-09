@@ -5,6 +5,7 @@ import org.example.model.FixInboundOccurrence
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import kotlin.time.DurationUnit
 
 class ArrivalLabel(
     fixInboundOccurrence: FixInboundOccurrence
@@ -38,7 +39,7 @@ class ArrivalLabel(
         }
 
         output += minutesToLoseOrGainFormatted
-        output += fixInboundOccurrence.remainingDistance.roundToInt().toString().padStart(6)
+        output += fixInboundOccurrence.windDelay?.toString(DurationUnit.MINUTES, 1)?.padStart(6)
 
         output += "</pre></html>"
 

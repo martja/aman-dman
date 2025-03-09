@@ -38,6 +38,19 @@ const std::string JsonMessageHelper::getJsonOfFixInbounds(long requestId, const 
         arrivalObject.AddMember("direct", inbound.nextFix, allocator);
         arrivalObject.AddMember("scratchPad", inbound.scratchPad, allocator);
 
+        Value altitudesAndDuration(kArrayType);
+        for (auto& alt : inbound.altitudesAndDuration) {
+            Value altObject(kObjectType);
+            altObject.AddMember("maxAltitude", alt.second.maxAltitude, allocator);
+            altObject.AddMember("minAltitude", alt.second.minAltitude, allocator);
+            altObject.AddMember("secDuration", alt.second.secDuration, allocator);
+            altObject.AddMember("averageHeading", alt.second.averageHeading, allocator);
+            altObject.AddMember("distance", alt.second.distance, allocator);
+            altitudesAndDuration.PushBack(altObject, allocator);
+        }
+
+        arrivalObject.AddMember("descentProfile", altitudesAndDuration, allocator);
+
         arrivalsArray.PushBack(arrivalObject, allocator);
     }
 

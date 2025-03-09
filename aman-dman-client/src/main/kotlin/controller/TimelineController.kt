@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
 import org.example.integration.AtcClient
 import org.example.model.*
+import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -39,6 +40,9 @@ class TimelineController(
     }
 
     private fun handleArrivals(fixInboundOccurrences: List<FixInboundOccurrence>) {
+        fixInboundOccurrences.forEach { fixInboundOccurrence ->
+            fixInboundOccurrence.windDelay = calculateExtraTimeForWind(fixInboundOccurrence)
+        }
         timelineState.arrivalOccurrences = fixInboundOccurrences
     }
 
@@ -48,6 +52,26 @@ class TimelineController(
 
     fun addDelayDefinition(name: String, from: Instant, duration: Duration, runway: String) {
         timelineState.addDelayDefinition(name, from, duration, runway)
+    }
+
+    private fun calculateExtraTimeForWind(fixInboundOccurrence: FixInboundOccurrence): Duration {
+        var windDelayAcc = 0.seconds
+        if(fixInboundOccurrence.callsign == "NSZ3220") {
+            println(fixInboundOccurrence.descentProfile.joinToString {
+                "[" + it.minAltitude.toString() + "-" + it.maxAltitude.toString() + "] hdg: " + it.averageHeading.toString() + " dur: " + it.duration.toString() + " dist: " + it.distance.toString()
+            })
+        }
+        fixInboundOccurrence.descentProfile.forEach { sector ->
+            val closestWindSegment = timelineState.verticalWindProfile.windInformation
+                .sortedBy { it.flightLevel }
+                .firstOrNull { it.flightLevel >= sector.minAltitude && it.flightLevel <= sector.maxAltitude }
+
+            if (closestWindSegment != null) {
+                windDelayAcc += calculateWindTimeAdjustmentInSegment(sector, closestWindSegment.windDirection, closestWindSegment.windSpeed)
+            }
+        }
+
+        return windDelayAcc
     }
 
     private fun recalculateSequence(arrivals: List<TimelineOccurrence>) {
@@ -79,4 +103,37 @@ class TimelineController(
         }
     }
 
+}
+
+/**
+ * Calculate the extra time caused by wind in a given segment.
+ * @param sector The segment to calculate the wind delay for
+ * @param windDirection The wind direction in degrees (true)
+ * @param windSpeed The wind speed in knots
+ * @return The extra time caused by wind in the segment (positive if delayed, negative if early)
+ */
+fun calculateWindTimeAdjustmentInSegment(
+    sector: DescentProfileSegment,
+    windDirection: Int,      // in degrees (true)
+    windSpeed: Int           // in knots
+): Duration {
+    val windAngleRad = Math.toRadians((windDirection - sector.averageHeading).toDouble())
+    val headWind = windSpeed * cos(windAngleRad)
+
+    if (sector.duration.inWholeSeconds == 0L) {
+        // Aircraft is just about to pass into the next segment
+        return Duration.ZERO
+    }
+
+    val calculatedGroundSpeed = sector.distance / (sector.duration.inWholeSeconds / (60.0 * 60.0))
+
+    val trueAirspeed = calculatedGroundSpeed + headWind
+
+    if (trueAirspeed <= 0.0) {
+        // Physically invalid, return zero delay
+        return Duration.ZERO
+    }
+
+    val stillAirDuration = sector.duration * (calculatedGroundSpeed / trueAirspeed)
+    return sector.duration - stillAirDuration
 }

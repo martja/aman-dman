@@ -37,7 +37,7 @@ class MainController {
         if (metWindow == null) {
             metWindow = JDialog(mainWindow, "Vertical wind profile")
             metWindow!!.setSize(150, 600)
-            metWindow!!.add(VerticalWindView())
+            metWindow!!.add(VerticalWindView(applicationState))
         }
 
         metWindow!!.isVisible = true

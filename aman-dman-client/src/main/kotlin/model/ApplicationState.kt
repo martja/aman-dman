@@ -2,6 +2,8 @@ package org.example.state
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import org.example.integration.WindApi
+import org.example.model.entities.VerticalWindProfile
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import javax.swing.Timer
@@ -9,6 +11,8 @@ import javax.swing.Timer
 class ApplicationState {
 
     private val pcs = PropertyChangeSupport(this)
+
+    val verticalWindProfile: VerticalWindProfile = WindApi().getVerticalProfileAtPoint(60.0, 11.0)!!
 
     var timeNow: Instant = Clock.System.now()
         set(value) {
