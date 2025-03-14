@@ -84,7 +84,10 @@ class WindApi {
                     val uWind = uWindData.getFloat(uWindData.index.set(i, a, j, k))
                     val vWind = vWindData.getFloat(vWindData.index.set(i, a, j, k))
 
-                    val windDirection = Math.toDegrees(atan2(uWind, vWind).toDouble()).roundToInt()
+                    var windDirection = Math.toDegrees(atan2(uWind, vWind).toDouble()).roundToInt() + 180
+                    if (windDirection > 360) windDirection -= 360
+
+
                     val windSpeedKnots = (sqrt(uWind * uWind + vWind * vWind) * 1.94384).roundToInt()
 
                     // Temperature dimension order: [time][isobaric][lat][lon]
