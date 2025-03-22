@@ -19,19 +19,19 @@ class VerticalWindView(
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
-        val maxFl = state.verticalWindProfile.windInformation.maxOf { it.flightLevel }
+        val maxFl = state.verticalWeatherProfile.weatherData.maxOf { it.flightLevelFt }
         val diagramMargin = 30
 
         val pxPerFl = (height - diagramMargin*2).toFloat() / maxFl.toFloat()
 
-        state.verticalWindProfile.windInformation.forEach {
+        state.verticalWeatherProfile.weatherData.forEach {
             val yPos = (height - pxPerFl * it.flightLevel).roundToInt() - diagramMargin
             g.color = Color.WHITE
             g.drawLine(0, yPos, 10, yPos)
 
-            g.drawString("FL${(it.flightLevel / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.windDirection.toString().padStart(3, '0')} / ${it.windSpeed} kt", 30, yPos)
+            g.drawString("FL${(it.flightLevelFt / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.windDirectionKts.toString().padStart(3, '0')} / ${it.windSpeedKts} kt", 30, yPos)
         }
 
-        g.drawString("Valid " + state.verticalWindProfile.time.format("yyyy/MM/dd HH:mm") + "Z", 5, height - 5)
+        g.drawString("Valid " + state.verticalWeatherProfile.time.format("yyyy/MM/dd HH:mm") + "Z", 5, height - 5)
     }
 }

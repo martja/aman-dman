@@ -1,7 +1,7 @@
 package org.example.model
 
 import kotlinx.datetime.Instant
-import org.example.model.entities.VerticalWindProfile
+import org.example.model.entities.VerticalWeatherProfile
 import org.example.state.ApplicationState
 import java.beans.PropertyChangeSupport
 import kotlin.time.Duration.Companion.hours
@@ -53,8 +53,8 @@ class TabState(private val applicationState: ApplicationState) {
             pcs.firePropertyChange("timelineMinTime", old, value)
         }
 
-    val verticalWindProfile: VerticalWindProfile
-        get() = applicationState.verticalWindProfile
+    val verticalWeatherProfile: VerticalWeatherProfile
+        get() = applicationState.verticalWeatherProfile
 
     fun addListener(listener: java.beans.PropertyChangeListener) {
         pcs.addPropertyChangeListener(listener)

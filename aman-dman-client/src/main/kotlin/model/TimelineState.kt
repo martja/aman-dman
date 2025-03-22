@@ -2,8 +2,7 @@ package org.example.model
 
 import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
-import org.example.model.entities.VerticalWindProfile
-import org.example.model.entities.WindInformation
+import org.example.model.entities.VerticalWeatherProfile
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import kotlin.time.Duration
@@ -62,8 +61,8 @@ class TimelineState(
             pcs.firePropertyChange("sequence", old, value)
         }
 
-    val verticalWindProfile: VerticalWindProfile
-        get() = tabState.verticalWindProfile
+    val verticalWeatherProfile: VerticalWeatherProfile
+        get() = tabState.verticalWeatherProfile
 
     fun addListener(listener: PropertyChangeListener) {
         pcs.addPropertyChangeListener(listener)
