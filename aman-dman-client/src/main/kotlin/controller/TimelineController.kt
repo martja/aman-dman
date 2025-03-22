@@ -62,12 +62,12 @@ class TimelineController(
             })
         }
         fixInboundOccurrence.descentProfile.forEach { sector ->
-            val closestWindSegment = timelineState.verticalWindProfile.windInformation
-                .sortedBy { it.flightLevel }
-                .firstOrNull { it.flightLevel >= sector.minAltitude && it.flightLevel <= sector.maxAltitude }
+            val closestWindSegment = timelineState.verticalWeatherProfile.weatherData
+                .sortedBy { it.flightLevelFt }
+                .firstOrNull { it.flightLevelFt >= sector.minAltitude && it.flightLevelFt <= sector.maxAltitude }
 
             if (closestWindSegment != null) {
-                windDelayAcc += calculateWindTimeAdjustmentInSegment(sector, closestWindSegment.windDirection, closestWindSegment.windSpeed)
+                windDelayAcc += calculateWindTimeAdjustmentInSegment(sector, closestWindSegment.windDirectionKts, closestWindSegment.windSpeedKts)
             }
         }
 

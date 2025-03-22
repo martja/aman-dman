@@ -1,9 +1,10 @@
 package org.example.integration
 
 import kotlinx.datetime.*
+import org.example.LatLng
 import org.example.format
-import org.example.model.entities.VerticalWindProfile
-import org.example.model.entities.WindInformation
+import org.example.model.entities.VerticalWeatherProfile
+import org.example.model.entities.WeatherData
 import ucar.nc2.NetcdfFile
 import ucar.nc2.NetcdfFiles
 import java.io.FileNotFoundException
@@ -19,7 +20,7 @@ import kotlin.time.Duration.Companion.seconds
 data class WindProfileGridPoint(
     val latitude: Double,
     val longitude: Double,
-    val windProfile: VerticalWindProfile
+    val windProfile: VerticalWeatherProfile
 )
 
 data class BoundingBox(
@@ -31,7 +32,7 @@ data class BoundingBox(
 
 class WindApi {
 
-    fun getVerticalProfileAtPoint(latitude: Double, longitude: Double): VerticalWindProfile? {
+    fun getVerticalProfileAtPoint(latitude: Double, longitude: Double): VerticalWeatherProfile? {
         val gridPoints = getVerticalProfileGrid(BoundingBox(
             topLat = latitude + 0.5,
             bottomLat = latitude - 0.5,
@@ -98,9 +99,9 @@ class WindApi {
                     val forecastTime = publishTime.plus(timeData.getLong(i).hours)
 
                     val currentGridPoint = gridPoints.find { it.latitude == gridLat && it.longitude == gridLon }?.windProfile
-                        ?: VerticalWindProfile(forecastTime, gridLat, gridLon, mutableListOf())
+                        ?: VerticalWeatherProfile(forecastTime, LatLng(lat = gridLat, lon = gridLon), mutableListOf())
 
-                    currentGridPoint.windInformation.add(WindInformation(flightLevel, windDirection, windSpeedKnots, temp))
+                    currentGridPoint.weatherData.add(WeatherData(flightLevel, windDirection, windSpeedKnots, temp))
 
                     if (gridPoints.none { it.latitude == gridLat && it.longitude == gridLon }) {
                         gridPoints.add(WindProfileGridPoint(gridLat, gridLon, currentGridPoint))

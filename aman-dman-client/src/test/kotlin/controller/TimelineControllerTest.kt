@@ -12,7 +12,7 @@ class TimelineControllerTest {
 
     @Test
     fun test_calculateSectorDelay() {
-        val sector = DescentProfileSegment(15000, 20000, 180, 10.minutes, 30)
+        val sector = DescentProfileSegment(15000, 20000, 180, 10.minutes, 30.0f)
 
         val adjustmentInHeadwind = calculateWindTimeAdjustmentInSegment(sector, 180, 60)
 
