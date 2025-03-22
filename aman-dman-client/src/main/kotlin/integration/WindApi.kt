@@ -147,9 +147,7 @@ class WindApi {
                     "&leftlon=${bbox.leftLon}" +
                     "&rightlon=${bbox.rightLon}" +
                     "&bottomlat=${bbox.bottomLat}" +
-                    "&lev_1000_mb=on" +
-                    "&lev_950_mb=on" +
-                    "&lev_900_mb=on" +
+git pull                    "&lev_900_mb=on" +
                     "&lev_850_mb=on" +
                     "&lev_800_mb=on" +
                     "&lev_750_mb=on" +

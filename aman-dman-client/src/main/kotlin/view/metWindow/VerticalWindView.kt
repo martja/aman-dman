@@ -13,7 +13,7 @@ class VerticalWindView(
 ) : JPanel(BorderLayout()) {
 
     init {
-        background = Color.GRAY
+        background = Color.DARK_GRAY
     }
 
     override fun paintComponent(g: Graphics) {
@@ -26,7 +26,7 @@ class VerticalWindView(
 
         state.verticalWindProfile.windInformation.forEach {
             val yPos = (height - pxPerFl * it.flightLevel).roundToInt() - diagramMargin
-            g.color = Color.BLACK
+            g.color = Color.WHITE
             g.drawLine(0, yPos, 10, yPos)
 
             g.drawString("FL${(it.flightLevel / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.windDirection.toString().padStart(3, '0')} / ${it.windSpeed} kt", 30, yPos)
