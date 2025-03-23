@@ -40,8 +40,8 @@ val lunip4l = listOf(
 )
 
 val performanceData = mapOf(
-    "A320" to AircraftPerformance(1800, 280, 250),
-    "B738" to AircraftPerformance(1800, 280, 250),
+    "A320" to AircraftPerformance(1800, 280, 250, 140),
+    "B738" to AircraftPerformance(1800, 280, 250, 140),
 )
 
 class PlannerTest {
@@ -67,7 +67,7 @@ class PlannerTest {
     fun `calculate ETA`() {
         val currentPosition = AircraftPosition(
             dmsToDecimal("""58°50'25.3"N  011°20'7.2"E"""),
-            12000,
+            22000,
             250,
             180
         )
@@ -97,9 +97,6 @@ class PlannerTest {
 
         assertEquals(1.minutes, eta)
     }
-
-
-
 }
 
 

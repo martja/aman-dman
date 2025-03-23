@@ -25,7 +25,7 @@ class VerticalWindView(
         val pxPerFl = (height - diagramMargin*2).toFloat() / maxFl.toFloat()
 
         state.verticalWeatherProfile.weatherData.forEach {
-            val yPos = (height - pxPerFl * it.flightLevel).roundToInt() - diagramMargin
+            val yPos = (height - pxPerFl * it.flightLevelFt).roundToInt() - diagramMargin
             g.color = Color.WHITE
             g.drawLine(0, yPos, 10, yPos)
 
