@@ -67,7 +67,7 @@ class TimelineController(
                 .firstOrNull { it.flightLevelFt >= sector.minAltitude && it.flightLevelFt <= sector.maxAltitude }
 
             if (closestWindSegment != null) {
-                windDelayAcc += calculateWindTimeAdjustmentInSegment(sector, closestWindSegment.windDirectionKts, closestWindSegment.windSpeedKts)
+                windDelayAcc += calculateWindTimeAdjustmentInSegment(sector, closestWindSegment.windDirectionDeg, closestWindSegment.windSpeedKts)
             }
         }
 

@@ -5,6 +5,7 @@ import org.example.model.entities.WeatherData
 import org.junit.jupiter.api.Test
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 
 
@@ -36,6 +37,13 @@ val lunip4l = listOf(
         minAlt(5000)
         exactAlt(5000)
         maxSpeed(220)
+    },
+    starFix("NOSLA") {
+        maxSpeed(200)
+    },
+    starFix("XEMEN") {
+        exactAlt(3500)
+        maxSpeed(200)
     }
 )
 
@@ -45,8 +53,6 @@ val performanceData = mapOf(
 )
 
 class PlannerTest {
-
-
 
     @Test
     fun `STAR length matches AIRAC spec`() {
@@ -95,7 +101,51 @@ class PlannerTest {
 
         val eta = remainingRoute.estimateRemainingTime(currentPosition, weatherData, lunip4l, performanceData["A320"]!!)
 
-        assertEquals(1.minutes, eta)
+        assertEquals(13.minutes, eta)
+    }
+
+    @Test
+    fun `Calculates bearing correctly`() {
+        LatLng(60.0, 0.0).bearingTo(LatLng(60.0, 1.0)).let {
+            assertEquals(90, it)
+        }
+
+        LatLng(60.0, 0.0).bearingTo(LatLng(61.0, 0.0)).let {
+            assertEquals(0, it)
+        }
+
+        LatLng(60.0, 0.0).bearingTo(LatLng(60.0, -1.0)).let {
+            assertEquals(270, it)
+        }
+
+        LatLng(60.0, 0.0).bearingTo(LatLng(59.0, 0.0)).let {
+            assertEquals(180, it)
+        }
+    }
+
+    @Test
+    fun `Calculates IAS to TAS correctly`() {
+        assertEquals(
+            304,
+            iasToTas(220, 20000, -20)
+        )
+
+        assertEquals(
+            254,
+            iasToTas(220, 10000, -10)
+        )
+    }
+
+    @Test
+    fun `Interpolate distance along path`() {
+        val origin = LatLng(60.0, 11.0)
+        val newPoint = origin.interpolatePositionAlongPath(LatLng(60.0, 12.0), 0.5)
+        val tolerance = 0.0001
+
+        assertEquals(60.0, newPoint.lat, tolerance)
+        assertTrue(newPoint.lon > 11.0)
+        assertTrue(newPoint.lon < 12.0)
+        assertEquals(0.5, origin.distanceTo(newPoint), tolerance)
     }
 }
 
@@ -119,3 +169,4 @@ fun dmsToDecimal(dms: String): LatLng {
 
     return LatLng(coords[0], coords[1]) // (latitude, longitude)
 }
+

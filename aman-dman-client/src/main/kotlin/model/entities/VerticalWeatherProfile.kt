@@ -5,7 +5,7 @@ import org.example.LatLng
 
 data class WeatherData(
     val flightLevelFt: Int,
-    val windDirectionKts: Int,
+    val windDirectionDeg: Int,
     val windSpeedKts: Int,
     val temperatureC: Int
 )

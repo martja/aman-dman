@@ -18,8 +18,8 @@ data class StarAltitudeConstraint(
 )
 
 data class StarSpeedConstraint(
-    val maxKts: Int? = null,
     val minKts: Int? = null,
+    val maxKts: Int? = null,
     val exactKts: Int? = null
 )
 
@@ -118,7 +118,9 @@ fun LatLng.bearingTo(latLng: LatLng): Int {
     val y = Math.sin(dlon) * Math.cos(lat2)
     val x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dlon)
 
-    return Math.toDegrees(Math.atan2(y, x)).roundToInt()
+    val bearing = Math.toDegrees(Math.atan2(y, x))
+
+    return ((bearing + 360) % 360).roundToInt()
 }
 
 fun List<RoutePoint>.getRouteDistance() =
@@ -141,6 +143,8 @@ fun List<RoutePoint>.estimateRemainingTime(
     // Pre-map STAR constraints by ID for fast lookup
     val starMap = star.associateBy { it.id }
 
+    var currentSpeedConstraint: Int? = null
+
     for (i in indices) {
         val targetWaypoint = this[i]
         val remainingRoute = this.subList(i, this.size)
@@ -157,7 +161,8 @@ fun List<RoutePoint>.estimateRemainingTime(
             from = currentPosition,
             to = targetWaypoint.position,
             weatherData = windData,
-            distanceToNextAltConstraint = routeUntilConstraint.getRouteDistance()
+            distanceToNextAltConstraint = routeUntilConstraint.getRouteDistance(),
+            maxIas = currentSpeedConstraint
         )
 
         descentPath.forEach { step ->
@@ -165,11 +170,12 @@ fun List<RoutePoint>.estimateRemainingTime(
             currentAltitude = step.altitudeFt
             currentPosition = step.position
 
-            println("${step.length.format(2)} NM at ${step.groundSpeed} kts, TAS ${step.tas} = ${step.time}, to: ${step.altitudeFt}")
+            println("${step.length.format(2)} NM at GS=${step.groundSpeed} kts, TAS=${step.tas} kts = ${step.time}, to: ${step.altitudeFt}")
         }
 
         // Snap to waypoint at end of segment
         currentPosition = targetWaypoint.position
+        currentSpeedConstraint = starMap[targetWaypoint.id]?.starSpeedConstraint?.maxKts ?: currentSpeedConstraint
         println("Reached ${targetWaypoint.id}")
     }
 
@@ -198,16 +204,16 @@ fun AircraftPerformance.computeDescentPath(
     from: LatLng,
     to: LatLng,
     weatherData: List<WeatherData>,
-    distanceToNextAltConstraint: Double
+    distanceToNextAltConstraint: Double,
+    maxIas: Int?
 ): List<DescentStep> {
     val descentPath = mutableListOf<DescentStep>()
-
 
     // Estimate average descent rate and groundspeed for planning
     val avgAltitude = (fromAltFt + toAltFt) / 2
     val avgWeatherData = weatherData.interpolateWeatherAtAltitude(avgAltitude)
     val avgDescentRateFpm = this.estimateDescentRate(avgAltitude)
-    val avgGroundSpeedKts = this.estimateGroundSpeed(avgAltitude, from.bearingTo(to), avgWeatherData)
+    val avgGroundSpeedKts = iasToTas(this.initialDescentSpeedIas, avgAltitude, avgWeatherData.temperatureC)
 
     // Calculate minimum distance needed to descend
     val totalDescentFt = fromAltFt - toAltFt
@@ -225,7 +231,12 @@ fun AircraftPerformance.computeDescentPath(
         val distanceToGo = currentPosition.distanceTo(to)
 
         val stepWeather = weatherData.interpolateWeatherAtAltitude(currentAltitude)
-        val stepGroundspeedKts = this.estimateGroundSpeed(currentAltitude, bearingToNext, stepWeather)
+
+        val expectedIas = maxIas
+            ?: if (currentAltitude > 10_000) this.initialDescentSpeedIas else this.below10kSpeedIas
+
+        val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather.temperatureC)
+        val stepGroundspeedKts = tasToGs(stepTas, stepWeather, bearingToNext)
         val stepDistanceNm = (stepGroundspeedKts * deltaTime) / 3600.0
 
         if (distanceToGo <= requiredDescentDistanceNm) {
@@ -244,7 +255,7 @@ fun AircraftPerformance.computeDescentPath(
                     length = stepDistanceNm.toFloat(),
                     time = deltaTime.seconds,
                     groundSpeed = stepGroundspeedKts,
-                    tas = this.calculateTrueAirspeed(currentAltitude, stepWeather.temperatureC),
+                    tas = stepTas
                 )
             )
 
@@ -261,7 +272,7 @@ fun AircraftPerformance.computeDescentPath(
                     length = stepDistanceNm.toFloat(),
                     time = deltaTime.seconds,
                     groundSpeed = stepGroundspeedKts,
-                    tas = this.calculateTrueAirspeed(currentAltitude, stepWeather.temperatureC),
+                    tas = stepTas
                 )
             )
 
@@ -275,14 +286,29 @@ fun AircraftPerformance.computeDescentPath(
 
 fun iasToTas(ias: Int, altitudeFt: Int, tempCelsius: Int): Int {
     val tempKelvin = tempCelsius + 273.15
-    val pressureAltitude = 145366 * (1 - Math.pow((tempKelvin / 288.15), 0.235))
-    val pressureRatio = Math.pow((1 - 0.0000068756 * pressureAltitude), 5.2559)
-    return (ias * Math.sqrt(288.15 / tempKelvin) * pressureRatio).toInt()
+    val altitudeMeters = altitudeFt * 0.3048
+
+    // Constants
+    val P0 = 101325.0 // Sea level pressure in Pascals
+    val T0 = 288.15   // Sea level temperature in Kelvin
+    val L = 0.0065    // Temperature lapse rate (K/m)
+    val R = 287.05    // Specific gas constant for dry air (J/kg·K)
+    val g = 9.80665   // Gravity (m/s²)
+
+    // ISA Pressure at altitude
+    val pressure = P0 * Math.pow(1 - (L * altitudeMeters) / T0, g / (R * L))
+
+    // Air density at altitude
+    val rho = pressure / (R * tempKelvin)
+    val rho0 = P0 / (R * T0)
+
+    // TAS estimation
+    return (ias * Math.sqrt(rho0 / rho)).roundToInt()
 }
 
-fun tasToGs(tas: Int, windSpeed: Int, windDirection: Int, track: Int): Int {
-    val windAngleRad = Math.toRadians((windDirection - track).toDouble())
-    val windComponent = windSpeed * Math.cos(windAngleRad)
+fun tasToGs(tas: Int, weatherData: WeatherData, track: Int): Int {
+    val windAngleRad = Math.toRadians((weatherData.windDirectionDeg - track).toDouble())
+    val windComponent = weatherData.windSpeedKts * Math.cos(windAngleRad)
     return (tas + windComponent).roundToInt()
 }
 
@@ -294,13 +320,13 @@ fun List<WeatherData>.interpolateWeatherAtAltitude(altitudeFt: Int): WeatherData
 
     val ratio = (altitudeFt - lower.flightLevelFt).toFloat() / (upper.flightLevelFt - lower.flightLevelFt).toFloat()
 
-    val direction = (1 - ratio) * lower.windDirectionKts + ratio * upper.windDirectionKts
+    val direction = (1 - ratio) * lower.windDirectionDeg + ratio * upper.windDirectionDeg
     val speed = (1 - ratio) * lower.windSpeedKts + ratio * upper.windSpeedKts
     val temperature = (1 - ratio) * lower.temperatureC + ratio * upper.temperatureC
 
     return WeatherData(
         flightLevelFt = altitudeFt,
-        windDirectionKts = direction.roundToInt(),
+        windDirectionDeg = direction.roundToInt(),
         windSpeedKts = speed.roundToInt(),
         temperatureC = temperature.roundToInt()
     )
@@ -313,25 +339,8 @@ data class AircraftPerformance(
     val landingSpeed: Int
 )
 
-fun AircraftPerformance.calculateTrueAirspeed(altitudeFt: Int, tempCelsius: Int): Int {
-    if (altitudeFt > 10_000)
-        return iasToTas(this.initialDescentSpeedIas, altitudeFt, tempCelsius)
-    else
-        return iasToTas(this.below10kSpeedIas, altitudeFt, tempCelsius)
-}
-
 fun AircraftPerformance.estimateDescentRate(altitudeFt: Int): Int {
     return this.idleDescentRateFpm
-}
-
-fun AircraftPerformance.estimateGroundSpeed(altitudeFt: Int, trackDeg: Int, weatherData: WeatherData?): Int {
-    val tas = this.calculateTrueAirspeed(altitudeFt, weatherData?.temperatureC ?: 0)
-    return tasToGs(
-        tas = tas,
-        windSpeed = weatherData?.windSpeedKts ?: 0,
-        windDirection = weatherData?.windDirectionKts ?: 0,
-        track = trackDeg
-    )
 }
 
 fun LatLng.interpolatePositionAlongPath(endPoint: LatLng, distanceNm: Double): LatLng {
