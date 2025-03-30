@@ -1,6 +1,8 @@
 package org.example
 
+import org.example.model.entities.AircraftPerformance
 import org.example.model.entities.WeatherData
+import org.example.model.entities.WindData
 import kotlin.math.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -64,24 +66,6 @@ fun starFix(id: String, block: StarFixBuilder.() -> Unit): StarFix {
     return StarFixBuilder(id).apply(block).build()
 }
 
-data class RouteLeg(
-    val from: StarFix,
-    val to: StarFix,
-    val isVector: Boolean = false
-)
-
-data class Route(
-    val legs: List<RouteLeg>
-)
-
-data class DescentSegment(
-    val leg: RouteLeg,
-    val fromAltFt: Int,
-    val toAltFt: Int,
-    val groundspeedKts: Int,
-    val descentRateFpm: Int
-)
-
 data class RoutePoint(
     val id: String,
     val position: LatLng
@@ -128,13 +112,12 @@ fun List<RoutePoint>.getRouteDistance() =
         from.position.distanceTo(to.position)
     }
 
-
-fun List<RoutePoint>.estimateRemainingTime(
+fun List<RoutePoint>.generateDescentSegments(
     target: AircraftPosition,
     windData: List<WeatherData>,
     star: List<StarFix>,
     aircraftPerformance: AircraftPerformance
-): Duration {
+): List<DescentSegment> {
     var duration = 0.seconds
     var currentPosition = target.position
     var currentAltitude = target.altitudeFt
@@ -143,7 +126,10 @@ fun List<RoutePoint>.estimateRemainingTime(
     // Pre-map STAR constraints by ID for fast lookup
     val starMap = star.associateBy { it.id }
 
-    var currentSpeedConstraint: Int? = null
+    var currentMaxIas: Int? = null
+    var currentMinIas: Int? = null
+
+    val descentSegments = mutableListOf<DescentSegment>()
 
     for (i in indices) {
         val targetWaypoint = this[i]
@@ -162,7 +148,9 @@ fun List<RoutePoint>.estimateRemainingTime(
             to = targetWaypoint.position,
             weatherData = windData,
             distanceToNextAltConstraint = routeUntilConstraint.getRouteDistance(),
-            maxIas = currentSpeedConstraint
+            maxIas = currentMaxIas,
+            minIas = currentMinIas,
+            airfieldAltitude = airfieldAltitude
         )
 
         descentPath.forEach { step ->
@@ -170,18 +158,43 @@ fun List<RoutePoint>.estimateRemainingTime(
             currentAltitude = step.altitudeFt
             currentPosition = step.position
 
-            println("${step.length.format(2)} NM at GS=${step.groundSpeed} kts, TAS=${step.tas} kts = ${step.time}, to: ${step.altitudeFt}")
+            descentSegments.add(
+                DescentSegment(
+                    inbound = targetWaypoint,
+                    position = step.position,
+                    altitudeFt = step.altitudeFt,
+                    length = step.length,
+                    time = step.time,
+                    groundSpeed = step.groundSpeed,
+                    tas = step.tas,
+                )
+            )
         }
 
         // Snap to waypoint at end of segment
         currentPosition = targetWaypoint.position
-        currentSpeedConstraint = starMap[targetWaypoint.id]?.starSpeedConstraint?.maxKts ?: currentSpeedConstraint
-        println("Reached ${targetWaypoint.id}")
+
+        currentMaxIas = starMap[targetWaypoint.id]?.starSpeedConstraint?.maxKts
+            ?: starMap[targetWaypoint.id]?.starSpeedConstraint?.exactKts
+            ?: currentMaxIas
+
+        currentMinIas = starMap[targetWaypoint.id]?.starSpeedConstraint?.minKts
+            ?: starMap[targetWaypoint.id]?.starSpeedConstraint?.exactKts
+            ?: currentMinIas
     }
 
-    println("Estimated duration: $duration")
-    return duration
+    return descentSegments
 }
+
+data class DescentSegment(
+    val inbound: RoutePoint,
+    val position: LatLng,
+    val altitudeFt: Int,
+    val length: Float,
+    val time: Duration,
+    val groundSpeed: Int,
+    val tas: Int,
+)
 
 
 /* *************** */
@@ -205,7 +218,9 @@ fun AircraftPerformance.computeDescentPath(
     to: LatLng,
     weatherData: List<WeatherData>,
     distanceToNextAltConstraint: Double,
-    maxIas: Int?
+    maxIas: Int?,
+    minIas: Int?,
+    airfieldAltitude: Int
 ): List<DescentStep> {
     val descentPath = mutableListOf<DescentStep>()
 
@@ -213,7 +228,7 @@ fun AircraftPerformance.computeDescentPath(
     val avgAltitude = (fromAltFt + toAltFt) / 2
     val avgWeatherData = weatherData.interpolateWeatherAtAltitude(avgAltitude)
     val avgDescentRateFpm = this.estimateDescentRate(avgAltitude)
-    val avgGroundSpeedKts = iasToTas(this.initialDescentSpeedIas, avgAltitude, avgWeatherData.temperatureC)
+    val avgGroundSpeedKts = iasToTas(this.descentIAS, avgAltitude, avgWeatherData.temperatureC)
 
     // Calculate minimum distance needed to descend
     val totalDescentFt = fromAltFt - toAltFt
@@ -232,11 +247,15 @@ fun AircraftPerformance.computeDescentPath(
 
         val stepWeather = weatherData.interpolateWeatherAtAltitude(currentAltitude)
 
-        val expectedIas = maxIas
-            ?: if (currentAltitude > 10_000) this.initialDescentSpeedIas else this.below10kSpeedIas
+        val preferredIas = this.getPreferredSpeed(currentAltitude, airfieldAltitude)
+
+        val highestExpectedIas = min(maxIas ?: preferredIas, preferredIas)
+        val lowestExpectedIas = min(minIas ?: highestExpectedIas, preferredIas)
+
+        val expectedIas = (highestExpectedIas + lowestExpectedIas) / 2
 
         val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather.temperatureC)
-        val stepGroundspeedKts = tasToGs(stepTas, stepWeather, bearingToNext)
+        val stepGroundspeedKts = tasToGs(stepTas, stepWeather.wind, bearingToNext)
         val stepDistanceNm = (stepGroundspeedKts * deltaTime) / 3600.0
 
         if (distanceToGo <= requiredDescentDistanceNm) {
@@ -306,10 +325,16 @@ fun iasToTas(ias: Int, altitudeFt: Int, tempCelsius: Int): Int {
     return (ias * Math.sqrt(rho0 / rho)).roundToInt()
 }
 
-fun tasToGs(tas: Int, weatherData: WeatherData, track: Int): Int {
-    val windAngleRad = Math.toRadians((weatherData.windDirectionDeg - track).toDouble())
-    val windComponent = weatherData.windSpeedKts * Math.cos(windAngleRad)
-    return (tas + windComponent).roundToInt()
+fun tasToGs(tas: Int, wind: WindData, track: Int): Int {
+    val windAngleRad = Math.toRadians((wind.directionDeg - track).toDouble())
+    val windSpeed = wind.speedKts.toDouble()
+
+    val gs = sqrt(
+        tas.toDouble().pow(2) + windSpeed.pow(2) -
+                2 * tas * windSpeed * cos(windAngleRad)
+    )
+
+    return gs.roundToInt()
 }
 
 fun List<WeatherData>.interpolateWeatherAtAltitude(altitudeFt: Int): WeatherData {
@@ -320,28 +345,32 @@ fun List<WeatherData>.interpolateWeatherAtAltitude(altitudeFt: Int): WeatherData
 
     val ratio = (altitudeFt - lower.flightLevelFt).toFloat() / (upper.flightLevelFt - lower.flightLevelFt).toFloat()
 
-    val direction = (1 - ratio) * lower.windDirectionDeg + ratio * upper.windDirectionDeg
-    val speed = (1 - ratio) * lower.windSpeedKts + ratio * upper.windSpeedKts
+    val direction = (1 - ratio) * lower.wind.directionDeg + ratio * upper.wind.directionDeg
+    val speed = (1 - ratio) * lower.wind.speedKts + ratio * upper.wind.speedKts
     val temperature = (1 - ratio) * lower.temperatureC + ratio * upper.temperatureC
 
     return WeatherData(
         flightLevelFt = altitudeFt,
-        windDirectionDeg = direction.roundToInt(),
-        windSpeedKts = speed.roundToInt(),
+        wind = WindData(direction.roundToInt(), speed.roundToInt()),
         temperatureC = temperature.roundToInt()
     )
 }
 
-data class AircraftPerformance(
-    val idleDescentRateFpm: Int,
-    val initialDescentSpeedIas: Int,
-    val below10kSpeedIas: Int,
-    val landingSpeed: Int
-)
+fun AircraftPerformance.estimateDescentRate(altitudeFt: Int) =
+    if (altitudeFt < 10_000) {
+        this.approachROD ?: this.descentROD ?: this.initialDescentROD ?: 1000
+    } else {
+        this.descentROD ?: this.initialDescentROD ?: this.approachROD ?: 1000
+    }
 
-fun AircraftPerformance.estimateDescentRate(altitudeFt: Int): Int {
-    return this.idleDescentRateFpm
-}
+fun AircraftPerformance.getPreferredSpeed(altitudeFt: Int, airfieldAltitude: Int) =
+    if (altitudeFt < airfieldAltitude + 3000) {
+        this.landingVat
+    } else if (altitudeFt < 10_000) {
+        this.approachIAS
+    } else {
+        this.descentIAS
+    }
 
 fun LatLng.interpolatePositionAlongPath(endPoint: LatLng, distanceNm: Double): LatLng {
     val radiusNm = 3440.065 // Earth radius in NM

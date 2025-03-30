@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
 import org.example.integration.AtcClient
 import org.example.model.*
+import org.example.model.entities.WindData
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.time.Duration
@@ -67,7 +68,7 @@ class TimelineController(
                 .firstOrNull { it.flightLevelFt >= sector.minAltitude && it.flightLevelFt <= sector.maxAltitude }
 
             if (closestWindSegment != null) {
-                windDelayAcc += calculateWindTimeAdjustmentInSegment(sector, closestWindSegment.windDirectionDeg, closestWindSegment.windSpeedKts)
+                windDelayAcc += calculateWindTimeAdjustmentInSegment(sector, closestWindSegment.wind)
             }
         }
 
@@ -114,11 +115,10 @@ class TimelineController(
  */
 fun calculateWindTimeAdjustmentInSegment(
     sector: DescentProfileSegment,
-    windDirection: Int,      // in degrees (true)
-    windSpeed: Int           // in knots
+    wind: WindData
 ): Duration {
-    val windAngleRad = Math.toRadians((windDirection - sector.averageHeading).toDouble())
-    val headWind = windSpeed * cos(windAngleRad)
+    val windAngleRad = Math.toRadians((wind.directionDeg - sector.averageHeading).toDouble())
+    val headWind = wind.speedKts * cos(windAngleRad)
 
     if (sector.duration.inWholeSeconds == 0L) {
         // Aircraft is just about to pass into the next segment

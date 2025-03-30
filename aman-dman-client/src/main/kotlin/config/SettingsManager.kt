@@ -35,8 +35,7 @@ object SettingsManager {
     }
 
     private fun saveSettings() {
-        val jsonFileName = "settings.json"
-        val jsonFile = File(jsonFileName)
+        val jsonFile = File(SETTINGS_FILE_PATH)
         jsonFile.writeText(jacksonObjectMapper().writeValueAsString(settingsJson))
     }
 }

@@ -1,12 +1,16 @@
 package controller
 
 import org.example.*
+import org.example.config.AircraftPerformanceData
+import org.example.model.entities.AircraftPerformance
 import org.example.model.entities.WeatherData
+import org.example.model.entities.WindData
 import org.junit.jupiter.api.Test
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 
 val lunip4l = listOf(
@@ -45,11 +49,6 @@ val lunip4l = listOf(
         exactAlt(3500)
         maxSpeed(200)
     }
-)
-
-val performanceData = mapOf(
-    "A320" to AircraftPerformance(1800, 280, 250, 140),
-    "B738" to AircraftPerformance(1800, 280, 250, 140),
 )
 
 class PlannerTest {
@@ -93,15 +92,28 @@ class PlannerTest {
         )
 
         val weatherData = listOf(
-            WeatherData(0, 180, 0, 0),
-            WeatherData(10000, 180, 10, -10),
-            WeatherData(20000, 180, 20, -20),
-            WeatherData(30000, 180, 30, -30),
+            WeatherData(0, 0, wind = WindData(180, 0)),
+            WeatherData(10000, -10, wind = WindData(180, 10)),
+            WeatherData(20000, -20, wind = WindData(180, 20)),
+            WeatherData(30000, -30, wind = WindData(180, 30)),
         )
 
-        val eta = remainingRoute.estimateRemainingTime(currentPosition, weatherData, lunip4l, performanceData["A320"]!!)
+        val aircraftPerformance = AircraftPerformanceData.get("B738")
 
-        assertEquals(13.minutes, eta)
+        val descentSegments = remainingRoute.generateDescentSegments(
+            currentPosition,
+            weatherData,
+            lunip4l,
+            aircraftPerformance
+        )
+
+        val remainingTime = descentSegments.sumOf { it.time.inWholeSeconds }.seconds
+
+        descentSegments.forEach {
+            println(it)
+        }
+
+        assertEquals(10.minutes + 30.seconds, remainingTime)
     }
 
     @Test
@@ -146,6 +158,35 @@ class PlannerTest {
         assertTrue(newPoint.lon > 11.0)
         assertTrue(newPoint.lon < 12.0)
         assertEquals(0.5, origin.distanceTo(newPoint), tolerance)
+    }
+
+    @Test
+    fun `Wind direction should affect ground speed`() {
+        val windFromNorth = WindData(speedKts = 20, directionDeg = 360)
+        val aircraftTas = 220
+
+        val gsWithHeadwind = tasToGs(
+            tas = aircraftTas,
+            wind = windFromNorth,
+            track = 360
+        )
+
+        val gsWithTailwind = tasToGs(
+            tas = aircraftTas,
+            wind = windFromNorth,
+            track = 180
+        )
+
+        val gsWithCrosswind = tasToGs(
+            tas = aircraftTas,
+            wind = windFromNorth,
+            track = 90
+        )
+
+
+        assertEquals(200, gsWithHeadwind)
+        assertEquals(240, gsWithTailwind)
+        assertEquals(220, gsWithCrosswind)
     }
 }
 

@@ -17,6 +17,7 @@ dependencies {
     implementation("edu.ucar:netcdf4:5.7.0")
     implementation("edu.ucar:grib:5.7.0")
     implementation("com.google.guava:guava:32.1.2-jre")
+    implementation("org.jsoup:jsoup:1.19.1")
     runtimeOnly("org.slf4j:slf4j-jdk14:1.7.32")
 }
 

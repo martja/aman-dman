@@ -5,6 +5,7 @@ import org.example.LatLng
 import org.example.format
 import org.example.model.entities.VerticalWeatherProfile
 import org.example.model.entities.WeatherData
+import org.example.model.entities.WindData
 import ucar.nc2.NetcdfFile
 import ucar.nc2.NetcdfFiles
 import java.io.FileNotFoundException
@@ -101,7 +102,7 @@ class WindApi {
                     val currentGridPoint = gridPoints.find { it.latitude == gridLat && it.longitude == gridLon }?.windProfile
                         ?: VerticalWeatherProfile(forecastTime, LatLng(lat = gridLat, lon = gridLon), mutableListOf())
 
-                    currentGridPoint.weatherData.add(WeatherData(flightLevel, windDirection, windSpeedKnots, temp))
+                    currentGridPoint.weatherData.add(WeatherData(flightLevel, temp, WindData(windDirection, windSpeedKnots)))
 
                     if (gridPoints.none { it.latitude == gridLat && it.longitude == gridLon }) {
                         gridPoints.add(WindProfileGridPoint(gridLat, gridLon, currentGridPoint))

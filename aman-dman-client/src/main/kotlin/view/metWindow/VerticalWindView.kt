@@ -29,7 +29,7 @@ class VerticalWindView(
             g.color = Color.WHITE
             g.drawLine(0, yPos, 10, yPos)
 
-            g.drawString("FL${(it.flightLevelFt / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.windDirectionDeg.toString().padStart(3, '0')} / ${it.windSpeedKts} kt", 30, yPos)
+            g.drawString("FL${(it.flightLevelFt / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.wind.directionDeg.toString().padStart(3, '0')} / ${it.wind.speedKts} kt", 30, yPos)
         }
 
         g.drawString("Valid " + state.verticalWeatherProfile.time.format("yyyy/MM/dd HH:mm") + "Z", 5, height - 5)
