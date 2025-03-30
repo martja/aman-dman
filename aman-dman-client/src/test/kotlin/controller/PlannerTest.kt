@@ -78,14 +78,13 @@ class PlannerTest {
         )
 
         val remainingRoute = listOf(
-            RoutePoint("CURRENT", currentPosition.position),
             RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E""")),
             RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E""")),
-            RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
+            /*RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
             RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E""")),
             RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E""")),
             RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E""")),
-            RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E""")),
+            */RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E""")),
             RoutePoint("NOSLA", dmsToDecimal("""59°59'1.2"N  010°59'51.2"E""")),
             RoutePoint("XEMEN", dmsToDecimal("""60°2'10.4"N  011°1'39.4"E""")),
             RoutePoint("ONE", dmsToDecimal("""60°10'40.6"N  011°6'41.0"E""")),
@@ -112,6 +111,9 @@ class PlannerTest {
         descentSegments.forEach {
             println(it)
         }
+
+        // To wkt linestring
+        val wkt = descentSegments.joinToString(",") { it.position.lon.toString() + " " + it.position.lat.toString() }
 
         assertEquals(10.minutes + 30.seconds, remainingTime)
     }

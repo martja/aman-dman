@@ -12,3 +12,6 @@ fun Instant.format(pattern: String): String {
     val dateTimeFormat = LocalDateTime.Format { byUnicodePattern(pattern) }
     return dateTimeFormat.format(this.toLocalDateTime(TimeZone.UTC))
 }
+
+fun Float.format(decimals: Int): String = "%.${decimals}f".format(this)
+fun Double.format(decimals: Int): String = "%.${decimals}f".format(this)

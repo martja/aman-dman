@@ -122,68 +122,59 @@ fun List<RoutePoint>.generateDescentSegments(
     var currentPosition = target.position
     var currentAltitude = target.altitudeFt
     val airfieldAltitude = 700
-
-    // Pre-map STAR constraints by ID for fast lookup
     val starMap = star.associateBy { it.id }
 
     var currentMaxIas: Int? = null
     var currentMinIas: Int? = null
 
-    val descentSegments = mutableListOf<DescentSegment>()
-
-    for (i in indices) {
-        val targetWaypoint = this[i]
-        val remainingRoute = this.subList(i, this.size)
-
+    return mapNotNull { targetWaypoint ->
+        val remainingRoute = dropWhile { it != targetWaypoint }
         val nextAltitudeConstraint = remainingRoute.firstNotNullOfOrNull { starMap[it.id]?.starAltitudeConstraint?.exactFt }
         val targetAltitude = nextAltitudeConstraint ?: airfieldAltitude
+        val routeUntilConstraint = remainingRoute.routeToNextAltitudeConstraint(star)
+        val distanceToNextAltConstraint = routeUntilConstraint.getRouteDistance()
 
-        val routeUntilConstraint = remainingRoute.takeWhile { starMap[it.id]?.starAltitudeConstraint?.exactFt == null }
-
-        // Descent phase
         val descentPath = aircraftPerformance.computeDescentPath(
             fromAltFt = currentAltitude,
             toAltFt = targetAltitude,
             from = currentPosition,
             to = targetWaypoint.position,
             weatherData = windData,
-            distanceToNextAltConstraint = routeUntilConstraint.getRouteDistance(),
+            distanceToNextAltConstraint = distanceToNextAltConstraint,
             maxIas = currentMaxIas,
             minIas = currentMinIas,
             airfieldAltitude = airfieldAltitude
         )
 
-        descentPath.forEach { step ->
+        val segments = descentPath.map { step ->
             duration += step.time
             currentAltitude = step.altitudeFt
             currentPosition = step.position
 
-            descentSegments.add(
-                DescentSegment(
-                    inbound = targetWaypoint,
-                    position = step.position,
-                    altitudeFt = step.altitudeFt,
-                    length = step.length,
-                    time = step.time,
-                    groundSpeed = step.groundSpeed,
-                    tas = step.tas,
-                )
+            DescentSegment(
+                inbound = targetWaypoint,
+                position = step.position,
+                altitudeFt = step.altitudeFt,
+                length = step.length,
+                time = step.time,
+                groundSpeed = step.groundSpeed,
+                tas = step.tas
             )
         }
 
-        // Snap to waypoint at end of segment
         currentPosition = targetWaypoint.position
+        starMap[targetWaypoint.id]?.starSpeedConstraint?.let { constraint ->
+            currentMaxIas = constraint.maxKts ?: constraint.exactKts ?: currentMaxIas
+            currentMinIas = constraint.minKts ?: constraint.exactKts ?: currentMinIas
+        }
 
-        currentMaxIas = starMap[targetWaypoint.id]?.starSpeedConstraint?.maxKts
-            ?: starMap[targetWaypoint.id]?.starSpeedConstraint?.exactKts
-            ?: currentMaxIas
+        segments
+    }.flatten()
+}
 
-        currentMinIas = starMap[targetWaypoint.id]?.starSpeedConstraint?.minKts
-            ?: starMap[targetWaypoint.id]?.starSpeedConstraint?.exactKts
-            ?: currentMinIas
-    }
-
-    return descentSegments
+fun List<RoutePoint>.routeToNextAltitudeConstraint(star: List<StarFix>): List<RoutePoint> {
+    val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.starAltitudeConstraint?.exactFt != null } }
+    return if (i == -1) emptyList() else this.subList(0, i + 1)
 }
 
 data class DescentSegment(
@@ -208,9 +199,6 @@ data class DescentStep(
     val tas: Int
 )
 
-fun Float.format(decimals: Int): String = "%.${decimals}f".format(this)
-fun Double.format(decimals: Int): String = "%.${decimals}f".format(this)
-
 fun AircraftPerformance.computeDescentPath(
     fromAltFt: Int,
     toAltFt: Int,
@@ -230,7 +218,7 @@ fun AircraftPerformance.computeDescentPath(
     val avgDescentRateFpm = this.estimateDescentRate(avgAltitude)
     val avgGroundSpeedKts = iasToTas(this.descentIAS, avgAltitude, avgWeatherData.temperatureC)
 
-    // Calculate minimum distance needed to descend
+    // Calculate minimum distance needed to descend to target altitude
     val totalDescentFt = fromAltFt - toAltFt
     val totalDescentMinutes = totalDescentFt / avgDescentRateFpm.toDouble()
     val requiredDescentDistanceNm = avgGroundSpeedKts * (totalDescentMinutes / 60.0)
@@ -242,61 +230,55 @@ fun AircraftPerformance.computeDescentPath(
 
     val deltaTime = 10.0 // seconds
 
-    while (distToNext > 0 && distToNext > distanceToNextAltConstraint && currentAltitude > toAltFt) {
-        val distanceToGo = currentPosition.distanceTo(to)
+    var accLegDistance = 0.0
 
+    while (true) {
         val stepWeather = weatherData.interpolateWeatherAtAltitude(currentAltitude)
-
         val preferredIas = this.getPreferredSpeed(currentAltitude, airfieldAltitude)
-
         val highestExpectedIas = min(maxIas ?: preferredIas, preferredIas)
         val lowestExpectedIas = min(minIas ?: highestExpectedIas, preferredIas)
-
         val expectedIas = (highestExpectedIas + lowestExpectedIas) / 2
-
         val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather.temperatureC)
         val stepGroundspeedKts = tasToGs(stepTas, stepWeather.wind, bearingToNext)
         val stepDistanceNm = (stepGroundspeedKts * deltaTime) / 3600.0
 
-        if (distanceToGo <= requiredDescentDistanceNm) {
-            // Begin descent
+        if (distToNext - stepDistanceNm < 0) {
+            // Snap to target waypoint
+            descentPath.add(
+                DescentStep(
+                    position = to,
+                    altitudeFt = currentAltitude,
+                    length = currentPosition.distanceTo(to).toFloat(),
+                    time = deltaTime.seconds,
+                    groundSpeed = stepGroundspeedKts,
+                    tas = stepTas
+                )
+            )
+            break
+        }
+
+        descentPath.add(
+            DescentStep(
+                position = currentPosition,
+                altitudeFt = currentAltitude,
+                length = stepDistanceNm.toFloat(),
+                time = deltaTime.seconds,
+                groundSpeed = stepGroundspeedKts,
+                tas = stepTas
+            )
+        )
+
+        currentPosition = currentPosition.interpolatePositionAlongPath(to, stepDistanceNm)
+        distToNext -= stepDistanceNm
+        accLegDistance += stepDistanceNm
+
+        if (distanceToNextAltConstraint - accLegDistance < requiredDescentDistanceNm) {
             val descentRateFpm = this.estimateDescentRate(currentAltitude)
             val verticalSpeed = descentRateFpm / 60.0 // ft/sec
 
             val stepDescentFt = verticalSpeed * deltaTime
             val nextAlt = max(currentAltitude - stepDescentFt.roundToInt(), toAltFt)
-            val nextPos = currentPosition.interpolatePositionAlongPath(to, stepDistanceNm)
-
-            descentPath.add(
-                DescentStep(
-                    position = nextPos,
-                    altitudeFt = nextAlt,
-                    length = stepDistanceNm.toFloat(),
-                    time = deltaTime.seconds,
-                    groundSpeed = stepGroundspeedKts,
-                    tas = stepTas
-                )
-            )
-
             currentAltitude = nextAlt
-            currentPosition = nextPos
-            distToNext -= stepDistanceNm
-        } else {
-            val nextPos = currentPosition.interpolatePositionAlongPath(to, stepDistanceNm)
-
-            descentPath.add(
-                DescentStep(
-                    position = nextPos,
-                    altitudeFt = currentAltitude,
-                    length = stepDistanceNm.toFloat(),
-                    time = deltaTime.seconds,
-                    groundSpeed = stepGroundspeedKts,
-                    tas = stepTas
-                )
-            )
-
-            currentPosition = nextPos
-            distToNext -= stepDistanceNm
         }
     }
 
