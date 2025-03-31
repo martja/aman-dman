@@ -1,6 +1,6 @@
 package org.example.view.weatherWindow
 
-import org.example.format
+import org.example.util.NumberUtils.format
 import org.example.state.ApplicationState
 import java.awt.BorderLayout
 import java.awt.Color
@@ -19,12 +19,12 @@ class VerticalWindView(
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
-        val maxFl = state.verticalWeatherProfile.weatherData.maxOf { it.flightLevelFt }
+        val maxFl = state.verticalWeatherProfile.weatherLayers.maxOf { it.flightLevelFt }
         val diagramMargin = 30
 
         val pxPerFl = (height - diagramMargin*2).toFloat() / maxFl.toFloat()
 
-        state.verticalWeatherProfile.weatherData.forEach {
+        state.verticalWeatherProfile.weatherLayers.forEach {
             val yPos = (height - pxPerFl * it.flightLevelFt).roundToInt() - diagramMargin
             g.color = Color.WHITE
             g.drawLine(0, yPos, 10, yPos)

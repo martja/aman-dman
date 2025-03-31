@@ -2,7 +2,7 @@ package org.example.model
 
 import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
-import org.example.model.entities.VerticalWeatherProfile
+import org.example.model.entities.weather.VerticalWeatherProfile
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import kotlin.time.Duration

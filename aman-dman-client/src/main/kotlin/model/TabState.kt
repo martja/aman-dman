@@ -1,7 +1,7 @@
 package org.example.model
 
 import kotlinx.datetime.Instant
-import org.example.model.entities.VerticalWeatherProfile
+import org.example.model.entities.weather.VerticalWeatherProfile
 import org.example.state.ApplicationState
 import java.beans.PropertyChangeSupport
 import kotlin.time.Duration.Companion.hours

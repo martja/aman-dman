@@ -1,11 +1,10 @@
 package org.example.integration
 
 import kotlinx.datetime.*
-import org.example.LatLng
-import org.example.format
-import org.example.model.entities.VerticalWeatherProfile
-import org.example.model.entities.WeatherData
-import org.example.model.entities.WindData
+import org.example.model.entities.navdata.LatLng
+import org.example.model.entities.weather.VerticalWeatherProfile
+import org.example.model.entities.weather.WeatherLayer
+import org.example.model.entities.weather.Wind
 import ucar.nc2.NetcdfFile
 import ucar.nc2.NetcdfFiles
 import java.io.FileNotFoundException
@@ -17,6 +16,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
+import org.example.util.NumberUtils.format
 
 data class WindProfileGridPoint(
     val latitude: Double,
@@ -102,7 +102,7 @@ class WindApi {
                     val currentGridPoint = gridPoints.find { it.latitude == gridLat && it.longitude == gridLon }?.windProfile
                         ?: VerticalWeatherProfile(forecastTime, LatLng(lat = gridLat, lon = gridLon), mutableListOf())
 
-                    currentGridPoint.weatherData.add(WeatherData(flightLevel, temp, WindData(windDirection, windSpeedKnots)))
+                    currentGridPoint.weatherLayers.add(WeatherLayer(flightLevel, temp, Wind(windDirection, windSpeedKnots)))
 
                     if (gridPoints.none { it.latitude == gridLat && it.longitude == gridLon }) {
                         gridPoints.add(WindProfileGridPoint(gridLat, gridLon, currentGridPoint))

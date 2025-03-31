@@ -4,7 +4,7 @@ import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
 import org.example.integration.AtcClient
 import org.example.model.*
-import org.example.model.entities.WindData
+import org.example.model.entities.weather.Wind
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.time.Duration
@@ -63,7 +63,7 @@ class TimelineController(
             })
         }
         fixInboundOccurrence.descentProfile.forEach { sector ->
-            val closestWindSegment = timelineState.verticalWeatherProfile.weatherData
+            val closestWindSegment = timelineState.verticalWeatherProfile.weatherLayers
                 .sortedBy { it.flightLevelFt }
                 .firstOrNull { it.flightLevelFt >= sector.minAltitude && it.flightLevelFt <= sector.maxAltitude }
 
@@ -115,7 +115,7 @@ class TimelineController(
  */
 fun calculateWindTimeAdjustmentInSegment(
     sector: DescentProfileSegment,
-    wind: WindData
+    wind: Wind
 ): Duration {
     val windAngleRad = Math.toRadians((wind.directionDeg - sector.averageHeading).toDouble())
     val headWind = wind.speedKts * cos(windAngleRad)

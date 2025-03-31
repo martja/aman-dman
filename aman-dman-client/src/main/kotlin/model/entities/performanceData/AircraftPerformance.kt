@@ -1,4 +1,4 @@
-package org.example.model.entities
+package org.example.model.entities.performance
 
 data class AircraftPerformance(
     val ICAO: String,

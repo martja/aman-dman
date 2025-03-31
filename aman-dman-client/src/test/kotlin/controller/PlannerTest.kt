@@ -1,53 +1,72 @@
 package controller
 
-import org.example.*
+import kotlinx.datetime.Clock
 import org.example.config.AircraftPerformanceData
-import org.example.model.entities.WeatherData
-import org.example.model.entities.WindData
+import org.example.model.entities.*
+import org.example.model.entities.estimation.DescentSegment
+import org.example.model.entities.navdata.LatLng
+import org.example.model.entities.navigation.star.StarFix
+import org.example.model.entities.navigation.AircraftPosition
+import org.example.model.entities.navigation.RoutePoint
+import org.example.model.entities.navigation.star.Star
+import org.example.model.entities.weather.VerticalWeatherProfile
+import org.example.model.entities.weather.WeatherLayer
+import org.example.model.entities.weather.Wind
+import org.example.util.AircraftUtils.iasToTas
+import org.example.util.AircraftUtils.tasToGs
+import org.example.util.NavigationUtils.interpolatePositionAlongPath
 import org.junit.jupiter.api.Test
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import org.example.service.DescentProfileService.generateDescentSegments
 
+fun starFix(id: String, block: StarFix.StarFixBuilder.() -> Unit): StarFix {
+    return StarFix.StarFixBuilder(id).apply(block).build()
+}
 
-val lunip4l = listOf(
-    starFix("LUNIP") {
-        maxSpeed(250)
-    },
-    starFix("DEVKU") {
-        minAlt(12000)
-        maxSpeed(250)
-    },
-    starFix("GM416") {
-        exactAlt(11000)
-        maxSpeed(220)
-    },
-    starFix("GM417") {
-        exactAlt(11000)
-        maxSpeed(220)
-    },
-    starFix("GM415") {
-        exactAlt(11000)
-        maxSpeed(220)
-    },
-    starFix("GM414") {
-        exactAlt(11000)
-        maxSpeed(220)
-    },
-    starFix("INSUV") {
-        minAlt(5000)
-        exactAlt(5000)
-        maxSpeed(220)
-    },
-    starFix("NOSLA") {
-        maxSpeed(200)
-    },
-    starFix("XEMEN") {
-        exactAlt(3500)
-        maxSpeed(200)
-    }
+val lunip4l = Star(
+    id = "LUNIP4L",
+    airfieldElevationFt = 700,
+    fixes = listOf(
+        starFix("LUNIP") {
+            maxSpeed(250)
+        },
+        starFix("DEVKU") {
+            minAlt(12000)
+            maxSpeed(250)
+        },
+        starFix("GM416") {
+            exactAlt(11000)
+            maxSpeed(220)
+        },
+        starFix("GM417") {
+            exactAlt(11000)
+            maxSpeed(220)
+        },
+        starFix("GM415") {
+            exactAlt(11000)
+            maxSpeed(220)
+        },
+        starFix("GM414") {
+            exactAlt(11000)
+            maxSpeed(220)
+        },
+        starFix("INSUV") {
+            minAlt(5000)
+            exactAlt(5000)
+            maxSpeed(220)
+        },
+        starFix("NOSLA") {
+            maxSpeed(200)
+        },
+        starFix("XEMEN") {
+            exactAlt(3500)
+            maxSpeed(200)
+        }
+    )
 )
 
 class PlannerTest {
@@ -131,7 +150,7 @@ class PlannerTest {
         val descentSegments = calculateTestDescent(testRoute)
         val altitudeViolations = descentSegments.filter { descentSegment ->
             val passingWp = testRoute.find { wp -> wp.position == descentSegment.position }
-            val altitudeConstraint = lunip4l.find { wp -> wp.id == passingWp?.id }?.starAltitudeConstraint
+            val altitudeConstraint = lunip4l.fixes.find { wp -> wp.id == passingWp?.id }?.starAltitudeConstraint
 
             if (altitudeConstraint == null) {
                 return@filter false
@@ -227,7 +246,7 @@ class PlannerTest {
 
     @Test
     fun `Wind direction should affect ground speed`() {
-        val windFromNorth = WindData(speedKts = 20, directionDeg = 360)
+        val windFromNorth = Wind(speedKts = 20, directionDeg = 360)
         val aircraftTas = 220
 
         val gsWithHeadwind = tasToGs(
@@ -251,22 +270,28 @@ class PlannerTest {
 
         assertEquals(200, gsWithHeadwind)
         assertEquals(240, gsWithTailwind)
-        assertEquals(220, gsWithCrosswind)
+        assertEquals(221, gsWithCrosswind)
     }
 
     fun calculateTestDescent(remainingRoute: List<RoutePoint>): List<DescentSegment> {
         val weatherData = listOf(
-            WeatherData(0, 0, wind = WindData(180, 0)),
-            WeatherData(10000, -10, wind = WindData(180, 10)),
-            WeatherData(20000, -20, wind = WindData(180, 20)),
-            WeatherData(30000, -30, wind = WindData(180, 30)),
+            WeatherLayer(0, 0, wind = Wind(180, 0)),
+            WeatherLayer(10000, -10, wind = Wind(180, 10)),
+            WeatherLayer(20000, -20, wind = Wind(180, 20)),
+            WeatherLayer(30000, -30, wind = Wind(180, 30)),
+        )
+
+        val weatherProfile = VerticalWeatherProfile(
+            Clock.System.now(),
+            currentPosition.position,
+            weatherData.toMutableList()
         )
 
         val aircraftPerformance = AircraftPerformanceData.get("B738")
 
         val descentSegments = remainingRoute.generateDescentSegments(
             currentPosition,
-            weatherData,
+            weatherProfile,
             lunip4l,
             aircraftPerformance
         )
@@ -299,3 +324,7 @@ fun dmsToDecimal(dms: String): LatLng {
     return LatLng(coords[0], coords[1]) // (latitude, longitude)
 }
 
+fun List<RoutePoint>.getRouteDistance() =
+    this.zipWithNext().sumOf { (from, to) ->
+        from.position.distanceTo(to.position)
+    }

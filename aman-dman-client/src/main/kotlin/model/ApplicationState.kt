@@ -3,7 +3,7 @@ package org.example.state
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.example.integration.WindApi
-import org.example.model.entities.VerticalWeatherProfile
+import org.example.model.entities.weather.VerticalWeatherProfile
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import javax.swing.Timer

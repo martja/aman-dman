@@ -2,7 +2,7 @@ package org.example.config
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.example.model.entities.AircraftPerformance
+import org.example.model.entities.performance.AircraftPerformance
 import java.io.File
 import java.io.FileNotFoundException
 

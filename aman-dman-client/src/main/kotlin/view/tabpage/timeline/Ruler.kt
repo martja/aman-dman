@@ -1,7 +1,7 @@
 package org.example.view.tabpage.timeline
 
 import kotlinx.datetime.*
-import org.example.format
+import org.example.util.NumberUtils.format
 import org.example.model.RunwayDelayOccurrence
 import org.example.model.TimelineState
 import org.example.presentation.tabpage.timeline.TimelineView
