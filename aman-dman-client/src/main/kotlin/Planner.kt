@@ -118,11 +118,11 @@ fun List<RoutePoint>.routeToNextAltitudeConstraint(star: List<StarFix>): List<Ro
 }
 
 data class DescentSegment(
-    val inbound: RoutePoint,
+    val inbound: String,
     val position: LatLng,
-    val altitudeFt: Int,
-    val length: Float,
-    val time: Duration,
+    val targetAltitude: Int,
+    val remainingDistance: Float,
+    val remainingTime: Duration,
     val groundSpeed: Int,
     val tas: Int,
 )
@@ -133,8 +133,6 @@ data class DescentSegment(
 data class DescentStep(
     val position: LatLng,
     val altitudeFt: Int,
-    val length: Float,
-    val time: Duration,
     val groundSpeed: Int,
     val tas: Int
 )
@@ -152,6 +150,20 @@ fun List<RoutePoint>.generateDescentSegments(
     // Starts at the airports and works backwards
     var currentPosition = this.last().position
     var currentAltitude = airfieldAltitude
+    var remainingDistance = 0f
+    var remainingTime = 0.seconds
+
+    descentSegments.add(
+        DescentSegment(
+            inbound = this.last().id,
+            position = currentPosition,
+            targetAltitude = currentAltitude,
+            remainingDistance = remainingDistance,
+            remainingTime = remainingTime,
+            groundSpeed = 0,
+            tas = 0
+        )
+    )
 
     // Start from the last waypoint and work backward
     for (i in lastIndex downTo 1) {
@@ -172,17 +184,22 @@ fun List<RoutePoint>.generateDescentSegments(
         )
 
         descentPath.forEach { step ->
+            val stepLength = currentPosition.distanceTo(step.position).toFloat()
+            remainingDistance += stepLength
+            remainingTime += (stepLength / step.groundSpeed * 3600.0).roundToInt().seconds
+
             descentSegments.add(
                 DescentSegment(
-                    inbound = fromWaypoint,
+                    inbound = fromWaypoint.id,
                     position = step.position,
-                    altitudeFt = step.altitudeFt,
-                    length = step.length,
-                    time = step.time,
+                    targetAltitude = step.altitudeFt,
+                    remainingDistance = remainingDistance,
+                    remainingTime = remainingTime,
                     groundSpeed = step.groundSpeed,
                     tas = step.tas,
                 )
             )
+
             currentAltitude = step.altitudeFt
             currentPosition = step.position
         }
@@ -224,8 +241,6 @@ fun AircraftPerformance.computeDescentPathBackward(
                 DescentStep(
                     position = toPoint,
                     altitudeFt = if (newAltitude > toAltFt) toAltFt else currentAltitude,
-                    length = remainingDistance.toFloat(),
-                    time = (remainingDistance / stepGroundspeedKts * 3600.0).seconds,
                     groundSpeed = stepGroundspeedKts,
                     tas = stepTas
                 )
@@ -241,8 +256,6 @@ fun AircraftPerformance.computeDescentPathBackward(
             DescentStep(
                 position = currentPosition,
                 altitudeFt = currentAltitude,
-                length = stepDistanceNm.toFloat(),
-                time = deltaTime.seconds,
                 groundSpeed = stepGroundspeedKts,
                 tas = stepTas
             )

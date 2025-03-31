@@ -2,7 +2,6 @@ package controller
 
 import org.example.*
 import org.example.config.AircraftPerformanceData
-import org.example.model.entities.AircraftPerformance
 import org.example.model.entities.WeatherData
 import org.example.model.entities.WindData
 import org.junit.jupiter.api.Test
@@ -52,6 +51,26 @@ val lunip4l = listOf(
 )
 
 class PlannerTest {
+    val currentPosition = AircraftPosition(
+        dmsToDecimal("""58°50'25.3"N  011°20'7.2"E"""),
+        22000,
+        250,
+        180
+    )
+
+    val testRoute = listOf(
+        RoutePoint("CURRENT", currentPosition.position),
+        RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E""")),
+        RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E""")),
+        RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
+        RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E""")),
+        RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E""")),
+        RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E""")),
+        RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E""")),
+        RoutePoint("NOSLA", dmsToDecimal("""59°59'1.2"N  010°59'51.2"E""")),
+        RoutePoint("XEMEN", dmsToDecimal("""60°2'10.4"N  011°1'39.4"E""")),
+        RoutePoint("ONE", dmsToDecimal("""60°10'40.6"N  011°6'41.0"E""")),
+    )
 
     @Test
     fun `STAR length matches AIRAC spec`() {
@@ -70,53 +89,96 @@ class PlannerTest {
 
     @Test
     fun `calculate ETA`() {
-        val currentPosition = AircraftPosition(
-            dmsToDecimal("""58°50'25.3"N  011°20'7.2"E"""),
-            22000,
-            250,
-            180
-        )
-
-        val remainingRoute = listOf(
-            RoutePoint("CURRENT", currentPosition.position),
-            RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E""")),
-            RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E""")),
-            RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
-            RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E""")),
-            RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E""")),
-            RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E""")),
-            RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E""")),
-            RoutePoint("NOSLA", dmsToDecimal("""59°59'1.2"N  010°59'51.2"E""")),
-            RoutePoint("XEMEN", dmsToDecimal("""60°2'10.4"N  011°1'39.4"E""")),
-            RoutePoint("ONE", dmsToDecimal("""60°10'40.6"N  011°6'41.0"E""")),
-        )
-
-        val weatherData = listOf(
-            WeatherData(0, 0, wind = WindData(180, 0)),
-            WeatherData(10000, -10, wind = WindData(180, 10)),
-            WeatherData(20000, -20, wind = WindData(180, 20)),
-            WeatherData(30000, -30, wind = WindData(180, 30)),
-        )
-
-        val aircraftPerformance = AircraftPerformanceData.get("B738")
-
-        val descentSegments = remainingRoute.generateDescentSegments(
-            currentPosition,
-            weatherData,
-            lunip4l,
-            aircraftPerformance
-        )
-
-        val remainingTime = descentSegments.sumOf { it.time.inWholeSeconds }.seconds
-
-        descentSegments.forEach {
-            println(it)
-        }
+        val descentSegments = calculateTestDescent(testRoute)
+        val remainingTime = descentSegments.first().remainingTime
 
         // To wkt linestring
         val wkt = "LINESTRING (" + descentSegments.joinToString(",") { it.position.lon.toString() + " " + it.position.lat.toString() } + ")"
 
-        assertEquals(10.minutes + 30.seconds, remainingTime)
+        assertEquals(20.minutes + 46.seconds, remainingTime)
+    }
+
+    @Test
+    fun `Removing waypoints along a straight line should not affect ETA`() {
+        val descentSegmentsOriginalRoute = calculateTestDescent(testRoute)
+        val remainingTimeOriginalRoute = descentSegmentsOriginalRoute.first().remainingTime
+
+        val testRouteB = testRoute.filter { it.id != "DEVKU" }
+        val descentSegmentsModifiedRoute = calculateTestDescent(testRouteB)
+
+        val remainingTimeModifiedRoute = descentSegmentsModifiedRoute.first().remainingTime
+
+        // Allow 2 seconds difference
+        assertTrue(remainingTimeOriginalRoute - remainingTimeModifiedRoute < 2.0.seconds)
+    }
+
+    @Test
+    fun `Removing that causes a shorter flight path should reduce time`() {
+        val descentSegmentsOriginalRoute = calculateTestDescent(testRoute)
+        val remainingTimeOriginalRoute = descentSegmentsOriginalRoute.first().remainingTime
+
+        val testRouteB = testRoute.filter { it.id != "GM415" && it.id != "GM414" }
+        val descentSegmentsModifiedRoute = calculateTestDescent(testRouteB)
+
+        val remainingTimeModifiedRoute = descentSegmentsModifiedRoute.first().remainingTime
+
+        assertEquals(remainingTimeOriginalRoute, 20.minutes + 46.seconds)
+        assertEquals(remainingTimeModifiedRoute, 18.minutes + 29.seconds)
+    }
+
+    @Test
+    fun `Descent path adheres to altitude restrictions`() {
+        val descentSegments = calculateTestDescent(testRoute)
+        val altitudeViolations = descentSegments.filter { descentSegment ->
+            val passingWp = testRoute.find { wp -> wp.position == descentSegment.position }
+            val altitudeConstraint = lunip4l.find { wp -> wp.id == passingWp?.id }?.starAltitudeConstraint
+
+            if (altitudeConstraint == null) {
+                return@filter false
+            }
+
+            val tooLow = altitudeConstraint.minFt != null && descentSegment.targetAltitude < altitudeConstraint.minFt!!
+            val tooHigh = altitudeConstraint.maxFt != null && descentSegment.targetAltitude > altitudeConstraint.maxFt!!
+
+            if (tooLow || tooHigh) {
+                println("Violation at ${descentSegment.position} - ${descentSegment.targetAltitude} ft")
+                return@filter true
+            }
+            return@filter false
+        }
+
+        assertEquals(emptyList(), altitudeViolations)
+    }
+
+    @Test
+    fun `The length of the descent segments route should be equal to the original route`() {
+        val descentSegments = calculateTestDescent(testRoute)
+        val descentSegmentsLength = descentSegments.zipWithNext { a, b -> a.position.distanceTo(b.position) }.sum()
+
+        val originalRouteLength = testRoute.getRouteDistance()
+
+        // Allow 0.05% difference
+        val maxDifference = originalRouteLength * 0.0005
+        assertEquals(originalRouteLength, descentSegmentsLength, maxDifference)
+    }
+
+    @Test
+    fun `Descent segments should not contain duplicates`() {
+        val descentSegments = calculateTestDescent(testRoute)
+        val nDistinctPoints = descentSegments.map { it.position.lat to it.position.lon }.distinct().size
+        val latLngDuplicates = nDistinctPoints - descentSegments.size
+
+        assertEquals(0, latLngDuplicates)
+    }
+
+    @Test
+    fun `Descent segments should include all waypoints`() {
+        val descentSegments = calculateTestDescent(testRoute)
+        val waypointsNotInDescentSegments = testRoute
+            .filter { waypoint -> descentSegments.none { it.position == waypoint.position } }
+            .map { it.id }
+
+        assertEquals(emptyList(), waypointsNotInDescentSegments)
     }
 
     @Test
@@ -190,6 +252,29 @@ class PlannerTest {
         assertEquals(200, gsWithHeadwind)
         assertEquals(240, gsWithTailwind)
         assertEquals(220, gsWithCrosswind)
+    }
+
+    fun calculateTestDescent(remainingRoute: List<RoutePoint>): List<DescentSegment> {
+        val weatherData = listOf(
+            WeatherData(0, 0, wind = WindData(180, 0)),
+            WeatherData(10000, -10, wind = WindData(180, 10)),
+            WeatherData(20000, -20, wind = WindData(180, 20)),
+            WeatherData(30000, -30, wind = WindData(180, 30)),
+        )
+
+        val aircraftPerformance = AircraftPerformanceData.get("B738")
+
+        val descentSegments = remainingRoute.generateDescentSegments(
+            currentPosition,
+            weatherData,
+            lunip4l,
+            aircraftPerformance
+        )
+
+        println("Descent segments for route:")
+        descentSegments.forEach { println(it) }
+
+        return descentSegments
     }
 }
 
