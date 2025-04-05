@@ -12,10 +12,13 @@ data class VerticalWeatherProfile(
     fun interpolateWeatherAtAltitude(altitudeFt: Int): WeatherLayer {
         // Interpolate wind data based on the two closest altitudes
         val sorted = weatherLayers.sortedBy { it.flightLevelFt }
-        val lower = sorted.last { it.flightLevelFt <= altitudeFt }
-        val upper = sorted.first { it.flightLevelFt > altitudeFt }
+        val lower = sorted.lastOrNull { it.flightLevelFt <= altitudeFt } ?: sorted.minBy { it.flightLevelFt }
+        val upper = sorted.firstOrNull { it.flightLevelFt > altitudeFt } ?: sorted.maxBy { it.flightLevelFt }
 
-        val ratio = (altitudeFt - lower.flightLevelFt).toFloat() / (upper.flightLevelFt - lower.flightLevelFt).toFloat()
+        val ratio =
+            if (altitudeFt <= lower.flightLevelFt) 0f
+            else if (altitudeFt >= upper.flightLevelFt) 1f
+            else (altitudeFt - lower.flightLevelFt).toFloat() / (upper.flightLevelFt - lower.flightLevelFt).toFloat()
 
         val direction = (1 - ratio) * lower.wind.directionDeg + ratio * upper.wind.directionDeg
         val speed = (1 - ratio) * lower.wind.speedKts + ratio * upper.wind.speedKts

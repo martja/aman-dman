@@ -8,6 +8,7 @@ import org.example.model.entities.navdata.LatLng
 import org.example.model.entities.navigation.star.StarFix
 import org.example.model.entities.navigation.AircraftPosition
 import org.example.model.entities.navigation.RoutePoint
+import org.example.model.entities.navigation.star.Constraint
 import org.example.model.entities.navigation.star.Star
 import org.example.model.entities.weather.VerticalWeatherProfile
 import org.example.model.entities.weather.WeatherLayer
@@ -22,6 +23,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import org.example.service.DescentProfileService.generateDescentSegments
+import org.example.util.NavigationUtils.dmsToDecimal
 
 fun starFix(id: String, block: StarFix.StarFixBuilder.() -> Unit): StarFix {
     return StarFix.StarFixBuilder(id).apply(block).build()
@@ -32,39 +34,39 @@ val lunip4l = Star(
     airfieldElevationFt = 700,
     fixes = listOf(
         starFix("LUNIP") {
-            maxSpeed(250)
+            speed(Constraint.Max(250))
         },
         starFix("DEVKU") {
-            minAlt(12000)
-            maxSpeed(250)
+            altitude(Constraint.Min(12000))
+            speed(Constraint.Max(250))
         },
         starFix("GM416") {
-            exactAlt(11000)
-            maxSpeed(220)
+            altitude(Constraint.Exact(11000))
+            speed(Constraint.Max(220))
         },
         starFix("GM417") {
-            exactAlt(11000)
-            maxSpeed(220)
+            altitude(Constraint.Exact(11000))
+            speed(Constraint.Max(220))
         },
         starFix("GM415") {
-            exactAlt(11000)
-            maxSpeed(220)
+            altitude(Constraint.Exact(11000))
+            speed(Constraint.Max(220))
         },
         starFix("GM414") {
-            exactAlt(11000)
-            maxSpeed(220)
+            altitude(Constraint.Exact(11000))
+            speed(Constraint.Max(220))
         },
         starFix("INSUV") {
-            minAlt(5000)
-            exactAlt(5000)
-            maxSpeed(220)
+            altitude(Constraint.Min(5000))
+            altitude(Constraint.Exact(5000))
+            speed(Constraint.Max(220))
         },
         starFix("NOSLA") {
-            maxSpeed(200)
+            speed(Constraint.Max(200))
         },
         starFix("XEMEN") {
-            exactAlt(3500)
-            maxSpeed(200)
+            altitude(Constraint.Exact(3500))
+            speed(Constraint.Max(200))
         }
     )
 )
@@ -156,11 +158,16 @@ class PlannerTest {
                 return@filter false
             }
 
-            val tooLow = altitudeConstraint.minFt != null && descentSegment.targetAltitude < altitudeConstraint.minFt!!
-            val tooHigh = altitudeConstraint.maxFt != null && descentSegment.targetAltitude > altitudeConstraint.maxFt!!
+            val wrongHeight =
+                when (altitudeConstraint) {
+                    is Constraint.Min -> descentSegment.targetAltitude < altitudeConstraint.value
+                    is Constraint.Exact -> descentSegment.targetAltitude != altitudeConstraint.value
+                    is Constraint.Max -> descentSegment.targetAltitude > altitudeConstraint.value
+                    is Constraint.Between -> descentSegment.targetAltitude < altitudeConstraint.min || descentSegment.targetAltitude > altitudeConstraint.max
+                }
 
-            if (tooLow || tooHigh) {
-                println("Violation at ${descentSegment.position} - ${descentSegment.targetAltitude} ft")
+            if (wrongHeight) {
+                println("Violation at ${passingWp!!.id} - ${descentSegment.targetAltitude} ft. Constraint = ${altitudeConstraint}")
                 return@filter true
             }
             return@filter false
@@ -301,27 +308,6 @@ class PlannerTest {
 
         return descentSegments
     }
-}
-
-
-fun dmsToDecimal(dms: String): LatLng {
-    val regex = Regex("""(\d+)°(\d+)'(\d+(?:\.\d+)?)"([NSEW])""")
-    val matches = regex.findAll(dms)
-
-    val coords = matches.map { match ->
-        val (deg, min, sec, dir) = match.destructured
-        val decimal = deg.toDouble() + min.toDouble() / 60 + sec.toDouble() / 3600
-        when (dir) {
-            "S", "W" -> -decimal
-            else -> decimal
-        }
-    }.toList()
-
-    if (coords.size != 2) {
-        throw IllegalArgumentException("Invalid coordinate format: $dms")
-    }
-
-    return LatLng(coords[0], coords[1]) // (latitude, longitude)
 }
 
 fun List<RoutePoint>.getRouteDistance() =

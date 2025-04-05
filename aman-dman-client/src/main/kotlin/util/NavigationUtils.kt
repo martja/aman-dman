@@ -32,10 +32,30 @@ object NavigationUtils {
     }
 
 
-    fun centralAngle(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    private fun centralAngle(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         return acos(
             sin(lat1) * sin(lat2) +
                     cos(lat1) * cos(lat2) * cos(lon2 - lon1)
         )
+    }
+
+    fun dmsToDecimal(dms: String): LatLng {
+        val regex = Regex("""(\d+)°(\d+)'(\d+(?:\.\d+)?)"([NSEW])""")
+        val matches = regex.findAll(dms)
+
+        val coords = matches.map { match ->
+            val (deg, min, sec, dir) = match.destructured
+            val decimal = deg.toDouble() + min.toDouble() / 60 + sec.toDouble() / 3600
+            when (dir) {
+                "S", "W" -> -decimal
+                else -> decimal
+            }
+        }.toList()
+
+        if (coords.size != 2) {
+            throw IllegalArgumentException("Invalid coordinate format: $dms")
+        }
+
+        return LatLng(coords[0], coords[1]) // (latitude, longitude)
     }
 }

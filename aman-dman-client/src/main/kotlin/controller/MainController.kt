@@ -6,6 +6,7 @@ import org.example.model.TabState
 import org.example.presentation.AmanDmanMainFrame
 import org.example.state.ApplicationState
 import org.example.view.TabView
+import org.example.view.VerticalProfileVisualization
 import org.example.view.weatherWindow.VerticalWindView
 import javax.swing.JDialog
 
@@ -15,6 +16,7 @@ class MainController {
     private var mainWindow: AmanDmanMainFrame? = null
     private val applicationState = ApplicationState()
     private var metWindow: JDialog? = null
+    private var profileWindow: JDialog? = null
 
     fun startApplication() {
         mainWindow = AmanDmanMainFrame(applicationState, this)
@@ -42,5 +44,16 @@ class MainController {
 
         metWindow!!.isVisible = true
         metWindow!!.isAlwaysOnTop = true
+    }
+
+    fun openProfileWindow() {
+        if (profileWindow == null) {
+            profileWindow = JDialog(mainWindow, "Vertical profile")
+            profileWindow!!.setSize(1200, 600)
+            profileWindow!!.add(VerticalProfileVisualization(applicationState))
+        }
+
+        profileWindow!!.isVisible = true
+        profileWindow!!.isAlwaysOnTop = true
     }
 }
