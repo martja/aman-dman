@@ -3,3 +3,13 @@ plugins {
 }
 rootProject.name = "aman-dman2"
 
+include(
+    ":app",
+    ":view",
+    ":controller",
+    ":model",
+    ":service",
+    ":common",
+    ":integration"
+)
+findProject(":model:integration")?.name = "integration"
