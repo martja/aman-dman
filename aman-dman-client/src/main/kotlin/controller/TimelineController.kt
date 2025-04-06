@@ -2,9 +2,17 @@ package org.example.controller
 
 import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
+import org.example.config.AircraftPerformanceData
 import org.example.integration.AtcClient
+import org.example.integration.entities.ArrivalJson
+import org.example.integration.entities.FixPointJson
 import org.example.model.*
+import org.example.model.entities.navdata.LatLng
+import org.example.model.entities.navigation.AircraftPosition
+import org.example.model.entities.navigation.RoutePoint
+import org.example.model.entities.navigation.star.lunip4l
 import org.example.model.entities.weather.Wind
+import org.example.model.service.DescentProfileService.generateDescentSegments
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.time.Duration
@@ -14,7 +22,8 @@ import kotlin.time.Duration.Companion.seconds
 class TimelineController(
     private val timelineState: TimelineState,
     atcClient: AtcClient,
-    timelineConfig: TimelineConfig
+    timelineConfig: TimelineConfig,
+    private val mainController: MainController
 ) {
     val minSeparationNauticalMiles = 3f
     val expectedSpeedOnFinalFix = 180f
@@ -27,10 +36,8 @@ class TimelineController(
             }
         }
 
-        atcClient.collectInboundsForFix(
-            targetFixes = listOf(timelineConfig.targetFixLeft, timelineConfig.targetFixRight!!),
-            viaFixes = timelineConfig.viaFixes,
-            destinationAirports = timelineConfig.airports,
+        atcClient.collectArrivalsFor(
+            timelineConfig.airports.first(),
             onDataReceived = this::handleArrivals
         )
 
@@ -40,11 +47,43 @@ class TimelineController(
         )
     }
 
-    private fun handleArrivals(fixInboundOccurrences: List<FixInboundOccurrence>) {
-        fixInboundOccurrences.forEach { fixInboundOccurrence ->
-            fixInboundOccurrence.windDelay = calculateExtraTimeForWind(fixInboundOccurrence)
-        }
-        timelineState.arrivalOccurrences = fixInboundOccurrences
+    private fun handleArrivals(arrivals: List<ArrivalJson>) {
+        timelineState.arrivalOccurrences = arrivals
+            .map {
+                val aircraftPerformance = AircraftPerformanceData.get(arrivals.first().icaoType)
+                val remainingRoute =
+                    listOf(RoutePoint(it.callsign, LatLng(it.latitude, it.longitude))) + it.remainingRoute.map { RoutePoint(it.name, LatLng(it.latitude, it.longitude)) }
+                val descentSegments = remainingRoute.generateDescentSegments(
+                    AircraftPosition(
+                        position = LatLng(it.latitude, it.longitude),
+                        altitudeFt = it.flightLevel,
+                        groundspeedKts = it.groundSpeed,
+                        trackDeg = it.track
+                    ),
+                    timelineState.verticalWeatherProfile,
+                    lunip4l,
+                    aircraftPerformance
+                )
+
+                if (it.callsign == "BAW5PT") {
+                    mainController.openProfileWindow(descentSegments)
+                }
+
+                RunwayArrivalOccurrence(
+                    timelineId = 0,
+                    assignedStar = it.assignedStar,
+                    trackingController = it.trackingController,
+                    callsign = it.callsign,
+                    icaoType = it.icaoType,
+                    runway = it.assignedRunway,
+                    time = timelineState.timeNow + descentSegments.first().remainingTime,
+                    flightLevel = it.flightLevel,
+                    pressureAltitude = it.pressureAltitude,
+                    groundSpeed = it.groundSpeed,
+                    wakeCategory = aircraftPerformance.takeOffWTC,
+                    arrivalAirportIcao = it.arrivalAirportIcao,
+                )
+            }
     }
 
     private fun handleDepartures(departureOccurrences: List<DepartureOccurrence>) {

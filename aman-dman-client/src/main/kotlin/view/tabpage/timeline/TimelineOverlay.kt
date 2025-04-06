@@ -144,15 +144,16 @@ class TimelineOverlay(
 
     private fun TimelineOccurrence.createLabel(): TimelineLabel {
         return when (this) {
-            is FixInboundOccurrence -> ArrivalLabel(this)
+            //is FixInboundOccurrence -> ArrivalLabel(this)
             is DepartureOccurrence -> DepartureLabel(this)
+            is RunwayArrivalOccurrence -> ArrivalLabel(this)
             else -> throw IllegalArgumentException("Unsupported occurrence type")
         }
     }
 
     private fun TimelineOccurrence.isLeftSide(): Boolean =
         when (this) {
-            is RunwayArrivalOccurrence -> this.finalFix == timelineConfig.targetFixLeft
+            is RunwayArrivalOccurrence -> this.runway == timelineConfig.runwayLeft
             is DepartureOccurrence -> this.runway == timelineConfig.runwayLeft
             is FixInboundOccurrence -> this.finalFix == timelineConfig.targetFixLeft
             is RunwayDelayOccurrence -> this.runway == timelineConfig.runwayLeft

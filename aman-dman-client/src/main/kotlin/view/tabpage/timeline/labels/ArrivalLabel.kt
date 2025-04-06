@@ -2,25 +2,25 @@ package org.example.view.tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
 import org.example.model.FixInboundOccurrence
+import org.example.model.RunwayArrivalOccurrence
 import kotlin.math.ceil
 import kotlin.math.floor
-import kotlin.math.roundToInt
 import kotlin.time.DurationUnit
 
 class ArrivalLabel(
-    fixInboundOccurrence: FixInboundOccurrence
-) : TimelineLabel(fixInboundOccurrence) {
+    arrivalOccurrence: RunwayArrivalOccurrence
+) : TimelineLabel(arrivalOccurrence) {
 
     override fun updateText() {
         var output = "<html><pre>"
-        val fixInboundOccurrence = timelineOccurrence as FixInboundOccurrence
+        val fixInboundOccurrence = timelineOccurrence as RunwayArrivalOccurrence
 
         output += fixInboundOccurrence.runway.padEnd(4)
-        output += fixInboundOccurrence.finalFix.padEnd(8)
+        output += fixInboundOccurrence.arrivalAirportIcao.padEnd(8)
         output += fixInboundOccurrence.callsign.padEnd(9)
         output += fixInboundOccurrence.icaoType.padEnd(5)
         output += fixInboundOccurrence.wakeCategory.toString().padEnd(2)
-        output += fixInboundOccurrence.viaFix.padEnd(6)
+        //output += fixInboundOccurrence.viaFix.padEnd(6)
 
         val secondsToLoseOrGain = fixInboundOccurrence.timeToLooseOrGain?.inWholeSeconds ?: 0
         var minutesToLoseOrGainFormatted = toNormalizedMinutes(secondsToLoseOrGain).toString()
@@ -39,7 +39,7 @@ class ArrivalLabel(
         }
 
         output += minutesToLoseOrGainFormatted
-        output += fixInboundOccurrence.windDelay?.toString(DurationUnit.MINUTES, 1)?.padStart(6)
+        //output += fixInboundOccurrence.windDelay?.toString(DurationUnit.MINUTES, 1)?.padStart(6)
 
         output += "</pre></html>"
 
@@ -47,7 +47,7 @@ class ArrivalLabel(
     }
 
     override fun getTimelinePlacement(): Instant {
-        return (timelineOccurrence as FixInboundOccurrence).finalFixEta
+        return (timelineOccurrence).time
     }
 
     private fun toNormalizedMinutes(seconds: Long): Int {

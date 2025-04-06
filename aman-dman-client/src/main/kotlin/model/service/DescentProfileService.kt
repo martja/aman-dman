@@ -1,4 +1,4 @@
-package org.example.service
+package org.example.model.service
 
 import org.example.model.entities.estimation.DescentSegment
 import org.example.model.entities.estimation.DescentStep
@@ -83,7 +83,32 @@ object DescentProfileService {
                 currentAltitude = step.altitudeFt
                 currentPosition = step.position
             }
+
+            // We have reached cruise
+            if (descentPath.isEmpty()) {
+                val weather = verticalWeatherProfile.interpolateWeatherAtAltitude(currentAltitude)
+                val bearing = currentPosition.bearingTo(targetWaypoint.position)
+                val expectedTas = iasToTas(
+                    aircraftPerformance.getPreferredIas(currentAltitude, star.airfieldElevationFt),
+                    currentAltitude,
+                    tempCelsius = weather.temperatureC
+                )
+
+                descentSegments.add(
+                    DescentSegment(
+                        inbound = fromWaypoint.id,
+                        position = targetWaypoint.position,
+                        targetAltitude = currentAltitude,
+                        remainingDistance = remainingDistance,
+                        remainingTime = remainingTime,
+                        groundSpeed = tasToGs(expectedTas, weather.wind, bearing),
+                        tas = expectedTas,
+                    )
+                )
+            }
         }
+
+
         return descentSegments.reversed()
     }
 
@@ -120,7 +145,7 @@ object DescentProfileService {
 
         while (true) {
             val stepWeather = weatherData.interpolateWeatherAtAltitude(currentAltitude)
-            val expectedIas = this.getPreferredSpeed(currentAltitude, airfieldAltitude)
+            val expectedIas = this.getPreferredIas(currentAltitude, airfieldAltitude)
             val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather.temperatureC)
             val stepGroundspeedKts = tasToGs(stepTas, stepWeather.wind, currentPosition.bearingTo(toPoint))
             val stepDistanceNm = (stepGroundspeedKts * deltaTime) / 3600.0
@@ -166,7 +191,7 @@ object DescentProfileService {
             this.descentROD ?: this.initialDescentROD ?: this.approachROD ?: 1000
         }
 
-    private fun AircraftPerformance.getPreferredSpeed(altitudeFt: Int, airfieldAltitude: Int) =
+    private fun AircraftPerformance.getPreferredIas(altitudeFt: Int, airfieldAltitude: Int) =
         if (altitudeFt < airfieldAltitude + 3000) {
             this.landingVat
         } else if (altitudeFt < 10_000) {

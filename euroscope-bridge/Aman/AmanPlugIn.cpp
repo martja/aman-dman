@@ -42,7 +42,7 @@ AmanPlugIn::~AmanPlugIn() {
 void AmanPlugIn::OnTimer(int Counter) {
     for each(auto & timeline in inboundsSubscriptions) {
         auto inbounds = collectResponseToInboundsSubscription(timeline);
-        auto inboundsJson = jsonSerializer.getJsonOfFixInbounds(timeline->requestId, inbounds);
+        auto inboundsJson = jsonSerializer.getJsonOfArrivals(timeline->requestId, inbounds);
         enqueueMessage(inboundsJson);
     }
 
@@ -76,26 +76,35 @@ int AmanPlugIn::getFirstViaFixIndex(CFlightPlanExtractedRoute extractedRoute, st
     return -1;
 }
 
-double AmanPlugIn::findRemainingDist(CRadarTarget radarTarget, CFlightPlanExtractedRoute extractedRoute, int fixIndex) {
+std::vector<RouteFix> AmanPlugIn::findRemainingRoutePoints(CRadarTarget radarTarget) {
+    auto extractedRoute = radarTarget.GetCorrelatedFlightPlan().GetExtractedRoute();
     int closestFixIndex = extractedRoute.GetPointsCalculatedIndex();
     int assignedDirectFixIndex = extractedRoute.GetPointsAssignedIndex();
+    int routeLength = extractedRoute.GetPointsNumber();
+
+    auto assignedStar = radarTarget.GetCorrelatedFlightPlan().GetFlightPlanData().GetStarName();
 
     int nextFixIndex = assignedDirectFixIndex > -1 ? assignedDirectFixIndex : closestFixIndex;
-    double totalDistance =
-        radarTarget.GetPosition().GetPosition().DistanceTo(extractedRoute.GetPointPosition(nextFixIndex));
+
+    std::vector<RouteFix> remainingRoute;
 
     // Ignore waypoints prior to nextFixIndex
-    for (int i = nextFixIndex; i < fixIndex; i++) {
-        totalDistance += extractedRoute.GetPointPosition(i).DistanceTo(extractedRoute.GetPointPosition(i + 1));
+    for (int i = nextFixIndex; i < routeLength; i++) {
+        RouteFix fix;
+        fix.name = extractedRoute.GetPointName(i);
+        fix.isOnStar = assignedStar == extractedRoute.GetPointAirwayName(i);
+        fix.latitude = extractedRoute.GetPointPosition(i).m_Latitude;
+        fix.longitude = extractedRoute.GetPointPosition(i).m_Longitude;
+        remainingRoute.push_back(fix);
     }
-    return totalDistance;
+    return remainingRoute;
 }
 
 std::vector<AmanAircraft> AmanPlugIn::collectResponseToInboundsSubscription(std::shared_ptr<InboundsToFixSubscription> timeline) {
     auto pAircraftList = std::vector<AmanAircraft>();
 
-    for each (auto finalFix in timeline->destinationFixes) {
-        auto inbounds = getInboundsForFix(finalFix, timeline->viaFixes, timeline->destinationAirports);
+    for each (auto airportIcao in timeline->destinationAirports) {
+        auto inbounds = getInboundsForAirport(airportIcao);
         pAircraftList.insert(pAircraftList.end(), inbounds.begin(), inbounds.end());
     }
 
@@ -177,7 +186,7 @@ void AmanPlugIn::onSetCtot(const std::string& callSign, long ctot) {
     }
 }
 
-std::vector<AmanAircraft> AmanPlugIn::getInboundsForFix(const std::string& fixName, std::vector<std::string> viaFixes, std::vector<std::string> destinationAirports) {
+std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& airportIcao) {
     long int timeNow = static_cast<long int>(std::time(nullptr)); // Current UNIX-timestamp in seconds
     int transAlt = this->GetTransitionAltitude();
 
@@ -190,124 +199,34 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForFix(const std::string& fixNa
             continue;
         }
 
+        CFlightPlanData fpd = rt.GetCorrelatedFlightPlan().GetFlightPlanData();
+        if (fpd.GetDestination() != airportIcao) {
+            continue;
+        }
+
         CFlightPlanExtractedRoute route = rt.GetCorrelatedFlightPlan().GetExtractedRoute();
-        CFlightPlanPositionPredictions predictions = rt.GetCorrelatedFlightPlan().GetPositionPredictions();
         bool isSelectedAircraft = asel.IsValid() && rt.GetCallsign() == asel.GetCallsign();
+        auto assignedStarName = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetStarName();
 
-        int targetFixIndex = getFixIndexByName(route, fixName);
-
-        if (targetFixIndex > -1 && // Target fix found
-            route.GetPointDistanceInMinutes(targetFixIndex) > -1 && // Target fix has not been passed
-            hasCorrectDestination(rt.GetCorrelatedFlightPlan().GetFlightPlanData(), destinationAirports)) { // Aircraft going to the correct destination
-
-            bool targetFixIsDestination = targetFixIndex == route.GetPointsNumber() - 1;
-            int timeToFix;
-
-            float restDistance = predictions.GetPosition(predictions.GetPointsNumber() - 1).DistanceTo(route.GetPointPosition(targetFixIndex));
-            int timeToDestination = (predictions.GetPointsNumber() - 1) * 60 + (restDistance / groundSpeed) * 60.0 * 60.0;
-
-            if (targetFixIsDestination) {
-                timeToFix = timeToDestination;
-            } else {
-                // Find the two position prediction points closest to the target point
-                float min1dist = INFINITE;
-                float min2dist = INFINITE;
-                float minScore = INFINITE;
-                int predIndexBeforeWp = 0;
-
-                for (int p = 0; p < predictions.GetPointsNumber(); p++) {
-                    float dist1 = predictions.GetPosition(p).DistanceTo(route.GetPointPosition(targetFixIndex));
-                    float dist2 = predictions.GetPosition(p + 1).DistanceTo(route.GetPointPosition(targetFixIndex));
-
-                    if (dist1 + dist2 < minScore) {
-                        min1dist = dist1;
-                        min2dist = dist2;
-                        minScore = dist1 + dist2;
-                        predIndexBeforeWp = p;
-                    }
-                }
-                float ratio = (min1dist / (min1dist + min2dist));
-                timeToFix = predIndexBeforeWp * 60.0 + ratio * 60.0;
-            }
-
-            // Calculate the time spent at different altitudes and the average heading. Altitudes are in 5000 ft intervals
-            auto altitudesAndDuration = std::map<int, VerticalProfileSection>();
-            int altIntervalRestTime = -1;
-            float altIntervalRestDistance = -1;
-            for (int p = 0; p < predictions.GetPointsNumber() - 1; p++) {
-                int alt = predictions.GetAltitude(p);
-                int heading = predictions.GetPosition(p).DirectionTo(predictions.GetPosition(p + 1));
-                float distanceToNext = predictions.GetPosition(p).DistanceTo(predictions.GetPosition(p + 1));
-
-                int nextAlt = predictions.GetAltitude(p + 1);
-
-                // Floor altitude to nearest 5000 ft
-                int currentAltFloor = (alt / 5000) * 5000;
-
-                int secondsToNext = 60; // There is 1 minute between each prediction
-
-                if (nextAlt < currentAltFloor) {
-                    // Calculate accurate reamining time inside the current 5000 ft interval
-                    float ratio = (float)(alt - currentAltFloor) / (float)(alt - nextAlt);
-                    secondsToNext = ratio * 60.0;
-                    float distanceToNextAltInterval = distanceToNext * ratio;
-                    altIntervalRestTime = 60 - secondsToNext;
-                    altIntervalRestDistance = distanceToNext - distanceToNextAltInterval;
-                    distanceToNext = distanceToNextAltInterval;
-                } else if (altIntervalRestTime > 0) {
-                    // The rest of the time is spent at the next altitude interval
-                    secondsToNext = altIntervalRestTime;
-                    distanceToNext = altIntervalRestDistance;
-                    altIntervalRestTime = -1;
-                    altIntervalRestDistance = -1;
-                }
-
-                if (altitudesAndDuration.find(currentAltFloor) == altitudesAndDuration.end()) {
-                    altitudesAndDuration[currentAltFloor] = VerticalProfileSection{ currentAltFloor + 5000, currentAltFloor, secondsToNext, heading, distanceToNext };
-                } else {
-                    altitudesAndDuration[currentAltFloor].secDuration += secondsToNext;
-                    altitudesAndDuration[currentAltFloor].averageHeading = (altitudesAndDuration[currentAltFloor].averageHeading + heading) / 2;
-                    altitudesAndDuration[currentAltFloor].distance += distanceToNext;
-                }
-            }
-
-            if (timeToFix > 0) {
-                int viaFixIndex = getFirstViaFixIndex(route, viaFixes);
-
-                AmanAircraft ac;
-                ac.callsign = rt.GetCallsign();
-                ac.finalFix = fixName;
-                ac.arrivalRunway = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetArrivalRwy();
-                ac.assignedStar = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetStarName();
-                ac.icaoType = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetAircraftFPType();
-                ac.nextFix = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetDirectToPointName();
-                ac.viaFix = viaFixes.at(viaFixIndex);
-                ac.trackedByMe = rt.GetCorrelatedFlightPlan().GetTrackingControllerIsMe();
-                ac.isSelected = isSelectedAircraft;
-                ac.wtc = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetAircraftWtc();
-                ac.targetFixEta = timeNow + timeToFix - rt.GetPosition().GetReceivedTime();
-                ac.destinationEta = timeNow + timeToDestination - rt.GetPosition().GetReceivedTime();
-                ac.distLeft = findRemainingDist(rt, route, targetFixIndex);
-                ac.secondsBehindPreceeding = 0; // Updated in the for-loop below
-                ac.scratchPad = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString();
-                ac.groundSpeed = rt.GetPosition().GetReportedGS();
-                ac.pressureAltitude = rt.GetPosition().GetPressureAltitude();
-                ac.flightLevel = rt.GetPosition().GetFlightLevel();
-                ac.isAboveTransAlt = ac.pressureAltitude > transAlt;
-                ac.altitudesAndDuration = altitudesAndDuration;
-                aircraftList.push_back(ac);
-            }
-        }
-    }
-    if (aircraftList.size() > 0) {
-        std::sort(aircraftList.begin(), aircraftList.end());
-        std::reverse(aircraftList.begin(), aircraftList.end());
-        for (int i = 0; i < aircraftList.size() - 1; i++) {
-            auto curr = &aircraftList[i];
-            auto next = &aircraftList[i + 1];
-
-            curr->secondsBehindPreceeding = curr->targetFixEta - next->targetFixEta;
-        }
+        AmanAircraft ac;
+        ac.callsign = rt.GetCallsign();
+        ac.arrivalRunway = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetArrivalRwy();
+        ac.assignedStar = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetStarName();
+        ac.icaoType = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetAircraftFPType();
+        ac.assignedDirectRouting = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetDirectToPointName();
+        ac.trackingController = rt.GetCorrelatedFlightPlan().GetTrackingControllerId();
+        ac.isSelected = isSelectedAircraft;
+        ac.wtc = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetAircraftWtc();
+        ac.secondsBehindPreceeding = 0; // Updated in the for-loop below
+        ac.scratchPad = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString();
+        ac.groundSpeed = rt.GetPosition().GetReportedGS();
+        ac.pressureAltitude = rt.GetPosition().GetPressureAltitude();
+        ac.flightLevel = rt.GetPosition().GetFlightLevel();
+        ac.remainingRoute = findRemainingRoutePoints(rt);
+        ac.arrivalAirportIcao = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetDestination();
+        ac.latitude = rt.GetPosition().GetPosition().m_Latitude;
+        ac.longitude = rt.GetPosition().GetPosition().m_Longitude;
+        aircraftList.push_back(ac);
     }
 
     return aircraftList;

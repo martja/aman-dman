@@ -46,9 +46,9 @@ private:
     bool hasCorrectDestination(CFlightPlanData fpd, std::vector<std::string> destinationAirports);
     int getFixIndexByName(CFlightPlanExtractedRoute extractedRoute, const std::string& fixName);
     int getFirstViaFixIndex(CFlightPlanExtractedRoute extractedRoute, std::vector<std::string> viaFixes);
-    double findRemainingDist(CRadarTarget radarTarget, CFlightPlanExtractedRoute extractedRoute, int fixIndex);
+    std::vector<RouteFix> findRemainingRoutePoints(CRadarTarget radarTarget);
 
-    std::vector<AmanAircraft> getInboundsForFix(const std::string& fixName, std::vector<std::string> viaFixes, std::vector<std::string> destinationAirports);
+    std::vector<AmanAircraft> getInboundsForAirport(const std::string& fixName);
     std::vector<DmanAircraft> getOutboundsFromAirport(const std::string& airport);
 
     long processDepartureTime(const std::string& departureTime);

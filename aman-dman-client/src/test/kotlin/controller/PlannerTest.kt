@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import org.example.service.DescentProfileService.generateDescentSegments
+import org.example.model.service.DescentProfileService.generateDescentSegments
 import org.example.util.NavigationUtils.dmsToDecimal
 
 fun starFix(id: String, block: StarFix.StarFixBuilder.() -> Unit): StarFix {

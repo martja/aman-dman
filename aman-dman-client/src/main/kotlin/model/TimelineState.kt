@@ -26,7 +26,7 @@ class TimelineState(
         }
     }
 
-    var arrivalOccurrences: List<FixInboundOccurrence> = listOf()
+    var arrivalOccurrences: List<RunwayArrivalOccurrence> = listOf()
         set(value) {
             val old = field
             field = value

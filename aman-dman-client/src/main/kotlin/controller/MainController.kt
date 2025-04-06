@@ -3,6 +3,7 @@ package org.example.controller
 import integration.AtcClientEuroScope
 import org.example.integration.AtcClient
 import org.example.model.TabState
+import org.example.model.entities.estimation.DescentSegment
 import org.example.presentation.AmanDmanMainFrame
 import org.example.state.ApplicationState
 import org.example.view.TabView
@@ -29,7 +30,7 @@ class MainController {
 
     fun createNewTab(name: String) {
         val tabState = TabState(applicationState)
-        val tabController = TabController(applicationState, tabState, atcClient!!)
+        val tabController = TabController(applicationState, tabState, atcClient!!, this)
         val tabView = TabView(tabController, tabState)
         tabController.setView(tabView)
         mainWindow?.addTab(name, tabView)
@@ -46,12 +47,12 @@ class MainController {
         metWindow!!.isAlwaysOnTop = true
     }
 
-    fun openProfileWindow() {
+    fun openProfileWindow(segments: List<DescentSegment>) {
         if (profileWindow == null) {
             profileWindow = JDialog(mainWindow, "Vertical profile")
             profileWindow!!.setSize(1200, 600)
-            profileWindow!!.add(VerticalProfileVisualization(applicationState))
         }
+        profileWindow!!.add(VerticalProfileVisualization(segments))
 
         profileWindow!!.isVisible = true
         profileWindow!!.isAlwaysOnTop = true

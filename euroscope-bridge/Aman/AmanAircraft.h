@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <map>
+#include <vector>
 
 struct VerticalProfileSection {
     int maxAltitude;
@@ -11,6 +11,13 @@ struct VerticalProfileSection {
     float distance;
 };
 
+struct RouteFix {
+    std::string name;
+    bool isOnStar;
+    double latitude;
+    double longitude;
+};
+
 class AmanAircraft {
 public:
     std::string callsign;
@@ -18,26 +25,19 @@ public:
     std::string arrivalRunway;
     std::string assignedStar;
     std::string icaoType;
-    std::string nextFix;
+    std::string assignedDirectRouting;
     std::string scratchPad;
-    std::string viaFix;
-    std::map<int, VerticalProfileSection> altitudesAndDuration;
+    std::vector<RouteFix> remainingRoute;
+    std::string trackingController;
+    std::string arrivalAirportIcao;
 
-    bool trackedByMe;
-    bool isAboveTransAlt;
     bool isSelected;
     char wtc;
-    uint32_t targetFixEta;
-    uint32_t destinationEta;
-    double distLeft;
     uint32_t secondsBehindPreceeding;
+    float latitude;
+    float longitude;
 
     int groundSpeed;
     int pressureAltitude;
     int flightLevel;
-
-
-    bool operator< (const AmanAircraft& other) const {
-        return targetFixEta < other.targetFixEta;
-    }
 };

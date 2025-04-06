@@ -5,6 +5,7 @@ import org.example.integration.entities.*
 import org.example.model.DepartureOccurrence
 import org.example.model.DescentProfileSegment
 import org.example.model.FixInboundOccurrence
+import org.example.model.RunwayArrivalOccurrence
 import kotlin.time.Duration.Companion.seconds
 
 abstract class AtcClient {
@@ -12,6 +13,7 @@ abstract class AtcClient {
 
     private val fixInboundCallbacks = mutableMapOf<Int, (List<FixInboundOccurrence>) -> Unit>()
     private val departureCallbacks = mutableMapOf<Int, (List<DepartureOccurrence>) -> Unit>()
+    private val arrivalCallbacks = mutableMapOf<Int, (List<ArrivalJson>) -> Unit>()
 
     private var nextRequestId = 0
         get() {
@@ -36,6 +38,22 @@ abstract class AtcClient {
         )
     }
 
+    fun collectArrivalsFor(
+        airportIcao: String,
+        onDataReceived: (List<ArrivalJson>) -> Unit
+    ) {
+        val timelineId = nextRequestId
+        arrivalCallbacks[timelineId] = onDataReceived
+        sendMessage(
+            RegisterFixInboundsMessage(
+                requestId = timelineId,
+                targetFixes = emptyList(),
+                viaFixes = emptyList(), // TODO
+                destinationAirports = listOf(airportIcao)
+            )
+        )
+    }
+
     fun collectDeparturesFrom(
         airportIcao: String,
         onDataReceived: (List<DepartureOccurrence>) -> Unit
@@ -52,9 +70,8 @@ abstract class AtcClient {
 
     protected fun handleMessage(incomingMessageJson: IncomingMessageJson) {
         when (incomingMessageJson) {
-            is FixInboundsUpdate -> {
-                val arrivals = incomingMessageJson.inbounds.map { it.toFixInboundOccurrence(incomingMessageJson.requestId) }
-                fixInboundCallbacks[incomingMessageJson.requestId]?.invoke(arrivals)
+            is ArrivalsUpdate -> {
+                arrivalCallbacks[incomingMessageJson.requestId]?.invoke(incomingMessageJson.inbounds)
             }
             is DeparturesUpdate -> {
                 val departures = incomingMessageJson.outbounds.map { it.toDepartureOccurrence(incomingMessageJson.requestId) }
@@ -70,36 +87,6 @@ abstract class AtcClient {
             )
         )
     }
-
-    private fun FixInboundJson.toFixInboundOccurrence(timelineId: Int) =
-        FixInboundOccurrence(
-            timelineId = timelineId,
-            callsign = this.callsign,
-            icaoType = this.icaoType,
-            wakeCategory =  this.wtc,
-            runway = this.runway,
-            assignedStar =  this.star,
-            time = Instant.fromEpochSeconds(this.eta),
-            remainingDistance = this.remainingDist,
-            finalFix = this.finalFix,
-            flightLevel = this.flightLevel,
-            pressureAltitude = this.pressureAltitude,
-            groundSpeed = this.groundSpeed,
-            isAboveTransAlt = this.isAboveTransAlt,
-            trackedByMe = this.trackedByMe,
-            arrivalAirportIcao = "N/A",
-            viaFix = this.viaFix,
-            finalFixEta = Instant.fromEpochSeconds(this.finalFixEta),
-            descentProfile = this.descentProfile.map {
-                DescentProfileSegment(
-                    minAltitude = it.minAltitude,
-                    maxAltitude = it.maxAltitude,
-                    averageHeading = it.averageHeading,
-                    duration = it.secDuration.seconds,
-                    distance = it.distance
-                )
-            }
-        )
 
     private fun DepartureJson.toDepartureOccurrence(timelineId: Int) =
         DepartureOccurrence(

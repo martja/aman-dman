@@ -1,7 +1,5 @@
 package org.example.controller
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import model.entities.TimelineConfig
 import org.example.config.SettingsManager
 import org.example.integration.AtcClient
@@ -18,6 +16,7 @@ class TabController(
     private val applicationState: ApplicationState,
     private val tabState: TabState,
     private val atcClient: AtcClient,
+    private val mainController: MainController,
 ) {
     private var tabView: TabView? = null
     val MIN_RANGE: Duration = 10.minutes
@@ -73,7 +72,7 @@ class TabController(
                 runwayRight = "01R",
             )
             val timelineState = TimelineState(tabState, timelineConfig)
-            val timelineController = TimelineController(timelineState, atcClient, timelineConfig)
+            val timelineController = TimelineController(timelineState, atcClient, timelineConfig, mainController)
 
             tabView?.addTimeline(timelineConfig, timelineState)
             timelineStates.add(timelineState)

@@ -27,8 +27,6 @@ class Footer(mainController: MainController) : JPanel(FlowLayout(FlowLayout.RIGH
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
                 mainController.openMetWindow()
-                mainController.openProfileWindow()
-
             }
         })
     }
