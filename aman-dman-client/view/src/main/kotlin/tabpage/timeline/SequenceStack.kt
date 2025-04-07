@@ -6,7 +6,7 @@ import java.awt.Color
 import java.awt.Graphics
 import javax.swing.JPanel
 
-class TrafficSequenceView(
+class SequenceStack(
     val timelineView: TimelineView,
     val alignment: TimelineAlignment
 ) : JPanel() {

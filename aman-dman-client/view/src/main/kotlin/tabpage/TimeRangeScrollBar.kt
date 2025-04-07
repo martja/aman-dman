@@ -1,10 +1,12 @@
 package tabpage
 
+import entity.TimeRange
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.example.DepartureOccurrence
 import org.example.RunwayDelayOccurrence
 import org.example.TimelineOccurrence
+import util.SharedValue
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
@@ -15,26 +17,32 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class TimeRangeScrollBar(
-    private val onRangeChange : (start: Instant, end: Instant) -> Unit,
+    private val selectedRange: SharedValue<TimeRange>,
+    private val availableRange: SharedValue<TimeRange>,
 ) : JComponent() {
     private var dragging = false
     private var resizingTop = false
     private var resizingBottom = false
     private var lastMouseY = 0
 
-    private var selectedViewMin: Instant = Clock.System.now() - 10.minutes
-    private var selectedViewMax: Instant = Clock.System.now() + 30.minutes
-
-    private var timelineMinTime: Instant = Instant.DISTANT_PAST
-    private var timelineMaxTime: Instant = Instant.DISTANT_FUTURE
-
     private var timelineOccurrences: List<TimelineOccurrence> = emptyList()
 
-    private var barTop: Int = 0
-    private var barBottom: Int = 0
+    private val barTop: Int
+        get() = calculateBarTop()
+
+    private val barBottom: Int
+        get() = calculateBarBottom()
 
     init {
         preferredSize = Dimension(28, 0) // Fixed width, vertical height
+
+        selectedRange.addListener {
+            repaint()
+        }
+
+        availableRange.addListener {
+            repaint()
+        }
 
         // Update the scrollbar values when the state changes
         /*tabState.addListener { evt ->
@@ -83,57 +91,59 @@ class TimeRangeScrollBar(
                 val secondsPerPixel = availableTimelineSeconds() / height.toFloat()
                 val delta: Duration = (- deltaY * secondsPerPixel).toInt().seconds
 
-                when {
-                    dragging -> {
-                        onRangeChange(
-                            selectedViewMin + delta,
-                            selectedViewMax + delta
+                val newValue: TimeRange = when {
+                    dragging ->
+                        TimeRange(
+                            selectedRange.value.start + delta,
+                            selectedRange.value.end + delta,
                         )
-                    }
-                    resizingTop -> {
-                        onRangeChange(
-                            selectedViewMin,
-                            selectedViewMax + delta
+                    resizingTop ->
+                        TimeRange(
+                            selectedRange.value.start,
+                            selectedRange.value.end + delta
                         )
-                    }
-                    resizingBottom -> {
-                        onRangeChange(
-                            selectedViewMin + delta,
-                            selectedViewMax
+                    resizingBottom ->
+                        TimeRange(
+                            selectedRange.value.start + delta,
+                            selectedRange.value.end
                         )
-                    }
+                    else -> selectedRange.value
+                }
+
+                // Ensure the new value is within the available range
+                if (
+                    newValue.start > availableRange.value.start &&
+                    newValue.end < availableRange.value.end &&
+                    newValue.end - newValue.start > 10.minutes
+                ) {
+                    selectedRange.value = newValue
                 }
             }
         })
     }
 
-    fun updateRange(start: Instant, end: Instant) {
-        selectedViewMin = start
-        selectedViewMax = end
-        updateScrollbar()
-        repaint()
+    fun calculateBarBottom(): Int {
+        val totalRangeSeconds = availableTimelineSeconds()
+
+        val startPositionOffset = selectedRange.value.start.epochSeconds - availableRange.value.start.epochSeconds
+        val endPositionOffset = selectedRange.value.end.epochSeconds - availableRange.value.start.epochSeconds
+
+        val relativeTimeStart = 1 - startPositionOffset.toFloat() / totalRangeSeconds.toFloat()
+        return (relativeTimeStart * height).toInt()
+    }
+
+    fun calculateBarTop(): Int {
+        val totalRangeSeconds = availableTimelineSeconds()
+
+        val startPositionOffset = selectedRange.value.start.epochSeconds - availableRange.value.start.epochSeconds
+        val endPositionOffset = selectedRange.value.end.epochSeconds - availableRange.value.start.epochSeconds
+
+        val relativeTimeEnd = 1 - endPositionOffset.toFloat() / totalRangeSeconds.toFloat()
+        return (relativeTimeEnd * height).toInt()
     }
 
     fun setTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
         this.timelineOccurrences = occurrences
-        this.timelineMinTime = occurrences.minOfOrNull { Clock.System.now() - 30.minutes } ?: Instant.DISTANT_PAST
-        this.timelineMaxTime = occurrences.maxOfOrNull { it.time + 1.hours } ?: Instant.DISTANT_FUTURE
-        updateScrollbar()
-        repaint()
-    }
-
-    fun updateScrollbar() {
-        val totalRangeSeconds = availableTimelineSeconds()
-
-        val startPositionOffset = selectedViewMin.epochSeconds - timelineMinTime.epochSeconds
-        val endPositionOffset = selectedViewMax.epochSeconds - timelineMinTime.epochSeconds
-
-        val relativeTimeEnd = 1 - endPositionOffset.toFloat() / totalRangeSeconds.toFloat()
-        val relativeTimeStart = 1 - startPositionOffset.toFloat() / totalRangeSeconds.toFloat()
-
-        barTop = (relativeTimeEnd * height).toInt()
-        barBottom = (relativeTimeStart * height).toInt()
-
         repaint()
     }
 
@@ -152,7 +162,7 @@ class TimeRangeScrollBar(
         g2.color = Color.WHITE
         g2.drawRect(0, 0, width - 1, height - 1)
 
-        val nowRelativeTime = 1 - (Clock.System.now().epochSeconds - timelineMinTime.epochSeconds).toFloat() / (timelineMaxTime.epochSeconds - timelineMinTime.epochSeconds).toFloat()
+        val nowRelativeTime = 1 - (Clock.System.now().epochSeconds - availableRange.value.start.epochSeconds).toFloat() / (availableRange.value.end.epochSeconds - availableRange.value.start.epochSeconds).toFloat()
         val currentTimeY = (nowRelativeTime * height).toInt()
 
         g2.color = Color.WHITE
@@ -183,7 +193,7 @@ class TimeRangeScrollBar(
     }
 
     private fun drawHorizontalBar(g: Graphics, instant: Instant, color: Color) {
-        val etaOffset = instant.epochSeconds - timelineMinTime.epochSeconds
+        val etaOffset = instant.epochSeconds - availableRange.value.start.epochSeconds
         val yPos = (1 - etaOffset.toFloat() /  availableTimelineSeconds().toFloat())*height
 
         g.color = color
@@ -191,8 +201,8 @@ class TimeRangeScrollBar(
     }
 
     private fun drawVerticalBar(g: Graphics, instant: Instant, duration: Duration, color: Color) {
-        val etaStartOffset = instant.epochSeconds - timelineMinTime.epochSeconds
-        val etaEndOffset = (instant + duration).epochSeconds - timelineMinTime.epochSeconds
+        val etaStartOffset = instant.epochSeconds - availableRange.value.start.epochSeconds
+        val etaEndOffset = (instant + duration).epochSeconds - availableRange.value.start.epochSeconds
         val yStartPos = (1 - etaStartOffset.toFloat() / availableTimelineSeconds().toFloat()) * height
         val yEndPos = (1 - etaEndOffset.toFloat() / availableTimelineSeconds().toFloat()) * height
 
@@ -201,6 +211,6 @@ class TimeRangeScrollBar(
     }
 
     private fun availableTimelineSeconds(): Long {
-        return timelineMaxTime.epochSeconds - timelineMinTime.epochSeconds
+        return availableRange.value.end.epochSeconds - availableRange.value.start.epochSeconds
     }
 }

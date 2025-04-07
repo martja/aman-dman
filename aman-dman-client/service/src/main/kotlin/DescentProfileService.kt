@@ -5,10 +5,11 @@ import org.example.entities.navigation.RoutePoint
 import org.example.entities.navigation.star.Constraint
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
-import org.example.entities.weather.interpolateWeatherAtAltitude
 import org.example.util.AircraftUtils.iasToTas
 import org.example.util.AircraftUtils.tasToGs
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
+import org.example.util.WeatherUtils.getStandardTemperaturAt
+import org.example.util.WeatherUtils.interpolateWeatherAtAltitude
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -16,9 +17,11 @@ import kotlin.time.Duration.Companion.seconds
 
 object DescentProfileService {
 
+    val defaultWind = Wind(0, 0)
+
     fun List<RoutePoint>.generateDescentSegments(
         aircraftPosition: AircraftPosition,
-        verticalWeatherProfile: VerticalWeatherProfile,
+        verticalWeatherProfile: VerticalWeatherProfile?,
         star: Star,
         aircraftPerformance: AircraftPerformance
     ): List<DescentSegment> {
@@ -84,12 +87,12 @@ object DescentProfileService {
 
             // We have reached cruise
             if (descentPath.isEmpty()) {
-                val weather = verticalWeatherProfile.interpolateWeatherAtAltitude(currentAltitude)
+                val weather = verticalWeatherProfile?.interpolateWeatherAtAltitude(currentAltitude)
                 val bearing = currentPosition.bearingTo(targetWaypoint.position)
                 val expectedTas = iasToTas(
                     aircraftPerformance.getPreferredIas(currentAltitude, star.airfieldElevationFt),
                     currentAltitude,
-                    tempCelsius = weather.temperatureC
+                    tempCelsius = weather?.temperatureC ?: getStandardTemperaturAt(currentAltitude)
                 )
 
                 descentSegments.add(
@@ -99,7 +102,7 @@ object DescentProfileService {
                         targetAltitude = currentAltitude,
                         remainingDistance = remainingDistance,
                         remainingTime = remainingTime,
-                        groundSpeed = tasToGs(expectedTas, weather.wind, bearing),
+                        groundSpeed = tasToGs(expectedTas, weather?.wind ?: defaultWind, bearing),
                         tas = expectedTas,
                     )
                 )
@@ -115,7 +118,7 @@ object DescentProfileService {
         nextAltitudeConstraint: Constraint,
         fromPoint: LatLng,
         toPoint: LatLng,
-        weatherData: VerticalWeatherProfile,
+        weatherData: VerticalWeatherProfile?,
         airfieldAltitude: Int,
     ): List<DescentStep> {
         val descentPath = mutableListOf<DescentStep>()
@@ -142,10 +145,10 @@ object DescentProfileService {
         }
 
         while (true) {
-            val stepWeather = weatherData.interpolateWeatherAtAltitude(currentAltitude)
+            val stepWeather = weatherData?.interpolateWeatherAtAltitude(currentAltitude)
             val expectedIas = this.getPreferredIas(currentAltitude, airfieldAltitude)
-            val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather.temperatureC)
-            val stepGroundspeedKts = tasToGs(stepTas, stepWeather.wind, currentPosition.bearingTo(toPoint))
+            val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather?.temperatureC ?: 0) // TODO: estimate
+            val stepGroundspeedKts = tasToGs(stepTas, stepWeather?.wind ?: defaultWind, currentPosition.bearingTo(toPoint))
             val stepDistanceNm = (stepGroundspeedKts * deltaTime) / 3600.0
 
             val newAltitude = currentAltitude + (verticalSpeed * deltaTime).toInt()

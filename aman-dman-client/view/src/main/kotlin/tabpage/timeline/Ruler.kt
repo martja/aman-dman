@@ -1,21 +1,23 @@
 package tabpage.timeline
 
+import entity.TimeRange
 import kotlinx.datetime.*
 import org.example.RunwayDelayOccurrence
 import org.example.TimelineOccurrence
 import org.example.util.NumberUtils.format
+import util.SharedValue
 import java.awt.*
 import javax.swing.JPanel
 
-class Ruler(private val timelineView: TimelineView) : JPanel(null) {
+class Ruler(
+    private val timelineView: TimelineView,
+    private val selectedRange: SharedValue<TimeRange>
+) : JPanel(null) {
     private val TICK_WIDTH_1_MIN = 5
     private val TICK_WIDTH_5_MIN = 10
 
     private val lineColor = Color.decode("#C8C8C8")
     private val pastColor = Color.decode("#4B4B4B")
-
-    private var selectedViewMax: Instant = Clock.System.now()
-    private var selectedViewMin: Instant = Clock.System.now()
 
     private var timelineOccurrences: List<TimelineOccurrence> = emptyList()
 
@@ -25,19 +27,12 @@ class Ruler(private val timelineView: TimelineView) : JPanel(null) {
 
     fun updateTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
         timelineOccurrences = occurrences
-        repaint()
-    }
-
-    fun updateSelectedViewRange(min: Instant, max: Instant) {
-        selectedViewMin = min
-        selectedViewMax = max
-        repaint()
     }
 
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
-        val timespanSeconds = selectedViewMax.epochSeconds - selectedViewMin.epochSeconds
+        val timespanSeconds = selectedRange.value.end.epochSeconds - selectedRange.value.start.epochSeconds
 
         val timeNow = Clock.System.now()
 
@@ -52,7 +47,7 @@ class Ruler(private val timelineView: TimelineView) : JPanel(null) {
         g.drawLine(width-1, 0, width-1, height)
 
         for (timestep in 0 .. timespanSeconds) {
-            val accInstant = Instant.fromEpochSeconds(selectedViewMin.epochSeconds + timestep)
+            val accInstant = Instant.fromEpochSeconds(selectedRange.value.start.epochSeconds + timestep)
             val accSeconds = accInstant.epochSeconds
             val yPos = timelineView.calculateYPositionForInstant(Instant.fromEpochSeconds(accSeconds))
 

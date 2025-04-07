@@ -1,12 +1,15 @@
 import org.example.AmanDataService
 import org.example.TimelineConfig
 import org.example.TimelineOccurrence
+import org.example.VerticalWeatherProfile
 import org.example.config.SettingsManager
 import org.example.eventHandling.AmanDataListener
 import org.example.eventHandling.ViewListener
+import org.example.weather.WindApi
+import javax.swing.SwingUtilities
 
 class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : ViewListener, AmanDataListener {
-
+    private var weatherProfile: VerticalWeatherProfile? = null
 
     init {
         model.connectToAtcClient()
@@ -32,7 +35,16 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
     }
 
     override fun onOpenMetWindowClicked() {
-        TODO("Not yet implemented")
+        view.openMetWindow()
+    }
+
+    override fun refreshWeatherData(lat: Double, lon: Double) {
+        Thread {
+            val weather = WindApi().getVerticalProfileAtPoint(lat, lon)
+            weatherProfile = weather
+            model.updateWeatherData(weather)
+            view.updateWeatherData(weather) // This is a call to the interface
+        }.start()
     }
 
     override fun onNewAmanData(amanData: List<TimelineOccurrence>) {

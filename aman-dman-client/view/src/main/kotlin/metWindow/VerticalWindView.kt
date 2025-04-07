@@ -16,8 +16,8 @@ class VerticalWindView: JPanel(BorderLayout()) {
         background = Color.DARK_GRAY
     }
 
-    fun update(state: VerticalWeatherProfile) {
-        this.profile = state
+    fun update(weatherProfile: VerticalWeatherProfile?) {
+        this.profile = weatherProfile
         repaint()
     }
 
@@ -39,6 +39,9 @@ class VerticalWindView: JPanel(BorderLayout()) {
             }
 
             g.drawString("Valid " + currentProfile.time.format("yyyy/MM/dd HH:mm") + "Z", 5, height - 5)
+        } ?: run {
+            g.color = Color.RED
+            g.drawString("No data available", 5, height - 5)
         }
     }
 }

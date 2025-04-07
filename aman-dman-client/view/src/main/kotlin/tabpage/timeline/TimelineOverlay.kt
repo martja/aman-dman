@@ -1,5 +1,6 @@
 package tabpage.timeline
 
+import entity.TimeRange
 import kotlinx.datetime.Clock
 import org.example.*
 import tabpage.timeline.labels.ArrivalLabel

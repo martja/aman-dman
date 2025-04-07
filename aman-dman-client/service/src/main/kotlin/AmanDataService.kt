@@ -14,10 +14,8 @@ import org.example.weather.WindApi
 
 class AmanDataService {
     var amanDataListener: AmanDataListener? = null
-
-    private val windApi = WindApi()
+    private var weatherData: VerticalWeatherProfile? = null
     private var atcClient: AtcClient? = null
-    private val weatherData = windApi.getVerticalProfileAtPoint(60.0, 11.0)
 
     fun connectToAtcClient() {
         atcClient = AtcClientEuroScope("127.0.0.1", 12345)
@@ -27,6 +25,10 @@ class AmanDataService {
         atcClient?.collectArrivalsFor(icao) { arrivals ->
             amanDataListener?.onNewAmanData(arrivals.map { it.toRunwayArrivalOccurrence() })
         }
+    }
+
+    fun updateWeatherData(data: VerticalWeatherProfile?) {
+        weatherData = data
     }
 
     fun ArrivalJson.toRunwayArrivalOccurrence(): RunwayArrivalOccurrence {
@@ -40,7 +42,7 @@ class AmanDataService {
                     groundspeedKts = groundSpeed,
                     trackDeg = track
                 ),
-                weatherData!!,
+                weatherData,
                 lunip4l,
                 performance
             )

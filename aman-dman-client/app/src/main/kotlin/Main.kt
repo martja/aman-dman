@@ -36,5 +36,6 @@ fun main() {
         model.amanDataListener = controller
         view.openWindow(controller)
 
+        controller.refreshWeatherData(60.0, 11.0)
     }
 }
