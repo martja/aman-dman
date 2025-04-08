@@ -3,6 +3,7 @@ package tabpage.timeline
 import entity.TimeRange
 import kotlinx.datetime.Clock
 import org.example.*
+import org.example.eventHandling.ViewListener
 import tabpage.timeline.labels.ArrivalLabel
 import tabpage.timeline.labels.DepartureLabel
 import tabpage.timeline.labels.TimelineLabel
@@ -17,7 +18,8 @@ import kotlin.math.min
 
 class TimelineOverlay(
     val timelineConfig: TimelineConfig,
-    val timelineView: TimelineView
+    val timelineView: TimelineView,
+    val viewListener: ViewListener
 ) : JPanel(null) {
     private val pointDiameter = 6
     private val rulerMargin = 30
@@ -125,11 +127,23 @@ class TimelineOverlay(
                 } else {
                     val newLabel = timelineOccurrence.createLabel()
                     newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
+                    newLabel.addMouseListener(object : java.awt.event.MouseAdapter() {
+                        override fun mouseClicked(e: java.awt.event.MouseEvent) {
+                            handleLabelClick(newLabel)
+                        }
+                    })
 
                     allLabels[flight.callsign] = newLabel
                     add(newLabel)
                 }
             }
+        }
+    }
+
+    private fun handleLabelClick(label: TimelineLabel) {
+        val flight = label.timelineOccurrence.getFlight()
+        if (flight != null) {
+            viewListener.onAircraftSelected(flight.callsign)
         }
     }
 

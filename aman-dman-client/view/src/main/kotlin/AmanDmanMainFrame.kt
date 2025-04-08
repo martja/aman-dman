@@ -1,7 +1,5 @@
 import metWindow.VerticalWindView
-import org.example.TimelineConfig
-import org.example.TimelineOccurrence
-import org.example.VerticalWeatherProfile
+import org.example.*
 import org.example.eventHandling.ViewListener
 import tabpage.Footer
 import java.awt.BorderLayout
@@ -18,12 +16,15 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
     var viewListener: ViewListener? = null
 
     private val verticalWindView = VerticalWindView()
-    private var dialog: JDialog? = null
+    private val descentProfileVisualizationView = VerticalProfileVisualization()
+
+    private var windDialog: JDialog? = null
+    private var descentProfileDialog: JDialog? = null
+
+    private var selectedCallsign: String? = null
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
-
-
         layout = BorderLayout()
     }
 
@@ -40,7 +41,7 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
     }
 
     fun addTab(name: String, timelineConfig: TimelineConfig) {
-        val newTab = TabView()
+        val newTab = TabView(viewListener!!)
         tabPane.addTab(name, newTab)
         newTab.addTimeline(timelineConfig)
     }
@@ -48,13 +49,18 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
     fun updateWithAmanData(amanData: List<TimelineOccurrence>) {
         val selectedTab = tabPane.selectedComponent as? TabView
         selectedTab?.updateAmanData(amanData)
+
+        val selectedDescentProfile = amanData.filterIsInstance<RunwayArrivalOccurrence>().find { it.callsign == selectedCallsign }
+        if (selectedDescentProfile != null) {
+            descentProfileVisualizationView.setDescentSegments(selectedDescentProfile.descentProfile)
+        }
     }
 
     fun openMetWindow() {
-        if (dialog != null) {
-            dialog?.isVisible = true
+        if (windDialog != null) {
+            windDialog?.isVisible = true
         } else {
-            dialog = JDialog(this, "Vertical wind profile").apply {
+            windDialog = JDialog(this, "Vertical wind profile").apply {
                 add(verticalWindView)
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
@@ -67,5 +73,24 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
 
     fun updateWeatherData(weather: VerticalWeatherProfile?) {
         verticalWindView.update(weather)
+    }
+
+    fun openDescentProfileWindow() {
+        if (descentProfileDialog != null) {
+            descentProfileDialog?.isVisible = true
+        } else {
+            descentProfileDialog = JDialog(this, "Descent profile").apply {
+                add(descentProfileVisualizationView)
+                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+                setLocationRelativeTo(this@AmanDmanMainFrame)
+                preferredSize = Dimension(200, 600)
+                isVisible = true
+                pack()
+            }
+        }
+    }
+
+    fun setSelectedCallsign(callsign: String?) {
+        this.selectedCallsign = callsign
     }
 }

@@ -33,7 +33,7 @@ class AmanDataService {
 
     fun ArrivalJson.toRunwayArrivalOccurrence(): RunwayArrivalOccurrence {
         val performance = AircraftPerformanceData.get(icaoType)
-        val remainingTime = this.remainingRoute
+        val descentSegments = this.remainingRoute
             .map { RoutePoint(it.name, LatLng(it.latitude, it.longitude)) }
             .generateDescentSegments(
                 AircraftPosition(
@@ -56,9 +56,10 @@ class AmanDataService {
             assignedStar = assignedStar,
             trackingController = trackingController,
             runway = assignedRunway,
-            time = Clock.System.now() + remainingTime.first().remainingTime,
+            time = Clock.System.now() + descentSegments.first().remainingTime,
             pressureAltitude = pressureAltitude,
             arrivalAirportIcao = arrivalAirportIcao,
+            descentProfile = descentSegments,
             timelineId = 0,
         )
     }

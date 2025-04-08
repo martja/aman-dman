@@ -20,14 +20,6 @@ interface Flight {
     val wakeCategory: Char
 }
 
-data class DescentProfileSegment(
-    val minAltitude: Int,
-    val maxAltitude: Int,
-    val averageHeading: Int,
-    val duration: Duration,
-    val distance: Float,
-)
-
 data class FixInboundOccurrence(
     override val timelineId: Int,
     override val time: Instant,
@@ -44,7 +36,7 @@ data class FixInboundOccurrence(
     val finalFixEta: Instant,
     val arrivalAirportIcao: String,
     var timeToLooseOrGain: Duration? = null,
-    val descentProfile: List<DescentProfileSegment>,
+    val descentProfile: List<DescentSegment>,
     var windDelay: Duration? = null
 ) : RunwayOccurrence(timelineId, time, runway), Flight
 
@@ -79,6 +71,7 @@ data class RunwayArrivalOccurrence(
     val groundSpeed: Int,
     val arrivalAirportIcao: String,
     val trackingController: String,
+    val descentProfile: List<DescentSegment>,
     var timeToLooseOrGain: Duration? = null
 ) : RunwayOccurrence(timelineId, time, runway), Flight
 

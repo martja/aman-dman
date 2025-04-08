@@ -4,6 +4,7 @@ import entity.TimeRange
 import kotlinx.datetime.Instant
 import org.example.TimelineConfig
 import org.example.TimelineOccurrence
+import org.example.eventHandling.ViewListener
 import util.SharedValue
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -14,9 +15,10 @@ import javax.swing.JPanel
 class TimelineView(
     private val timelineConfig: TimelineConfig,
     private val selectedTimeRange: SharedValue<TimeRange>,
+    private val viewListener: ViewListener,
 ) : JLayeredPane() {
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
-    private val palettePanel = TimelineOverlay(timelineConfig, this)
+    private val palettePanel = TimelineOverlay(timelineConfig, this, viewListener)
 
     private val ruler = Ruler(this, selectedTimeRange)
 
@@ -47,18 +49,11 @@ class TimelineView(
         basePanel.add(SequenceStack(this, TimelineAlignment.LEFT), gbc)
 
         selectedTimeRange.addListener {
-            ruler.repaint()
             palettePanel.repaint()
         }
     }
 
     fun updateTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
-        for (i in 0 until basePanel.componentCount) {
-            val component = basePanel.getComponent(i)
-            if (component is SequenceStack) {
-                component.updateTimelineOccurrences(occurrences)
-            }
-        }
         palettePanel.updateTimelineOccurrences(occurrences)
         ruler.updateTimelineOccurrences(occurrences)
     }

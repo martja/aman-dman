@@ -18,6 +18,10 @@ class VerticalProfileVisualization : JPanel(BorderLayout()) {
     override fun paintComponent(g: java.awt.Graphics) {
         super.paintComponent(g)
 
+        if (descentSegments.isEmpty()) {
+            return
+        }
+
         val minAlt = descentSegments.minOf { it.targetAltitude }
         val maxAlt = descentSegments.maxOf { it.targetAltitude }
 

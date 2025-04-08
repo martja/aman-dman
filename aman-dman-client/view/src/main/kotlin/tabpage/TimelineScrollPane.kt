@@ -3,6 +3,7 @@ package tabpage
 import entity.TimeRange
 import org.example.TimelineConfig
 import org.example.TimelineOccurrence
+import org.example.eventHandling.ViewListener
 import tabpage.timeline.TimelineView
 import util.SharedValue
 import java.awt.Dimension
@@ -13,7 +14,10 @@ import javax.swing.JPanel
 import javax.swing.JScrollPane
 
 
-class TimelineScrollPane(val selectedTimeRange: SharedValue<TimeRange>) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
+class TimelineScrollPane(
+    val selectedTimeRange: SharedValue<TimeRange>,
+    val viewListener: ViewListener
+) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
     init {
         val items = JPanel(GridBagLayout())
         val gbc = GridBagConstraints()
@@ -25,7 +29,7 @@ class TimelineScrollPane(val selectedTimeRange: SharedValue<TimeRange>) : JScrol
     }
 
     fun insertTimeline(timelineConfig: TimelineConfig) {
-        val tl = TimelineView(timelineConfig, selectedTimeRange)
+        val tl = TimelineView(timelineConfig, selectedTimeRange, viewListener)
         tl.preferredSize = Dimension(800, 0)
         val gbc = GridBagConstraints()
         gbc.weighty = 1.0

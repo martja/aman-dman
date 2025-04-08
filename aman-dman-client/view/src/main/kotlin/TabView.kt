@@ -3,6 +3,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.example.TimelineConfig
 import org.example.TimelineOccurrence
+import org.example.eventHandling.ViewListener
 import tabpage.TimeRangeScrollBar
 import tabpage.TimelineScrollPane
 import tabpage.TopBar
@@ -14,7 +15,9 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class TabView : JPanel(BorderLayout()) {
+class TabView(
+    private val viewListener: ViewListener,
+) : JPanel(BorderLayout()) {
 
     private var rangeStart: Instant? = null
     private var rangeEnd: Instant? = null
@@ -34,7 +37,7 @@ class TabView : JPanel(BorderLayout()) {
     )
 
     val timeWindowScrollbar = TimeRangeScrollBar(selectedTimeRange, availableTimeRange)
-    val timelineScrollPane = TimelineScrollPane(selectedTimeRange)
+    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, viewListener)
 
     init {
         add(TopBar(), BorderLayout.NORTH)

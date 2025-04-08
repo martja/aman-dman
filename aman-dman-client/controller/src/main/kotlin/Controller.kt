@@ -1,7 +1,4 @@
-import org.example.AmanDataService
-import org.example.TimelineConfig
-import org.example.TimelineOccurrence
-import org.example.VerticalWeatherProfile
+import org.example.*
 import org.example.config.SettingsManager
 import org.example.eventHandling.AmanDataListener
 import org.example.eventHandling.ViewListener
@@ -45,6 +42,14 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
             model.updateWeatherData(weather)
             view.updateWeatherData(weather) // This is a call to the interface
         }.start()
+    }
+
+    override fun onOpenVerticalProfileWindowClicked() {
+        view.openDescentProfileWindow()
+    }
+
+    override fun onAircraftSelected(callsign: String) {
+        view.setSelectedCallsign(callsign)
     }
 
     override fun onNewAmanData(amanData: List<TimelineOccurrence>) {

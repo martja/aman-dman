@@ -13,10 +13,12 @@ import javax.swing.Timer
 class Footer(viewListener: ViewListener?) : JPanel(FlowLayout(FlowLayout.RIGHT)) {
     private val timeLabel = JLabel("10:00:22")
     private val metButton = JButton("MET")
+    private val profileButton = JButton("Profile")
     private val newTabButton = JButton("New Tab")
 
     init {
         add(metButton)
+        add(profileButton)
         add(timeLabel)
         add(newTabButton)
 
@@ -36,6 +38,13 @@ class Footer(viewListener: ViewListener?) : JPanel(FlowLayout(FlowLayout.RIGHT))
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
                 viewListener?.onNewTabRequested("Heya")
+            }
+        })
+
+        profileButton.addMouseListener(object : java.awt.event.MouseAdapter() {
+            override fun mousePressed(e: MouseEvent?) {
+                super.mousePressed(e)
+                viewListener?.onOpenVerticalProfileWindowClicked()
             }
         })
     }
