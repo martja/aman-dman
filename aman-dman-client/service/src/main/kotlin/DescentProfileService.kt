@@ -22,15 +22,15 @@ object DescentProfileService {
     fun List<RoutePoint>.generateDescentSegments(
         aircraftPosition: AircraftPosition,
         verticalWeatherProfile: VerticalWeatherProfile?,
-        star: Star,
+        star: Star?,
         aircraftPerformance: AircraftPerformance
     ): List<DescentSegment> {
-        val starMap = star.fixes.associateBy { it.id }
+        val starMap = star?.fixes?.associateBy { it.id }
         val descentSegments = mutableListOf<DescentSegment>()
 
         // Starts at the airports and works backwards
         var currentPosition = this.last().position
-        var currentAltitude = star.airfieldElevationFt
+        var currentAltitude = star?.airfieldElevationFt ?: 0
         var remainingDistance = 0f
         var remainingTime = 0.seconds
 
@@ -51,16 +51,18 @@ object DescentProfileService {
             val fromWaypoint = this[i]
             val targetWaypoint = this[i-1]
             val remainingRouteReversed = this.subList(0, i).reversed()
-            val nextAltitudeConstraint = remainingRouteReversed.routeToNextAltitudeConstraint(star.fixes).lastOrNull()?.let { fix ->
-                starMap[fix.id]?.starAltitudeConstraint
-            } ?: Constraint.Exact(aircraftPosition.altitudeFt)
+            val nextAltitudeConstraint = star?.let {
+                remainingRouteReversed.routeToNextAltitudeConstraint(star.fixes).lastOrNull()?.let { fix ->
+                    starMap?.get(fix.id)?.starAltitudeConstraint
+                }
+            }
 
             val descentPath = aircraftPerformance.computeDescentPathBackward(
-                nextAltitudeConstraint = nextAltitudeConstraint,
+                nextAltitudeConstraint = nextAltitudeConstraint ?: Constraint.Exact(aircraftPosition.altitudeFt),
                 fromPoint = currentPosition,
                 toPoint = targetWaypoint.position,
                 weatherData = verticalWeatherProfile,
-                airfieldAltitude = star.airfieldElevationFt,
+                airfieldAltitude = star?.airfieldElevationFt ?: 0,
                 fromAltFt = currentAltitude
             )
 
@@ -90,7 +92,7 @@ object DescentProfileService {
                 val weather = verticalWeatherProfile?.interpolateWeatherAtAltitude(currentAltitude)
                 val bearing = currentPosition.bearingTo(targetWaypoint.position)
                 val expectedTas = iasToTas(
-                    aircraftPerformance.getPreferredIas(currentAltitude, star.airfieldElevationFt),
+                    aircraftPerformance.getPreferredIas(currentAltitude, star?.airfieldElevationFt ?: 0),
                     currentAltitude,
                     tempCelsius = weather?.temperatureC ?: getStandardTemperaturAt(currentAltitude)
                 )

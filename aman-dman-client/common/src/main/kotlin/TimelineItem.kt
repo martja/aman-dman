@@ -72,6 +72,7 @@ data class RunwayArrivalOccurrence(
     val arrivalAirportIcao: String,
     val trackingController: String,
     val descentProfile: List<DescentSegment>,
+    val basedOnNavdata: Boolean,
     var timeToLooseOrGain: Duration? = null
 ) : RunwayOccurrence(timelineId, time, runway), Flight
 

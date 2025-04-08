@@ -7,15 +7,14 @@ import org.example.DescentProfileService.generateDescentSegments
 import org.example.config.AircraftPerformanceData
 import org.example.entities.navigation.AircraftPosition
 import org.example.entities.navigation.RoutePoint
-import org.example.entities.navigation.star.lunip4l
 import org.example.eventHandling.AmanDataListener
 import org.example.integration.entities.ArrivalJson
-import org.example.weather.WindApi
 
 class AmanDataService {
     var amanDataListener: AmanDataListener? = null
     private var weatherData: VerticalWeatherProfile? = null
     private var atcClient: AtcClient? = null
+    private val navdataService: NavdataService = NavdataService()
 
     fun connectToAtcClient() {
         atcClient = AtcClientEuroScope("127.0.0.1", 12345)
@@ -31,10 +30,19 @@ class AmanDataService {
         weatherData = data
     }
 
-    fun ArrivalJson.toRunwayArrivalOccurrence(): RunwayArrivalOccurrence {
+    private fun ArrivalJson.toRunwayArrivalOccurrence(): RunwayArrivalOccurrence {
         val performance = AircraftPerformanceData.get(icaoType)
+        val star = navdataService.stars.find { it.id == assignedStar }
+
+        if (star == null) {
+            println("Star not found for ${this.callsign}: $assignedStar")
+        }
+
         val descentSegments = this.remainingRoute
             .map { RoutePoint(it.name, LatLng(it.latitude, it.longitude)) }
+            .let { route ->
+                listOf(RoutePoint("CURRENT", LatLng(latitude, longitude))) + route
+            }
             .generateDescentSegments(
                 AircraftPosition(
                     position = LatLng(latitude, longitude),
@@ -43,7 +51,7 @@ class AmanDataService {
                     trackDeg = track
                 ),
                 weatherData,
-                lunip4l,
+                star,
                 performance
             )
 
@@ -61,6 +69,7 @@ class AmanDataService {
             arrivalAirportIcao = arrivalAirportIcao,
             descentProfile = descentSegments,
             timelineId = 0,
+            basedOnNavdata = star != null,
         )
     }
 

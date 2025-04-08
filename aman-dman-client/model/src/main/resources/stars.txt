@@ -1,0 +1,51 @@
+STAR LUNIP4L @700 ICAO:ENGM RWY:01R
+  LUNIP: spd<=250
+  DEVKU: alt>=12000, spd<=250
+  GM416: alt=11000, spd<=220
+  GM417: alt=11000, spd<=220
+  GM415: alt=11000, spd<=220
+  GM414: alt=11000, spd<=220
+  INSUV: alt=5000, spd<=220
+  NOSLA: spd<=200
+  XEMEN: alt=3500, spd<=200
+  ENGM: alt=700
+
+STAR ADOPI3L @700 ICAO:ENGM RWY:01L
+  ADOPI: spd<=250
+  NIVDU: spd<=250
+  GM402: alt=10000, spd<=220
+  GM405: alt=10000, spd<=220
+  GM404: alt=10000, spd<=220
+  GM455: alt=10000, spd<=220
+  VALPU: alt>=5000, spd=220
+  OGRAS: spd<=200
+  XIKLA: alt=3500
+  ENGM: alt=700
+
+STAR ESEBA4L @700 ICAO:ENGM RWY:01L
+  ESEBA: spd<=250
+  IDAMO: spd<=250
+  GM403: alt=10000, spd<=220
+  GM411: alt=10000, spd<=220
+  GM413: alt=10000, spd<=220
+  GM412: alt=10000, spd<=220
+  GM454: alt=10000, spd<=220
+  INSUV: alt=5000, spd<=220
+  NOSLA: spd<=200
+  XEMEN: alt=3500, spd<=200
+  ENGM: alt=700
+
+STAR BELGU3L @700 ICAO:ENGM RWY:01L
+BELGU: spd<=250
+VANUK: spd<=250
+GM456: alt>=12000, spd<=250
+GM400: alt=9000, spd<=250
+GM402: alt=9000, spd<=220
+GM405: alt=9000, spd<=220
+GM406: alt=9000, spd<=220
+GM404: alt=9000, spd<=220
+GM455: alt=9000, spd<=220
+VALPU: alt=5000, spd<=220
+OGRAS: spd<=200
+XIKLA: alt=3500
+ENGM: alt=700

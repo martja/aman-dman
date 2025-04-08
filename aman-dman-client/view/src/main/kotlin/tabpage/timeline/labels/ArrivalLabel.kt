@@ -2,11 +2,12 @@ package tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
 import org.example.RunwayArrivalOccurrence
+import java.awt.Color
 import kotlin.math.ceil
 import kotlin.math.floor
 
 class ArrivalLabel(
-    arrivalOccurrence: RunwayArrivalOccurrence
+    val arrivalOccurrence: RunwayArrivalOccurrence
 ) : TimelineLabel(arrivalOccurrence) {
 
     override fun updateText() {
@@ -42,6 +43,13 @@ class ArrivalLabel(
         output += "</pre></html>"
 
         text = output
+    }
+
+    override fun getBorderColor(): Color {
+        if (arrivalOccurrence.basedOnNavdata) {
+            return super.getBorderColor()
+        }
+        return Color.ORANGE
     }
 
     override fun getTimelinePlacement(): Instant {

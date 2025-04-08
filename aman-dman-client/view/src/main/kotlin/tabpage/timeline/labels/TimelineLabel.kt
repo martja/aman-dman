@@ -38,9 +38,13 @@ abstract class TimelineLabel(
 
     abstract fun getTimelinePlacement(): Instant
 
+    protected open fun getBorderColor(): Color {
+        return Color.GRAY
+    }
+
     override fun paintBorder(g: java.awt.Graphics) {
         super.paintBorder(g)
-        g.color = java.awt.Color.GRAY
+        g.color = getBorderColor()
         g.drawRoundRect(this.visibleRect.x, visibleRect.y, visibleRect.width - 1, visibleRect.height - 1, 4, 4)
     }
 }

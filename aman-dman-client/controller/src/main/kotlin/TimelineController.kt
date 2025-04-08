@@ -7,7 +7,6 @@ import org.example.model.*
 import org.example.model.entities.navdata.LatLng
 import org.example.model.entities.navigation.AircraftPosition
 import org.example.model.entities.navigation.RoutePoint
-import org.example.model.entities.navigation.star.lunip4l
 import org.example.model.entities.weather.Wind
 import org.example.model.service.DescentProfileService.generateDescentSegments
 import kotlin.math.cos
