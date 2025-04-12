@@ -84,13 +84,16 @@ data class DescentSegment(
     val remainingTime: Duration,
     val groundSpeed: Int,
     val tas: Int,
+    val wind: Wind,
+    val heading: Int
 )
 
 data class DescentStep(
     val position: LatLng,
     val altitudeFt: Int,
     val groundSpeed: Int,
-    val tas: Int
+    val tas: Int,
+    val wind: Wind
 )
 
 data class TimelineConfig(

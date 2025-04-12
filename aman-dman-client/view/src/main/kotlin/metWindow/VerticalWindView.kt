@@ -2,9 +2,11 @@ package metWindow
 
 import org.example.VerticalWeatherProfile
 import org.example.util.NumberUtils.format
+import util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Graphics
+import java.awt.Point
 import javax.swing.JPanel
 import kotlin.math.roundToInt
 
@@ -34,6 +36,16 @@ class VerticalWindView: JPanel(BorderLayout()) {
                 val yPos = (height - pxPerFl * it.flightLevelFt).roundToInt() - diagramMargin
                 g.color = Color.WHITE
                 g.drawLine(0, yPos, 10, yPos)
+
+                WindBarbs.drawWindBarb(
+                    g,
+                    width - diagramMargin - 20,
+                    yPos,
+                    it.wind.directionDeg,
+                    it.wind.speedKts,
+                    length = 40,
+                    barbMaxLength = 12,
+                )
 
                 g.drawString("FL${(it.flightLevelFt / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.wind.directionDeg.toString().padStart(3, '0')} / ${it.wind.speedKts} kt", 30, yPos)
             }

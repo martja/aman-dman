@@ -5,6 +5,7 @@ import org.example.entities.navigation.RoutePoint
 import org.example.entities.navigation.star.Constraint
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
+import org.example.util.AircraftUtils.gsToTas
 import org.example.util.AircraftUtils.iasToTas
 import org.example.util.AircraftUtils.tasToGs
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
@@ -42,7 +43,12 @@ object DescentProfileService {
                 remainingDistance = remainingDistance,
                 remainingTime = remainingTime,
                 groundSpeed = 0,
-                tas = 0
+                tas = 0,
+                wind = defaultWind,
+                heading =
+                    if (this.size >= 2)
+                        this[lastIndex - 1].position.bearingTo(this[lastIndex].position)
+                    else 0
             )
         )
 
@@ -63,7 +69,9 @@ object DescentProfileService {
                 toPoint = targetWaypoint.position,
                 weatherData = verticalWeatherProfile,
                 airfieldAltitude = star?.airfieldElevationFt ?: 0,
-                fromAltFt = currentAltitude
+                fromAltFt = currentAltitude,
+                aircraftAltitude = aircraftPosition.altitudeFt,
+                aircraftGroundSpeed = aircraftPosition.groundspeedKts,
             )
 
             descentPath.forEach { step ->
@@ -80,6 +88,8 @@ object DescentProfileService {
                         remainingTime = remainingTime,
                         groundSpeed = step.groundSpeed,
                         tas = step.tas,
+                        wind = step.wind,
+                        heading = step.position.bearingTo(currentPosition)
                     )
                 )
 
@@ -90,7 +100,7 @@ object DescentProfileService {
             // We have reached cruise
             if (descentPath.isEmpty()) {
                 val weather = verticalWeatherProfile?.interpolateWeatherAtAltitude(currentAltitude)
-                val bearing = currentPosition.bearingTo(targetWaypoint.position)
+                val bearing = currentPosition.bearingTo(this.first().position)
                 val expectedTas = iasToTas(
                     aircraftPerformance.getPreferredIas(currentAltitude, star?.airfieldElevationFt ?: 0),
                     currentAltitude,
@@ -106,6 +116,8 @@ object DescentProfileService {
                         remainingTime = remainingTime,
                         groundSpeed = tasToGs(expectedTas, weather?.wind ?: defaultWind, bearing),
                         tas = expectedTas,
+                        wind = weather?.wind ?: defaultWind,
+                        heading = bearing
                     )
                 )
             }
@@ -122,10 +134,15 @@ object DescentProfileService {
         toPoint: LatLng,
         weatherData: VerticalWeatherProfile?,
         airfieldAltitude: Int,
+        aircraftAltitude: Int,
+        aircraftGroundSpeed: Int,
     ): List<DescentStep> {
         val descentPath = mutableListOf<DescentStep>()
         var currentAltitude = fromAltFt
         var currentPosition = fromPoint
+
+        val aircraftWind = weatherData?.interpolateWeatherAtAltitude(currentAltitude)?.wind
+        val currentTas = gsToTas(aircraftGroundSpeed, aircraftWind ?: defaultWind, currentPosition.bearingTo(toPoint))
 
         val deltaTime = 10.0 // seconds
         val descentRateFpm = this.estimateDescentRate(currentAltitude)
@@ -156,14 +173,15 @@ object DescentProfileService {
             val newAltitude = currentAltitude + (verticalSpeed * deltaTime).toInt()
             val newPosition = currentPosition.interpolatePositionAlongPath(toPoint, stepDistanceNm)
 
-            if (newAltitude > maxAltFt || remainingDistance - stepDistanceNm < 0) {
+            if (newAltitude > maxAltFt || remainingDistance - stepDistanceNm < 0 || newAltitude > aircraftAltitude) {
                 // We have reached the target altitude or the target point
                 descentPath.add(
                     DescentStep(
                         position = toPoint,
                         altitudeFt = max(minAltFt, min(newAltitude, maxAltFt)),
                         groundSpeed = stepGroundspeedKts,
-                        tas = stepTas
+                        tas = min(currentTas, stepTas),
+                        wind = stepWeather?.wind ?: defaultWind
                     )
                 )
                 break
@@ -178,7 +196,8 @@ object DescentProfileService {
                     position = currentPosition,
                     altitudeFt = currentAltitude,
                     groundSpeed = stepGroundspeedKts,
-                    tas = stepTas
+                    tas = min(currentTas, stepTas),
+                    wind = stepWeather?.wind ?: defaultWind
                 )
             )
 

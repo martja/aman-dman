@@ -29,6 +29,28 @@ object AircraftUtils {
         return (ias * Math.sqrt(rho0 / rho)).roundToInt()
     }
 
+    fun gsToTas(gs: Int, wind: Wind, track: Int): Int {
+        val windAngleRad = Math.toRadians((wind.directionDeg - track).toDouble())
+        val windSpeed = wind.speedKts.toDouble()
+        val gsDouble = gs.toDouble()
+
+        // Quadratic equation: TAS² - 2*TAS*wind*cos(angle) + wind² - GS² = 0
+        val a = 1.0
+        val b = -2 * windSpeed * cos(windAngleRad)
+        val c = windSpeed.pow(2) - gsDouble.pow(2)
+
+        val discriminant = b * b - 4 * a * c
+
+        if (discriminant < 0) {
+            // No real solution, return GS as fallback
+            return gs
+        }
+
+        val tas = (-b + sqrt(discriminant)) / (2 * a)
+        return tas.roundToInt()
+    }
+
+
     fun tasToGs(tas: Int, wind: Wind, track: Int): Int {
         val windAngleRad = Math.toRadians((wind.directionDeg - track).toDouble())
         val windSpeed = wind.speedKts.toDouble()

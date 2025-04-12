@@ -16,7 +16,7 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
     var viewListener: ViewListener? = null
 
     private val verticalWindView = VerticalWindView()
-    private val descentProfileVisualizationView = VerticalProfileVisualization()
+    private val descentProfileVisualizationView = DescentProfileVisualization()
 
     private var windDialog: JDialog? = null
     private var descentProfileDialog: JDialog? = null
@@ -64,7 +64,7 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
                 add(verticalWindView)
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
-                preferredSize = Dimension(200, 600)
+                preferredSize = Dimension(300, 700)
                 isVisible = true
                 pack()
             }
@@ -83,7 +83,7 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
                 add(descentProfileVisualizationView)
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
-                preferredSize = Dimension(200, 600)
+                preferredSize = Dimension(800, 600)
                 isVisible = true
                 pack()
             }
