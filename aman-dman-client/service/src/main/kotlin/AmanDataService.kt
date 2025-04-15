@@ -32,7 +32,7 @@ class AmanDataService {
 
     private fun ArrivalJson.toRunwayArrivalOccurrence(): RunwayArrivalOccurrence {
         val performance = AircraftPerformanceData.get(icaoType)
-        val star = navdataService.stars.find { it.id == assignedStar }
+        val star = navdataService.stars.find { it.id == assignedStar && it.runway == assignedRunway }
 
         if (star == null) {
             println("Star not found for ${this.callsign}: $assignedStar")

@@ -3,6 +3,7 @@ package org.example.entities.navigation.star
 
 data class Star(
     val id: String,
-    val airfieldElevationFt: Int,
+    val airport: String,
+    val runway: String,
     val fixes: List<StarFix>
 )

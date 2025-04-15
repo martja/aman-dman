@@ -16,47 +16,46 @@ class NavdataService {
         this::class.java.classLoader.getResource(fileName)?.readText()
             ?: throw IllegalArgumentException("File not found: $fileName")
 
-
     fun parseStars(input: String): List<Star> {
-        val lines = input.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        val lines = input.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("[") }
 
-        val headerRegex = Regex("""STAR\s+(\S+)\s+@(\d+)\s+ICAO:(\S+)\s+RWY:(\S+)""")
-        val fixLineRegex = Regex("""(\S+):\s*(.+)""")
-        val constraintRegex = Regex("""(alt|spd)([<>=]+)(\d+)""")
+        val starHeaderRegex = Regex("STAR:(\\S+):(\\S+):(\\S+)")
+        val constraintRegex = Regex("""(A|S)([<]=|[>]=|=)(\d+)""")
 
         val stars = mutableListOf<Star>()
         var currentId: String? = null
-        var currentElevation: Int? = null
+        var currentAirport: String? = null
+        var currentRunway: String? = null
         var currentFixes = mutableListOf<StarFix>()
 
         fun flushCurrentStar() {
-            if (currentId != null && currentElevation != null) {
-                stars.add(Star(currentId!!, currentElevation!!, currentFixes))
+            if (currentId != null && currentAirport != null && currentRunway != null) {
+                stars.add(Star(currentId!!, currentAirport!!, currentRunway!!, currentFixes))
             }
             currentId = null
-            currentElevation = null
+            currentAirport = null
+            currentRunway = null
             currentFixes = mutableListOf()
         }
 
         for (line in lines) {
-            if (line.startsWith("STAR")) {
+            if (line.startsWith("STAR:")) {
                 flushCurrentStar()
 
-                val (id, elevationStr, _, _) = headerRegex.matchEntire(line)
-                    ?.destructured
+                val (icao, rwy, id) = starHeaderRegex.matchEntire(line)?.destructured
                     ?: throw IllegalArgumentException("Invalid STAR header: $line")
-
                 currentId = id
-                currentElevation = elevationStr.toInt()
+                currentAirport = icao
+                currentRunway = rwy
             } else {
-                val (fixId, constraintStr) = fixLineRegex.matchEntire(line)?.destructured
-                    ?: throw IllegalArgumentException("Invalid fix line: $line")
+                val parts = line.split(":").map { it.trim() }.filter { it.isNotEmpty() }
+                if (parts.isEmpty()) continue
 
-                val constraints = constraintStr.split(",").map { it.trim() }
-
+                val fixId = parts[0]
                 val builder = StarFix.StarFixBuilder(fixId)
 
-                for (constraint in constraints) {
+                val constraintParts = parts.drop(1)
+                for (constraint in constraintParts) {
                     val (type, op, valueStr) = constraintRegex.matchEntire(constraint)?.destructured
                         ?: throw IllegalArgumentException("Invalid constraint: $constraint")
                     val value = valueStr.toInt()
@@ -69,8 +68,8 @@ class NavdataService {
                     }
 
                     when (type) {
-                        "alt" -> builder.altitude(parsed)
-                        "spd" -> builder.speed(parsed)
+                        "A" -> builder.altitude(parsed)
+                        "S" -> builder.speed(parsed)
                         else -> throw IllegalArgumentException("Unknown constraint type: $type")
                     }
                 }
@@ -82,5 +81,4 @@ class NavdataService {
         flushCurrentStar()
         return stars
     }
-
 }
