@@ -1,15 +1,15 @@
 package org.example
 
-import org.example.DescentProfileService.generateDescentSegments
 import org.example.entities.navigation.AircraftPosition
 import org.example.entities.navigation.RoutePoint
 import org.example.entities.navigation.star.Constraint
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
-import org.example.util.AircraftUtils.gsToTas
-import org.example.util.AircraftUtils.iasToTas
-import org.example.util.AircraftUtils.tasToGs
+import org.example.util.PhysicsUtils.gsToTas
+import org.example.util.PhysicsUtils.iasToTas
+import org.example.util.PhysicsUtils.tasToGs
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
+import org.example.util.PhysicsUtils.machToIAS
 import org.example.util.WeatherUtils.getStandardTemperaturAt
 import org.example.util.WeatherUtils.interpolateWeatherAtAltitude
 import kotlin.math.max
@@ -104,7 +104,7 @@ object DescentProfileService {
                 val weather = verticalWeatherProfile?.interpolateWeatherAtAltitude(currentAltitude)
                 val bearing = currentPosition.bearingTo(this.first().position)
                 val expectedTas = iasToTas(
-                    aircraftPerformance.getPreferredIas(currentAltitude, lastAltitudeConstraint ?: 0),
+                    aircraftPerformance.getPreferredIas(currentAltitude, weather?.temperatureC),
                     currentAltitude,
                     tempCelsius = weather?.temperatureC ?: getStandardTemperaturAt(currentAltitude)
                 )
@@ -167,7 +167,7 @@ object DescentProfileService {
 
         while (true) {
             val stepWeather = weatherData?.interpolateWeatherAtAltitude(currentAltitude)
-            val expectedIas = this.getPreferredIas(currentAltitude, lastAltitudeConstraint)
+            val expectedIas = this.getPreferredIas(currentAltitude, stepWeather?.temperatureC)
             val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather?.temperatureC ?: 0) // TODO: estimate
             val stepGroundspeedKts = tasToGs(stepTas, stepWeather?.wind ?: defaultWind, currentPosition.bearingTo(toPoint))
             val stepDistanceNm = (stepGroundspeedKts * deltaTime) / 3600.0
@@ -208,21 +208,63 @@ object DescentProfileService {
         return descentPath
     }
 
-    private fun AircraftPerformance.estimateDescentRate(altitudeFt: Int) =
-        if (altitudeFt < 10_000) {
-            this.approachROD ?: this.descentROD ?: this.initialDescentROD ?: 1000
-        } else {
-            this.descentROD ?: this.initialDescentROD ?: this.approachROD ?: 1000
-        }
+    private fun AircraftPerformance.estimateDescentRate(altitudeFt: Int): Int {
+        // Example: https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=A321
+        val vs10kToGnd = approachROD ?: descentROD ?: initialDescentROD ?: 1000
+        val vs24kTo10k = descentROD ?: approachROD ?: initialDescentROD ?: 1000
+        val vsAbove24k = initialDescentROD ?: descentROD ?: approachROD ?: 1000
 
-    private fun AircraftPerformance.getPreferredIas(altitudeFt: Int, lastAltConstraint: Int) =
-        if (altitudeFt < lastAltConstraint + 3000) {
-            this.landingVat
-        } else if (altitudeFt < 10_000) {
-            this.approachIAS
-        } else {
-            this.descentIAS
+        // Interpolate between the values based on altitude
+        return when {
+            altitudeFt < 10_000 -> {
+                vs10kToGnd
+            }
+            altitudeFt in 10_000 until 24_000 -> {
+                val ratio = (altitudeFt - 10_000).toDouble() / (24_000 - 10_000)
+                ((1 - ratio) * vs10kToGnd + ratio * vs24kTo10k).toInt()
+            }
+            else -> {
+                val ratio = (altitudeFt - 24_000).coerceAtMost(10_000).toDouble() / 10_000  // cap interpolation up to 34k
+                ((1 - ratio) * vs24kTo10k + ratio * vsAbove24k).toInt()
+            }
         }
+    }
+
+    private fun AircraftPerformance.getPreferredIas(altitudeFt: Int, temperatureC: Int?): Int {
+        // Define key IAS values
+        val ias10kTo5k = approachIAS  // Assuming approach IAS value
+        val ias24kTo10k = descentIAS  // Assuming descent IAS value
+        val iasAbove24k = initialDescentMACH?.let {
+            machToIAS(it, altitudeFt, temperatureC ?: getStandardTemperaturAt(altitudeFt))
+        } ?: descentIAS
+
+        // Interpolation for 10k to ground
+        return when {
+            altitudeFt < 5000 -> {
+                // Interpolation between ias10kTo5k and landingVAT (5k to ground)
+                val ratio = (altitudeFt / 5000.0)
+                val iasAtAltitude = (1 - ratio) * ias10kTo5k + ratio * landingVat
+                iasAtAltitude.toInt()
+            }
+            altitudeFt in 5000 until 10000 -> {
+                // Interpolate between ias10kToGnd and ias24kTo10k (approach section)
+                val ratio = (altitudeFt - 5000) / 5000.0
+                val iasAtAltitude = (1 - ratio) * ias10kTo5k + ratio * ias24kTo10k
+                iasAtAltitude.toInt()
+            }
+            altitudeFt in 10000 until 24000 -> {
+                // Linear interpolation from ias10kToGnd to ias24kTo10k
+                val ratio = (altitudeFt - 10000) / 14000.0
+                val iasAtAltitude = (1 - ratio) * ias24kTo10k + ratio * iasAbove24k
+                iasAtAltitude.toInt()
+            }
+            else -> {
+                // Above 24,000 ft use iasAbove24k directly
+                iasAbove24k.toInt()
+            }
+        }
+    }
+
 
     private fun List<RoutePoint>.routeToNextAltitudeConstraint(star: List<StarFix>): List<RoutePoint> {
         val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.starAltitudeConstraint != null } }

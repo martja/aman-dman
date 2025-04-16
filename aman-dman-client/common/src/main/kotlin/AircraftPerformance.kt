@@ -19,7 +19,7 @@ data class AircraftPerformance(
     val cruiseMACH: Float?,
     val cruiseCeiling: Int,
     val cruiseRange: Int?,
-    val initialDescentMACH: Double?,
+    val initialDescentMACH: Float?,
     val initialDescentROD: Int?,
     val descentIAS: Int,
     val descentROD: Int?,
