@@ -210,9 +210,9 @@ object DescentProfileService {
 
     private fun AircraftPerformance.estimateDescentRate(altitudeFt: Int): Int {
         // Example: https://contentzone.eurocontrol.int/aircraftperformance/details.aspx?ICAO=A321
-        val vs10kToGnd = approachROD ?: descentROD ?: initialDescentROD ?: 1000
-        val vs24kTo10k = descentROD ?: approachROD ?: initialDescentROD ?: 1000
         val vsAbove24k = initialDescentROD ?: descentROD ?: approachROD ?: 1000
+        val vs24kTo10k = descentROD ?: approachROD ?: initialDescentROD ?: 1000
+        val vs10kToGnd = approachROD ?: descentROD ?: initialDescentROD ?: 1000
 
         // Interpolate between the values based on altitude
         return when {
@@ -259,8 +259,7 @@ object DescentProfileService {
                 iasAtAltitude.toInt()
             }
             else -> {
-                // Above 24,000 ft use iasAbove24k directly
-                iasAbove24k.toInt()
+                iasAbove24k
             }
         }
     }
