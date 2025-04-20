@@ -22,7 +22,7 @@ class AmanDataService {
 
     fun subscribeForInbounds(icao: String) {
         atcClient?.collectArrivalsFor(icao) { arrivals ->
-            amanDataListener?.onNewAmanData(arrivals.map { it.toRunwayArrivalOccurrence() })
+            amanDataListener?.onLiveData(arrivals.map { it.toRunwayArrivalOccurrence() })
         }
     }
 
@@ -66,7 +66,7 @@ class AmanDataService {
             runway = assignedRunway,
             time = Clock.System.now() + descentSegments.first().remainingTime,
             pressureAltitude = pressureAltitude,
-            arrivalAirportIcao = arrivalAirportIcao,
+            airportIcao = arrivalAirportIcao,
             descentProfile = descentSegments,
             timelineId = 0,
             basedOnNavdata = star != null,

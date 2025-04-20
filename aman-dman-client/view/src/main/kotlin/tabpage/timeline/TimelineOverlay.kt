@@ -1,6 +1,5 @@
 package tabpage.timeline
 
-import entity.TimeRange
 import kotlinx.datetime.Clock
 import org.example.*
 import org.example.eventHandling.ViewListener
@@ -22,14 +21,14 @@ class TimelineOverlay(
     val viewListener: ViewListener
 ) : JPanel(null) {
     private val pointDiameter = 6
-    private val rulerMargin = 30
+    private val scaleMargin = 30
     private val labelWidth = 320
 
     private val allLabels = hashMapOf<String, TimelineLabel>()
 
     private var timelineOccurrences: List<TimelineOccurrence> = emptyList()
 
-    private val timelineNameLabel = JLabel(timelineConfig.label, SwingConstants.CENTER).apply {
+    private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
         background = Color.WHITE
         foreground = Color.BLACK
@@ -53,15 +52,15 @@ class TimelineOverlay(
 
         updateFlightLabels()
 
-        val ruler = timelineView.getRulerBounds()
+        val scale = timelineView.getScaleBounds()
 
         val leftSideLabels = allLabels.filter { it.value.timelineOccurrence.isLeftSide() }.values.toList()
         val rightSideLabels = allLabels.filter { !it.value.timelineOccurrence.isLeftSide() }.values.toList()
 
-        rearrangeLabels(leftSideLabels, ruler.x - labelWidth - rulerMargin)
-        rearrangeLabels(rightSideLabels, ruler.x + rulerMargin + ruler.width)
+        rearrangeLabels(leftSideLabels, scale.x - labelWidth - scaleMargin)
+        rearrangeLabels(rightSideLabels, scale.x + scaleMargin + scale.width)
 
-        timelineNameLabel.setBounds(ruler.x - 10, ruler.y + ruler.height - 20, 100, 20)
+        timelineNameLabel.setBounds(scale.x - 10, scale.y + scale.height - 20, 100, 20)
     }
 
     private fun rearrangeLabels(selectedLabels: List<TimelineLabel>, x: Int) {
@@ -83,12 +82,12 @@ class TimelineOverlay(
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
         doLayout()
-        val ruler = timelineView.getRulerBounds()
+        val scaleBounds = timelineView.getScaleBounds()
 
         allLabels.values.forEach {
             val leftSide = it.timelineOccurrence.isLeftSide()
 
-            val dotX = if (leftSide) ruler.x else ruler.x + ruler.width
+            val dotX = if (leftSide) scaleBounds.x else scaleBounds.x + scaleBounds.width
             val dotY = timelineView.calculateYPositionForInstant(it.getTimelinePlacement())
             val labelX = if (leftSide) it.x + it.width else it.x
             g.drawLine(labelX, it.y + it.height / 2, dotX, dotY)
@@ -100,8 +99,8 @@ class TimelineOverlay(
             )
         }
 
-        paintHourglass(g, ruler.x)
-        paintHourglass(g, ruler.x + ruler.width)
+        paintHourglass(g, scaleBounds.x)
+        paintHourglass(g, scaleBounds.x + scaleBounds.width)
     }
 
     private fun updateFlightLabels() {
@@ -167,10 +166,10 @@ class TimelineOverlay(
 
     private fun TimelineOccurrence.isLeftSide(): Boolean =
         when (this) {
-            is RunwayArrivalOccurrence -> this.runway == timelineConfig.runwayLeft
-            is DepartureOccurrence -> this.runway == timelineConfig.runwayLeft
-            is FixInboundOccurrence -> this.finalFix == timelineConfig.targetFixLeft
-            is RunwayDelayOccurrence -> this.runway == timelineConfig.runwayLeft
+            is RunwayArrivalOccurrence -> false //this.runway == timelineConfig.runwayLeft
+            is DepartureOccurrence -> false // this.runway == timelineConfig.runwayLeft
+            is FixInboundOccurrence -> timelineConfig.targetFixesLeft.contains(this.finalFix)
+            is RunwayDelayOccurrence -> false //this.runway == timelineConfig.runwayLeft
         }
 
     private fun paintHourglass(g: Graphics, xPosition: Int) {

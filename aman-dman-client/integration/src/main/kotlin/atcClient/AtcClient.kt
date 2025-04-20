@@ -94,5 +94,6 @@ abstract class AtcClient {
             icaoType = this.icaoType,
             wakeCategory = this.wakeCategory,
             time = Instant.fromEpochSeconds(this.estimatedDepartureTime),
+            airportIcao = this.airportIcao,
         )
 }

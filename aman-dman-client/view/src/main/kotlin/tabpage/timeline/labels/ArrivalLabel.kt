@@ -15,7 +15,7 @@ class ArrivalLabel(
         val fixInboundOccurrence = timelineOccurrence as RunwayArrivalOccurrence
 
         output += fixInboundOccurrence.runway.padEnd(4)
-        output += fixInboundOccurrence.arrivalAirportIcao.padEnd(8)
+        output += fixInboundOccurrence.airportIcao.padEnd(8)
         output += fixInboundOccurrence.callsign.padEnd(9)
         output += fixInboundOccurrence.icaoType.padEnd(5)
         output += fixInboundOccurrence.wakeCategory.toString().padEnd(2)

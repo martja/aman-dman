@@ -13,14 +13,14 @@ import javax.swing.JLayeredPane
 import javax.swing.JPanel
 
 class TimelineView(
-    private val timelineConfig: TimelineConfig,
+    timelineConfig: TimelineConfig,
     private val selectedTimeRange: SharedValue<TimeRange>,
     private val viewListener: ViewListener,
 ) : JLayeredPane() {
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
     private val palettePanel = TimelineOverlay(timelineConfig, this, viewListener)
 
-    private val ruler = Ruler(this, selectedTimeRange)
+    private val timeScale = TimeScale(this, selectedTimeRange)
 
     init {
         layout = null // JLayeredPane requires explicit bounds for components
@@ -38,10 +38,10 @@ class TimelineView(
         gbc.weightx = 1.0
         basePanel.add(SequenceStack(this, TimelineAlignment.RIGHT), gbc)
 
-        // Ruler
+        // Scale visualisation
         gbc.gridx = 1
         gbc.weightx = 0.2
-        basePanel.add(ruler, gbc)
+        basePanel.add(timeScale, gbc)
 
         // Right TrafficSequenceView
         gbc.gridx = 2
@@ -55,7 +55,7 @@ class TimelineView(
 
     fun updateTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
         palettePanel.updateTimelineOccurrences(occurrences)
-        ruler.updateTimelineOccurrences(occurrences)
+        timeScale.updateTimelineOccurrences(occurrences)
     }
 
     fun calculateYPositionForInstant(instant: Instant): Int {
@@ -64,8 +64,8 @@ class TimelineView(
         return (height - pixelsPerSecond * (instant.epochSeconds - selectedTimeRange.value.start.epochSeconds)).toInt()
     }
 
-    fun getRulerBounds(): Rectangle {
-        return ruler.bounds
+    fun getScaleBounds(): Rectangle {
+        return timeScale.bounds
     }
 
     override fun doLayout() {

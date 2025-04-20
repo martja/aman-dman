@@ -1,34 +1,40 @@
+import org.example.dto.CreateOrUpdateTimelineDto
 import org.example.*
 import org.example.config.SettingsManager
 import org.example.eventHandling.AmanDataListener
 import org.example.eventHandling.ViewListener
 import org.example.weather.WindApi
-import javax.swing.SwingUtilities
 
 class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : ViewListener, AmanDataListener {
     private var weatherProfile: VerticalWeatherProfile? = null
+    private val timelineGroups = mutableListOf<TimelineGroup>()
+    private var selectedCallsign: String? = null
 
     init {
         model.connectToAtcClient()
     }
 
-    override fun onNewTabRequested(tabId: String) {
+    override fun onLoadAllTabsRequested() {
         model.subscribeForInbounds("ENGM")
 
         SettingsManager.getSettings().timelines.forEach { (id, timelineJson) ->
-            val timelineConfig =  TimelineConfig(
-                id = id.hashCode().toLong(),
-                label = id,
-                targetFixLeft = timelineJson.targetFixes.first(),
-                targetFixRight = timelineJson.targetFixes.last(),
-                viaFixes = timelineJson.viaFixes,
-                airports = timelineJson.destinationAirports,
-                runwayLeft = "01L",
-                runwayRight = "01R",
+            timelineGroups.add(
+                TimelineGroup(
+                    id = id,
+                    name = timelineJson.title,
+                    timelines = mutableListOf(
+                        TimelineConfig(
+                            timelineJson.title,
+                            timelineJson.targetFixesLeft,
+                            timelineJson.targetFixesRight,
+                            timelineJson.airportIcao
+                        )
+                    )
+                )
             )
-
-            view.addTab(id, timelineConfig)
         }
+
+        view.updateTimelineGroups(timelineGroups)
     }
 
     override fun onOpenMetWindowClicked() {
@@ -49,11 +55,57 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
     }
 
     override fun onAircraftSelected(callsign: String) {
-        view.setSelectedCallsign(callsign)
+        selectedCallsign = callsign
     }
 
-    override fun onNewAmanData(amanData: List<TimelineOccurrence>) {
-        view.updateWithAmanData(amanData)
+    override fun onLiveData(amanData: List<TimelineOccurrence>) {
+        timelineGroups.forEach { group ->
+            view.getTabByGroupId(group.id)?.let { tab ->
+                val relevantData = amanData.filter { occurrence ->
+                    group.timelines.any { timeline -> timeline.airportIcao == occurrence.airportIcao }
+                }
+                tab.updateAmanData(relevantData)
+            }
+        }
+
+        if (selectedCallsign != null) {
+            val selectedDescentProfile = amanData.filterIsInstance<RunwayArrivalOccurrence>().find { it.callsign == selectedCallsign }
+            if (selectedDescentProfile != null) {
+                view.descentProfileVisualizationView.setDescentSegments(selectedDescentProfile.descentProfile)
+            }
+        }
     }
 
+    override fun onNewTimelineGroup(title: String) {
+        timelineGroups.add(TimelineGroup(title, title, mutableListOf()))
+        view.updateTimelineGroups(timelineGroups)
+    }
+
+    override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
+        val group = timelineGroups.find { it.id == config.groupId }
+        if (group != null) {
+            group.timelines += TimelineConfig(
+                title = config.title,
+                targetFixesLeft = config.targetFixesLeft,
+                targetFixesRight = config.targetFixesRight,
+                airportIcao = config.airportIcao
+            )
+            view.updateTimelineGroups(timelineGroups)
+            view.closeTimelineForm()
+        }
+    }
+
+    override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {
+        val group = timelineGroups.find { it.id == groupId }
+        if (group != null) {
+            val existingConfig = group.timelines.find { it.title == timelineTitle }
+            if (existingConfig != null) {
+                view.openTimelineConfigForm(groupId, existingConfig)
+            }
+        }
+    }
+
+    override fun onNewTimelineClicked(groupId: String) {
+        view.openTimelineConfigForm(groupId)
+    }
 }

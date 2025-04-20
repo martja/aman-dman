@@ -7,11 +7,10 @@ data class AmanDmanSettingsJson(
 )
 
 data class TimelineJson(
-    val targetFixes: List<String>,
-    val viaFixes: List<String>,
-    val tagLayout: String,
-    val destinationAirports: List<String>,
-    val defaultTimeSpan: Int? = null
+    val title: String,
+    val targetFixesLeft: List<String>,
+    val targetFixesRight: List<String>,
+    val airportIcao: String,
 )
 
 data class TagLayoutElementJson(

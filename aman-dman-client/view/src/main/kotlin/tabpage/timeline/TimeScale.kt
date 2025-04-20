@@ -9,7 +9,7 @@ import util.SharedValue
 import java.awt.*
 import javax.swing.JPanel
 
-class Ruler(
+class TimeScale(
     private val timelineView: TimelineView,
     private val selectedRange: SharedValue<TimeRange>
 ) : JPanel(null) {

@@ -1,12 +1,12 @@
 import entity.TimeRange
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import org.example.TimelineConfig
+import org.example.TimelineGroup
 import org.example.TimelineOccurrence
 import org.example.eventHandling.ViewListener
 import tabpage.TimeRangeScrollBar
 import tabpage.TimelineScrollPane
 import tabpage.TopBar
+import tabpage.timeline.TimelineView
 import util.SharedValue
 import java.awt.BorderLayout
 import javax.swing.JPanel
@@ -16,11 +16,9 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class TabView(
-    private val viewListener: ViewListener,
+    viewListener: ViewListener,
+    val groupId: String,
 ) : JPanel(BorderLayout()) {
-
-    private var rangeStart: Instant? = null
-    private var rangeEnd: Instant? = null
 
     private val availableTimeRange = SharedValue(
         initialValue = TimeRange(
@@ -55,12 +53,22 @@ class TabView(
         timer.start()
     }
 
-    fun addTimeline(timelineConfig: TimelineConfig) {
-        timelineScrollPane.insertTimeline(timelineConfig)
-    }
-
     fun updateAmanData(amanData: List<TimelineOccurrence>) {
         timeWindowScrollbar.setTimelineOccurrences(amanData)
         timelineScrollPane.updateTimelineOccurrences(amanData)
+    }
+
+    fun updateTimelines(timelineGroup: TimelineGroup) {
+        // Clear existing timelines
+        val items = timelineScrollPane.viewport.view as JPanel
+        items.components.forEach { component ->
+            if (component is TimelineView) {
+                items.remove(component)
+            }
+        }
+        // Add the current timelines
+        timelineGroup.timelines.forEach { timelineConfig ->
+            timelineScrollPane.insertTimeline(timelineConfig)
+        }
     }
 }
