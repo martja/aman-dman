@@ -1,6 +1,5 @@
 package org.example
 
-import org.example.entities.navigation.star.Constraint
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
 
@@ -20,7 +19,7 @@ class NavdataService {
         val lines = input.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("[") }
 
         val starHeaderRegex = Regex("STAR:(\\S+):(\\S+):(\\S+)")
-        val constraintRegex = Regex("""(A|S)([<]=|[>]=|=)(\d+)""")
+        val constraintRegex = Regex("""(A|S)=(\d+)""")
 
         val stars = mutableListOf<Star>()
         var currentId: String? = null
@@ -56,20 +55,13 @@ class NavdataService {
 
                 val constraintParts = parts.drop(1)
                 for (constraint in constraintParts) {
-                    val (type, op, valueStr) = constraintRegex.matchEntire(constraint)?.destructured
+                    val (type, valueStr) = constraintRegex.matchEntire(constraint)?.destructured
                         ?: throw IllegalArgumentException("Invalid constraint: $constraint")
                     val value = valueStr.toInt()
 
-                    val parsed = when (op) {
-                        "=" -> Constraint.Exact(value)
-                        "<=" -> Constraint.Max(value)
-                        ">=" -> Constraint.Min(value)
-                        else -> throw IllegalArgumentException("Unsupported operator: $op")
-                    }
-
                     when (type) {
-                        "A" -> builder.altitude(parsed)
-                        "S" -> builder.speed(parsed)
+                        "A" -> builder.altitude(value)
+                        "S" -> builder.speed(value)
                         else -> throw IllegalArgumentException("Unknown constraint type: $type")
                     }
                 }

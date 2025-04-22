@@ -2,7 +2,6 @@ package org.example
 
 import org.example.entities.navigation.AircraftPosition
 import org.example.entities.navigation.RoutePoint
-import org.example.entities.navigation.star.Constraint
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
 import org.example.util.PhysicsUtils.gsToTas
@@ -61,7 +60,7 @@ object DescentProfileService {
             val remainingRouteReversed = this.subList(0, i).reversed()
             val nextAltitudeConstraint = star?.let {
                 remainingRouteReversed.routeToNextAltitudeConstraint(star.fixes).lastOrNull()?.let { fix ->
-                    starMap?.get(fix.id)?.starAltitudeConstraint
+                    starMap?.get(fix.id)?.typicalAltitude
                 }
             }
 
@@ -70,7 +69,7 @@ object DescentProfileService {
             }
 
             val nextSpeedConstraint = routeToNextSpeedConstraint?.lastOrNull()?.let { fix ->
-                starMap?.get(fix.id)?.starSpeedConstraint
+                starMap?.get(fix.id)?.typicalSpeedIas
             }
 
             val distanceToNextSpeedConstraint = routeToNextSpeedConstraint?.zipWithNext { a, b -> a.position.distanceTo(b.position) }?.sum()
@@ -78,12 +77,12 @@ object DescentProfileService {
 
             val descentSteps = aircraftPerformance.computeDescentPathBackward(
                 lowerAltitude = currentAltitude,
-                higherAltitude = nextAltitudeConstraint ?: Constraint.Exact(aircraftPosition.altitudeFt),
+                higherAltitude = nextAltitudeConstraint ?: aircraftPosition.altitudeFt,
                 lowerPoint = currentPosition,
                 higherPoint = targetWaypoint.position,
                 weatherData = verticalWeatherProfile,
                 distanceToNextSpeedConstraint = distanceToNextSpeedConstraint?.roundToInt(),
-                nextSpeedConstraint = nextSpeedConstraint ?: Constraint.Exact(aircraftPosition.groundspeedKts),
+                nextSpeedConstraint = nextSpeedConstraint,
                 aircraftAltitude = aircraftPosition.altitudeFt,
                 aircraftGroundSpeed = aircraftPosition.groundspeedKts,
             )
@@ -152,11 +151,11 @@ object DescentProfileService {
      */
     private fun AircraftPerformance.computeDescentPathBackward(
         lowerAltitude: Int,
-        higherAltitude: Constraint,
+        higherAltitude: Int,
         lowerPoint: LatLng,
         higherPoint: LatLng,
         weatherData: VerticalWeatherProfile?,
-        nextSpeedConstraint: Constraint,
+        nextSpeedConstraint: Int?,
         aircraftAltitude: Int,
         aircraftGroundSpeed: Int,
         distanceToNextSpeedConstraint: Int?,
@@ -173,41 +172,26 @@ object DescentProfileService {
         val verticalSpeed = descentRateFpm / 60.0 // ft/sec
 
         var remainingDistance = lowerPoint.distanceTo(higherPoint)
-
-        val minAltFt = when (higherAltitude) {
-            is Constraint.Min -> higherAltitude.value
-            is Constraint.Between -> higherAltitude.min
-            else -> Int.MIN_VALUE
-        }
-
-        val maxAltFt = when (higherAltitude) {
-            is Constraint.Max -> higherAltitude.value
-            is Constraint.Exact -> higherAltitude.value
-            is Constraint.Between -> higherAltitude.max
-            else -> Int.MAX_VALUE
-        }
+        val estimatedOutsideTemperature = getStandardTemperaturAt(currentAltitude)
 
         while (true) {
             val stepWeather = weatherData?.interpolateWeatherAtAltitude(currentAltitude)
-            val expectedIas = when (nextSpeedConstraint) {
-                is Constraint.Max -> nextSpeedConstraint.value
-                is Constraint.Exact -> nextSpeedConstraint.value
-                is Constraint.Between -> nextSpeedConstraint.max
-                else -> this.getPreferredIas(currentAltitude, stepWeather?.temperatureC)
-            }
-            val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather?.temperatureC ?: 0) // TODO: estimate
+            val stepTas = nextSpeedConstraint?.let {
+                iasToTas(nextSpeedConstraint, currentAltitude, stepWeather?.temperatureC ?: estimatedOutsideTemperature)
+            } ?: iasToTas(getPreferredIas(currentAltitude, stepWeather?.temperatureC), currentAltitude, stepWeather?.temperatureC ?: estimatedOutsideTemperature)
+
             val stepGroundspeedKts = tasToGs(stepTas, stepWeather?.wind ?: defaultWind, currentPosition.bearingTo(higherPoint))
             val stepDistanceNm = (stepGroundspeedKts * deltaTime) / 3600.0
 
             val newAltitude = currentAltitude + (verticalSpeed * deltaTime).toInt()
             val newPosition = currentPosition.interpolatePositionAlongPath(higherPoint, stepDistanceNm)
 
-            if (newAltitude > maxAltFt || remainingDistance - stepDistanceNm < 0 || newAltitude > aircraftAltitude) {
+            if (newAltitude > higherAltitude || remainingDistance - stepDistanceNm < 0 || newAltitude > aircraftAltitude) {
                 // We have reached the target altitude or the target point
                 descentPath.add(
                     DescentStep(
                         position = higherPoint,
-                        altitudeFt = max(minAltFt, min(newAltitude, maxAltFt)),
+                        altitudeFt = max(lowerAltitude, min(newAltitude, higherAltitude)),
                         groundSpeed = stepGroundspeedKts,
                         tas = min(currentTas, stepTas),
                         wind = stepWeather?.wind ?: defaultWind
@@ -293,25 +277,19 @@ object DescentProfileService {
 
 
     private fun List<RoutePoint>.routeToNextAltitudeConstraint(star: List<StarFix>): List<RoutePoint> {
-        val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.starAltitudeConstraint != null } }
+        val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.typicalAltitude != null } }
         return if (i == -1) emptyList() else this.subList(0, i + 1)
     }
 
     private fun List<RoutePoint>.routeToNextSpeedConstraint(star: List<StarFix>): List<RoutePoint> {
-        val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.starSpeedConstraint != null } }
+        val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.typicalSpeedIas != null } }
         return if (i == -1) emptyList() else this.subList(0, i + 1)
     }
 
     private fun Star.findFinalAltitude(): Int =
         this.fixes.reversed().first {
-            it.starAltitudeConstraint != null
+            it.typicalAltitude != null
         }.let { fix ->
-            return when (val constraint = fix.starAltitudeConstraint) {
-                is Constraint.Min -> constraint.value
-                is Constraint.Max -> constraint.value
-                is Constraint.Between -> constraint.max
-                is Constraint.Exact -> constraint.value
-                null -> 0
-            }
+            fix.typicalAltitude ?: 0
         }
 }

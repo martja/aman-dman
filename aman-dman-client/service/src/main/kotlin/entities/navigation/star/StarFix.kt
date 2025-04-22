@@ -2,25 +2,25 @@ package org.example.entities.navigation.star
 
 data class StarFix(
     val id: String,
-    val starAltitudeConstraint: Constraint? = null,
-    val starSpeedConstraint: Constraint? = null
+    val typicalAltitude: Int? = null,
+    val typicalSpeedIas: Int? = null
 ) {
     class StarFixBuilder(private val id: String) {
-        private var altitudeConstraint: Constraint? = null
-        private var speedConstraint: Constraint? = null
+        private var typicalAltitude: Int? = null
+        private var typicalSpeedIas: Int? = null
 
-        fun altitude(constraint: Constraint): StarFixBuilder {
-            altitudeConstraint = constraint
+        fun altitude(value: Int): StarFixBuilder {
+            typicalAltitude = value
             return this
         }
 
-        fun speed(constraint: Constraint): StarFixBuilder {
-            speedConstraint = constraint
+        fun speed(value: Int): StarFixBuilder {
+            typicalSpeedIas = value
             return this
         }
 
         fun build(): StarFix {
-            return StarFix(id, altitudeConstraint, speedConstraint)
+            return StarFix(id, typicalAltitude, typicalSpeedIas)
         }
     }
 }
