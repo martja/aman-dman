@@ -54,7 +54,7 @@ object DescentProfileService {
             )
         )
 
-        // Start from the last waypoint and work backward
+        // Start from the last waypoint (the airport) and work backward
         for (i in lastIndex downTo 1) {
             val fromWaypoint = this[i]
             val targetWaypoint = this[i-1]
@@ -65,18 +65,30 @@ object DescentProfileService {
                 }
             }
 
-            val descentPath = aircraftPerformance.computeDescentPathBackward(
-                nextAltitudeConstraint = nextAltitudeConstraint ?: Constraint.Exact(aircraftPosition.altitudeFt),
-                fromPoint = currentPosition,
-                toPoint = targetWaypoint.position,
+            val routeToNextSpeedConstraint = star?.let {
+                remainingRouteReversed.routeToNextSpeedConstraint(it.fixes)
+            }
+
+            val nextSpeedConstraint = routeToNextSpeedConstraint?.lastOrNull()?.let { fix ->
+                starMap?.get(fix.id)?.starSpeedConstraint
+            }
+
+            val distanceToNextSpeedConstraint = routeToNextSpeedConstraint?.zipWithNext { a, b -> a.position.distanceTo(b.position) }?.sum()
+
+
+            val descentSteps = aircraftPerformance.computeDescentPathBackward(
+                lowerAltitude = currentAltitude,
+                higherAltitude = nextAltitudeConstraint ?: Constraint.Exact(aircraftPosition.altitudeFt),
+                lowerPoint = currentPosition,
+                higherPoint = targetWaypoint.position,
                 weatherData = verticalWeatherProfile,
-                lastAltitudeConstraint = lastAltitudeConstraint ?: 0,
-                fromAltFt = currentAltitude,
+                distanceToNextSpeedConstraint = distanceToNextSpeedConstraint?.roundToInt(),
+                nextSpeedConstraint = nextSpeedConstraint ?: Constraint.Exact(aircraftPosition.groundspeedKts),
                 aircraftAltitude = aircraftPosition.altitudeFt,
                 aircraftGroundSpeed = aircraftPosition.groundspeedKts,
             )
 
-            descentPath.forEach { step ->
+            descentSteps.forEach { step ->
                 val stepLength = currentPosition.distanceTo(step.position).toFloat()
                 remainingDistance += stepLength
                 remainingTime += (stepLength / step.groundSpeed * 3600.0).roundToInt().seconds
@@ -100,7 +112,7 @@ object DescentProfileService {
             }
 
             // We have reached cruise
-            if (descentPath.isEmpty()) {
+            if (descentSteps.isEmpty()) {
                 val weather = verticalWeatherProfile?.interpolateWeatherAtAltitude(currentAltitude)
                 val bearing = currentPosition.bearingTo(this.first().position)
                 val expectedTas = iasToTas(
@@ -129,57 +141,72 @@ object DescentProfileService {
         return descentSegments.reversed()
     }
 
+    /**
+     * Computes the descent path backward from a given altitude to a target altitude.
+     *
+     * @param lowerAltitude The altitude we are descending to
+     * @param higherAltitude The target altitude we want to reach
+     * @param lowerPoint The point we are descending towards
+     * @param higherPoint The point we are descending from
+     * @param weatherData The weather data at the current altitude
+     */
     private fun AircraftPerformance.computeDescentPathBackward(
-        fromAltFt: Int,
-        nextAltitudeConstraint: Constraint,
-        fromPoint: LatLng,
-        toPoint: LatLng,
+        lowerAltitude: Int,
+        higherAltitude: Constraint,
+        lowerPoint: LatLng,
+        higherPoint: LatLng,
         weatherData: VerticalWeatherProfile?,
-        lastAltitudeConstraint: Int,
+        nextSpeedConstraint: Constraint,
         aircraftAltitude: Int,
         aircraftGroundSpeed: Int,
+        distanceToNextSpeedConstraint: Int?,
     ): List<DescentStep> {
         val descentPath = mutableListOf<DescentStep>()
-        var currentAltitude = fromAltFt
-        var currentPosition = fromPoint
+        var currentAltitude = lowerAltitude
+        var currentPosition = lowerPoint
 
         val aircraftWind = weatherData?.interpolateWeatherAtAltitude(currentAltitude)?.wind
-        val currentTas = gsToTas(aircraftGroundSpeed, aircraftWind ?: defaultWind, currentPosition.bearingTo(toPoint))
+        val currentTas = gsToTas(aircraftGroundSpeed, aircraftWind ?: defaultWind, currentPosition.bearingTo(higherPoint))
 
         val deltaTime = 10.0 // seconds
         val descentRateFpm = this.estimateDescentRate(currentAltitude)
         val verticalSpeed = descentRateFpm / 60.0 // ft/sec
 
-        var remainingDistance = fromPoint.distanceTo(toPoint)
+        var remainingDistance = lowerPoint.distanceTo(higherPoint)
 
-        val minAltFt = when (nextAltitudeConstraint) {
-            is Constraint.Min -> nextAltitudeConstraint.value
-            is Constraint.Between -> nextAltitudeConstraint.min
+        val minAltFt = when (higherAltitude) {
+            is Constraint.Min -> higherAltitude.value
+            is Constraint.Between -> higherAltitude.min
             else -> Int.MIN_VALUE
         }
 
-        val maxAltFt = when (nextAltitudeConstraint) {
-            is Constraint.Max -> nextAltitudeConstraint.value
-            is Constraint.Exact -> nextAltitudeConstraint.value
-            is Constraint.Between -> nextAltitudeConstraint.max
+        val maxAltFt = when (higherAltitude) {
+            is Constraint.Max -> higherAltitude.value
+            is Constraint.Exact -> higherAltitude.value
+            is Constraint.Between -> higherAltitude.max
             else -> Int.MAX_VALUE
         }
 
         while (true) {
             val stepWeather = weatherData?.interpolateWeatherAtAltitude(currentAltitude)
-            val expectedIas = this.getPreferredIas(currentAltitude, stepWeather?.temperatureC)
+            val expectedIas = when (nextSpeedConstraint) {
+                is Constraint.Max -> nextSpeedConstraint.value
+                is Constraint.Exact -> nextSpeedConstraint.value
+                is Constraint.Between -> nextSpeedConstraint.max
+                else -> this.getPreferredIas(currentAltitude, stepWeather?.temperatureC)
+            }
             val stepTas = iasToTas(expectedIas, currentAltitude, stepWeather?.temperatureC ?: 0) // TODO: estimate
-            val stepGroundspeedKts = tasToGs(stepTas, stepWeather?.wind ?: defaultWind, currentPosition.bearingTo(toPoint))
+            val stepGroundspeedKts = tasToGs(stepTas, stepWeather?.wind ?: defaultWind, currentPosition.bearingTo(higherPoint))
             val stepDistanceNm = (stepGroundspeedKts * deltaTime) / 3600.0
 
             val newAltitude = currentAltitude + (verticalSpeed * deltaTime).toInt()
-            val newPosition = currentPosition.interpolatePositionAlongPath(toPoint, stepDistanceNm)
+            val newPosition = currentPosition.interpolatePositionAlongPath(higherPoint, stepDistanceNm)
 
             if (newAltitude > maxAltFt || remainingDistance - stepDistanceNm < 0 || newAltitude > aircraftAltitude) {
                 // We have reached the target altitude or the target point
                 descentPath.add(
                     DescentStep(
-                        position = toPoint,
+                        position = higherPoint,
                         altitudeFt = max(minAltFt, min(newAltitude, maxAltFt)),
                         groundSpeed = stepGroundspeedKts,
                         tas = min(currentTas, stepTas),
@@ -267,6 +294,11 @@ object DescentProfileService {
 
     private fun List<RoutePoint>.routeToNextAltitudeConstraint(star: List<StarFix>): List<RoutePoint> {
         val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.starAltitudeConstraint != null } }
+        return if (i == -1) emptyList() else this.subList(0, i + 1)
+    }
+
+    private fun List<RoutePoint>.routeToNextSpeedConstraint(star: List<StarFix>): List<RoutePoint> {
+        val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.starSpeedConstraint != null } }
         return if (i == -1) emptyList() else this.subList(0, i + 1)
     }
 
