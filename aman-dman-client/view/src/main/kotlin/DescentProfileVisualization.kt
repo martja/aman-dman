@@ -1,18 +1,18 @@
-import org.example.DescentSegment
+import org.example.EstimatedProfilePoint
 import util.WindBarbs
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
 class DescentProfileVisualization : JPanel(BorderLayout()) {
 
-    private var descentSegments: List<DescentSegment> = emptyList()
+    private var estimatedProfilePoints: List<EstimatedProfilePoint> = emptyList()
 
     init {
         background = java.awt.Color.DARK_GRAY
     }
 
-    fun setDescentSegments(segments: List<DescentSegment>) {
-        this.descentSegments = segments
+    fun setDescentSegments(segments: List<EstimatedProfilePoint>) {
+        this.estimatedProfilePoints = segments
         repaint()
     }
 
@@ -22,16 +22,16 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     override fun paintComponent(g: java.awt.Graphics) {
         super.paintComponent(g)
 
-        if (descentSegments.isEmpty()) {
+        if (estimatedProfilePoints.isEmpty()) {
             return
         }
 
-        val minAlt = descentSegments.minOf { it.targetAltitude }
-        val maxAlt = descentSegments.maxOf { it.targetAltitude }
+        val minAlt = estimatedProfilePoints.minOf { it.altitude }
+        val maxAlt = estimatedProfilePoints.maxOf { it.altitude }
 
-        val totalLengthNm = descentSegments.first().remainingDistance
-        val totalLengthSeconds = descentSegments.first().remainingTime.inWholeSeconds
-        val totalAirLengthNm = descentSegments.zipWithNext { a, b ->
+        val totalLengthNm = estimatedProfilePoints.first().remainingDistance
+        val totalLengthSeconds = estimatedProfilePoints.first().remainingTime.inWholeSeconds
+        val totalAirLengthNm = estimatedProfilePoints.zipWithNext { a, b ->
             val legDuration = a.remainingTime.inWholeSeconds - b.remainingTime.inWholeSeconds
             val airDistance = a.tas * (legDuration / 3600.0)
             airDistance
@@ -53,8 +53,8 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
             g.drawString("FL" + (i / 100).toString().padStart(3, '0'), 5, yPos + 5)
         }
 
-        descentSegments.forEach {
-            val yPos = (height - pxPerFt * (it.targetAltitude - minAlt)).toInt() - diagramMarginTop
+        estimatedProfilePoints.forEach {
+            val yPos = (height - pxPerFt * (it.altitude - minAlt)).toInt() - diagramMarginTop
             val xPos = width - (pxPerNm * it.remainingDistance).toInt() - diagramMargin
             val xPosTime = width - (pxPerSecond * it.remainingTime.inWholeSeconds).toInt() - diagramMargin
 
@@ -73,7 +73,7 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
                 g.drawString(prevInbound, xPos, yPos - 5)
                 g.drawString(it.remainingTime.toString(), xPos, yPos + 15)
                 g.drawString(it.groundSpeed.toString() + " kts", xPos, yPos + 15 + 12)
-                g.drawString(it.targetAltitude.toString() + " ft", xPos, yPos + 15 + 10 + 12)
+                g.drawString(it.altitude.toString() + " ft", xPos, yPos + 15 + 10 + 12)
             }
 
             prevInbound = it.inbound

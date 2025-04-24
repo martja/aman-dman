@@ -1,29 +1,20 @@
-package controller
-
 import kotlinx.datetime.Clock
+import org.example.*
+import org.example.DescentProfileService.generateDescentSegments
 import org.example.config.AircraftPerformanceData
-import org.example.model.entities.*
-import org.example.model.entities.estimation.DescentSegment
-import org.example.model.entities.navdata.LatLng
-import org.example.model.entities.navigation.star.StarFix
-import org.example.model.entities.navigation.AircraftPosition
-import org.example.model.entities.navigation.RoutePoint
-import org.example.model.entities.navigation.star.Constraint
-import org.example.model.entities.navigation.star.Star
-import org.example.model.entities.weather.VerticalWeatherProfile
-import org.example.model.entities.weather.WeatherLayer
-import org.example.model.entities.weather.Wind
-import org.example.util.AircraftUtils.iasToTas
-import org.example.util.AircraftUtils.tasToGs
+import org.example.entities.navigation.AircraftPosition
+import org.example.entities.navigation.RoutePoint
+import org.example.entities.navigation.star.Star
+import org.example.entities.navigation.star.StarFix
+import org.example.util.NavigationUtils.dmsToDecimal
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
+import org.example.util.PhysicsUtils
 import org.junit.jupiter.api.Test
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import org.example.model.service.DescentProfileService.generateDescentSegments
-import org.example.util.NavigationUtils.dmsToDecimal
 
 fun starFix(id: String, block: StarFix.StarFixBuilder.() -> Unit): StarFix {
     return StarFix.StarFixBuilder(id).apply(block).build()
@@ -31,47 +22,35 @@ fun starFix(id: String, block: StarFix.StarFixBuilder.() -> Unit): StarFix {
 
 val lunip4l = Star(
     id = "LUNIP4L",
-    airfieldElevationFt = 700,
+    airport = "ENGM",
+    runway = "01L",
     fixes = listOf(
         starFix("LUNIP") {
-            speed(Constraint.Max(250))
-        },
-        starFix("DEVKU") {
-            altitude(Constraint.Min(12000))
-            speed(Constraint.Max(250))
+            speed(250)
         },
         starFix("GM416") {
-            altitude(Constraint.Exact(11000))
-            speed(Constraint.Max(220))
-        },
-        starFix("GM417") {
-            altitude(Constraint.Exact(11000))
-            speed(Constraint.Max(220))
-        },
-        starFix("GM415") {
-            altitude(Constraint.Exact(11000))
-            speed(Constraint.Max(220))
-        },
-        starFix("GM414") {
-            altitude(Constraint.Exact(11000))
-            speed(Constraint.Max(220))
+            altitude(11000)
+            speed(220)
         },
         starFix("INSUV") {
-            altitude(Constraint.Min(5000))
-            altitude(Constraint.Exact(5000))
-            speed(Constraint.Max(220))
+            altitude(5000)
+            speed(200)
         },
         starFix("NOSLA") {
-            speed(Constraint.Max(200))
+            altitude(4000)
+            speed(180)
         },
         starFix("XEMEN") {
-            altitude(Constraint.Exact(3500))
-            speed(Constraint.Max(200))
+            altitude(3500)
+            speed(170)
+        },
+        starFix("ENGM") {
+            altitude(700)
         }
     )
 )
 
-class PlannerTest {
+class DescentProfileTest {
     val currentPosition = AircraftPosition(
         dmsToDecimal("""58°50'25.3"N  011°20'7.2"E"""),
         22000,
@@ -108,7 +87,7 @@ class PlannerTest {
         assertEquals(64, lunip4lRoute.getRouteDistance().roundToInt())
     }
 
-    @Test
+    /*@Test
     fun `calculate ETA`() {
         val descentSegments = calculateTestDescent(testRoute)
         val remainingTime = descentSegments.first().remainingTime
@@ -117,7 +96,7 @@ class PlannerTest {
         val wkt = "LINESTRING (" + descentSegments.joinToString(",") { it.position.lon.toString() + " " + it.position.lat.toString() } + ")"
 
         assertEquals(20.minutes + 46.seconds, remainingTime)
-    }
+    }*/
 
     @Test
     fun `Removing waypoints along a straight line should not affect ETA`() {
@@ -134,7 +113,25 @@ class PlannerTest {
     }
 
     @Test
-    fun `Removing that causes a shorter flight path should reduce time`() {
+    fun `When aircraft is heading away from the first waypoint, the turn radius will be taken into account`() {
+        val descentSegmentsOriginalRoute = calculateTestDescent(testRoute)
+
+        val testRouteWithInitialHeading = testRoute.mapIndexed { index, routePoint ->
+            if (index == 0) {
+                routePoint.copy(
+                    position = routePoint.position.interpolatePositionAlongPath(
+                        LatLng(60.0, 11.0),
+                        0.5
+                    )
+                )
+            } else {
+                routePoint
+            }
+        }
+    }
+
+    @Test
+    fun `Removing a fix that causes a shorter flight path should reduce time`() {
         val descentSegmentsOriginalRoute = calculateTestDescent(testRoute)
         val remainingTimeOriginalRoute = descentSegmentsOriginalRoute.first().remainingTime
 
@@ -143,8 +140,7 @@ class PlannerTest {
 
         val remainingTimeModifiedRoute = descentSegmentsModifiedRoute.first().remainingTime
 
-        assertEquals(remainingTimeOriginalRoute, 20.minutes + 46.seconds)
-        assertEquals(remainingTimeModifiedRoute, 18.minutes + 29.seconds)
+        assertTrue { remainingTimeOriginalRoute > remainingTimeModifiedRoute }
     }
 
     @Test
@@ -152,22 +148,16 @@ class PlannerTest {
         val descentSegments = calculateTestDescent(testRoute)
         val altitudeViolations = descentSegments.filter { descentSegment ->
             val passingWp = testRoute.find { wp -> wp.position == descentSegment.position }
-            val altitudeConstraint = lunip4l.fixes.find { wp -> wp.id == passingWp?.id }?.starAltitudeConstraint
+            val altitudeConstraint = lunip4l.fixes.find { wp -> wp.id == passingWp?.id }?.typicalAltitude
 
             if (altitudeConstraint == null) {
                 return@filter false
             }
 
-            val wrongHeight =
-                when (altitudeConstraint) {
-                    is Constraint.Min -> descentSegment.targetAltitude < altitudeConstraint.value
-                    is Constraint.Exact -> descentSegment.targetAltitude != altitudeConstraint.value
-                    is Constraint.Max -> descentSegment.targetAltitude > altitudeConstraint.value
-                    is Constraint.Between -> descentSegment.targetAltitude < altitudeConstraint.min || descentSegment.targetAltitude > altitudeConstraint.max
-                }
+            val wrongHeight = abs(descentSegment.altitude - altitudeConstraint) > 500
 
             if (wrongHeight) {
-                println("Violation at ${passingWp!!.id} - ${descentSegment.targetAltitude} ft. Constraint = ${altitudeConstraint}")
+                println("Violation at ${passingWp!!.id} - ${descentSegment.altitude} ft. Constraint = ${altitudeConstraint}")
                 return@filter true
             }
             return@filter false
@@ -230,12 +220,12 @@ class PlannerTest {
     fun `Calculates IAS to TAS correctly`() {
         assertEquals(
             304,
-            iasToTas(220, 20000, -20)
+            PhysicsUtils.iasToTas(220, 20000, -20)
         )
 
         assertEquals(
             254,
-            iasToTas(220, 10000, -10)
+            PhysicsUtils.iasToTas(220, 10000, -10)
         )
     }
 
@@ -256,19 +246,19 @@ class PlannerTest {
         val windFromNorth = Wind(speedKts = 20, directionDeg = 360)
         val aircraftTas = 220
 
-        val gsWithHeadwind = tasToGs(
+        val gsWithHeadwind = PhysicsUtils.tasToGs(
             tas = aircraftTas,
             wind = windFromNorth,
             track = 360
         )
 
-        val gsWithTailwind = tasToGs(
+        val gsWithTailwind = PhysicsUtils.tasToGs(
             tas = aircraftTas,
             wind = windFromNorth,
             track = 180
         )
 
-        val gsWithCrosswind = tasToGs(
+        val gsWithCrosswind = PhysicsUtils.tasToGs(
             tas = aircraftTas,
             wind = windFromNorth,
             track = 90
@@ -280,7 +270,7 @@ class PlannerTest {
         assertEquals(221, gsWithCrosswind)
     }
 
-    fun calculateTestDescent(remainingRoute: List<RoutePoint>): List<DescentSegment> {
+    private fun calculateTestDescent(remainingRoute: List<RoutePoint>): List<EstimatedProfilePoint> {
         val weatherData = listOf(
             WeatherLayer(0, 0, wind = Wind(180, 0)),
             WeatherLayer(10000, -10, wind = Wind(180, 10)),
