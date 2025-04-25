@@ -1,15 +1,29 @@
 import org.example.EstimatedProfilePoint
 import util.WindBarbs
 import java.awt.BorderLayout
+import java.awt.event.MouseEvent
 import javax.swing.JPanel
+import javax.swing.ToolTipManager
 
 class DescentProfileVisualization : JPanel(BorderLayout()) {
 
     private var estimatedProfilePoints: List<EstimatedProfilePoint> = emptyList()
+    private var hoveredPoint: EstimatedProfilePoint? = null
 
     init {
         background = java.awt.Color.DARK_GRAY
+
+        addMouseMotionListener(object : java.awt.event.MouseMotionAdapter() {
+            override fun mouseMoved(e: MouseEvent) {
+                val point = findHoveredDataPoint(e.x, e.y)
+                if (point != hoveredPoint) {
+                    hoveredPoint = point
+                    repaint()
+                }
+            }
+        })
     }
+
 
     fun setDescentSegments(segments: List<EstimatedProfilePoint>) {
         this.estimatedProfilePoints = segments
@@ -29,39 +43,23 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
         val minAlt = estimatedProfilePoints.minOf { it.altitude }
         val maxAlt = estimatedProfilePoints.maxOf { it.altitude }
 
-        val totalLengthNm = estimatedProfilePoints.first().remainingDistance
-        val totalLengthSeconds = estimatedProfilePoints.first().remainingTime.inWholeSeconds
-        val totalAirLengthNm = estimatedProfilePoints.zipWithNext { a, b ->
-            val legDuration = a.remainingTime.inWholeSeconds - b.remainingTime.inWholeSeconds
-            val airDistance = a.tas * (legDuration / 3600.0)
-            airDistance
-        }.sum()
-
-        val pxPerFt = (height - diagramMarginTop*2).toFloat() / (maxAlt - minAlt).toFloat()
-        val pxPerNm = (width - diagramMargin*2).toFloat() / totalLengthNm
-        val pxPerSecond = (width - diagramMargin*2).toFloat() / totalLengthSeconds
-
-        var prevX = diagramMargin
-        var prevTimeX = diagramMargin
-        var prevY = diagramMarginTop
-        var prevInbound: String? = null
-
+        // Illustrate the flight levels
         for (i in 0..maxAlt step 1000) {
-            val yPos = (height - pxPerFt * (i - minAlt)).toInt() - diagramMarginTop
+            val (_, yPos) = calculateComponentCoordinates(i - minAlt, 0.0f)
             g.color = java.awt.Color.GRAY
             g.drawLine(50, yPos, width - diagramMargin, yPos)
             g.drawString("FL" + (i / 100).toString().padStart(3, '0'), 5, yPos + 5)
         }
 
+        var prevX = diagramMargin
+        var prevY = diagramMarginTop
+        var prevInbound: String? = null
+
         estimatedProfilePoints.forEach {
-            val yPos = (height - pxPerFt * (it.altitude - minAlt)).toInt() - diagramMarginTop
-            val xPos = width - (pxPerNm * it.remainingDistance).toInt() - diagramMargin
-            val xPosTime = width - (pxPerSecond * it.remainingTime.inWholeSeconds).toInt() - diagramMargin
+            val (xPos, yPos) = calculateComponentCoordinates(it.altitude, it.remainingDistance)
 
             // Visualize remaninging time wrt height
             g.color = java.awt.Color.GRAY
-            g.drawLine(prevTimeX, prevY, xPosTime, yPos)
-            prevTimeX = xPosTime
 
             // Visualize remaninging distance wrt height
             g.color = java.awt.Color.WHITE
@@ -82,6 +80,41 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
 
             WindBarbs.drawWindBarb(g, xPos, 40, it.wind.directionDeg, it.wind.speedKts, relativeToHeading = it.heading + 90 )
         }
+
+        hoveredPoint?.let {
+            g.drawString(
+                "GS: ${it.groundSpeed} kts, TAS: ${it.tas} kts, IAS: ${it.ias} kts, remaining time: ${it.remainingTime}, remaining distance: ${it.remainingDistance} nm",
+                diagramMargin,
+                height - 20
+            )
+        }
     }
+
+    private fun calculateComponentCoordinates(altitude: Int, distance: Float): Pair<Int, Int> {
+        val minAlt = estimatedProfilePoints.minOf { it.altitude }
+        val maxAlt = estimatedProfilePoints.maxOf { it.altitude }
+
+        val totalLengthNm = estimatedProfilePoints.first().remainingDistance
+
+        val pxPerFt = (height - diagramMarginTop*2).toFloat() / (maxAlt - minAlt).toFloat()
+        val pxPerNm = (width - diagramMargin*2).toFloat() / totalLengthNm
+
+        val yPos = (height - pxPerFt * (altitude - minAlt)).toInt() - diagramMarginTop
+        val xPos = width - (pxPerNm * distance).toInt() - diagramMargin
+
+        return Pair(xPos, yPos)
+    }
+
+    private fun findHoveredDataPoint(x: Int, y: Int): EstimatedProfilePoint? {
+        val minDistance = 10
+        for (point in estimatedProfilePoints) {
+            val (pointX, pointY) = calculateComponentCoordinates(point.altitude, point.remainingDistance)
+            if (Math.abs(pointX - x) < minDistance && Math.abs(pointY - y) < minDistance) {
+                return point
+            }
+        }
+        return null
+    }
+
 }
 

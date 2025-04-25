@@ -4,14 +4,12 @@ import org.example.entities.navigation.AircraftPosition
 import org.example.entities.navigation.RoutePoint
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
-import org.example.util.PhysicsUtils.gsToTas
 import org.example.util.PhysicsUtils.iasToTas
 import org.example.util.PhysicsUtils.tasToGs
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
 import org.example.util.PhysicsUtils.machToIAS
 import org.example.util.WeatherUtils.getStandardTemperaturAt
 import org.example.util.WeatherUtils.interpolateWeatherAtAltitude
-import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
@@ -23,28 +21,30 @@ object DescentProfileService {
         aircraftPosition: AircraftPosition,
         verticalWeatherProfile: VerticalWeatherProfile?,
         star: Star?,
-        aircraftPerformance: AircraftPerformance
+        aircraftPerformance: AircraftPerformance,
+        landingAirportIcao: String
     ): List<EstimatedProfilePoint> {
         val starMap = star?.fixes?.associateBy { it.id }
         val estimatedProfilePoints = mutableListOf<EstimatedProfilePoint>()
         val lastAltitudeConstraint = star?.findFinalAltitude()
 
         // Starts at the airports and works backwards
-        var currentPosition = this.last().position
-        var currentAltitude = lastAltitudeConstraint ?: 0
-        var remainingDistance = 0f
-        var remainingTime = 0.seconds
+        var probePosition = this.last().position
+        var probeAltitude = lastAltitudeConstraint ?: 0
+        var probingDistance = 0f
+        var accumulatedTimeFromDestination = 0.seconds
 
         estimatedProfilePoints.add(
             EstimatedProfilePoint(
                 inbound = this.last().id,
-                position = currentPosition,
-                altitude = currentAltitude,
-                remainingDistance = remainingDistance,
-                remainingTime = remainingTime,
+                position = probePosition,
+                altitude = probeAltitude,
+                remainingDistance = probingDistance,
+                remainingTime = accumulatedTimeFromDestination,
                 groundSpeed = aircraftPerformance.landingVat, // TODO: convert to ground speed
                 tas = aircraftPerformance.landingVat,
                 wind = defaultWind, // TODO: use wind from METAR
+                ias = aircraftPerformance.landingVat,
                 heading =
                     if (this.size >= 2)
                         this[lastIndex - 1].position.bearingTo(this[lastIndex].position)
@@ -54,8 +54,8 @@ object DescentProfileService {
 
         // Start from the last waypoint (the airport) and work backward
         for (i in lastIndex downTo 1) {
-            val fromWaypoint = this[i]
-            val targetWaypoint = this[i-1]
+            val laterPoint = this[i]
+            val earlierPoint = this[i-1]
             val remainingRouteReversed = this.subList(0, i).reversed()
             val nextAltitudeConstraint = star?.let {
                 remainingRouteReversed.routeToNextAltitudeConstraint(star.fixes).lastOrNull()?.let { fix ->
@@ -67,64 +67,72 @@ object DescentProfileService {
                 remainingRouteReversed.routeToNextSpeedConstraint(it.fixes)
             }
 
-            val nextSpeedConstraint = routeToNextSpeedConstraint?.lastOrNull()?.let { fix ->
-                starMap?.get(fix.id)?.typicalSpeedIas
-            }
+
+            val nextSpeedConstraint =
+                if (laterPoint.id == landingAirportIcao)
+                    aircraftPerformance.landingVat
+                else
+                    routeToNextSpeedConstraint?.lastOrNull()?.let { fix ->
+                        starMap?.get(fix.id)?.typicalSpeedIas
+                    }
 
             val descentSteps = aircraftPerformance.computeDescentPathBackward(
-                lowerAltitude = currentAltitude,
+                lowerAltitude = probeAltitude,
                 higherAltitude = nextAltitudeConstraint ?: aircraftPosition.altitudeFt,
-                laterPoint = currentPosition,
-                earlierPoint = targetWaypoint.position,
+                laterPoint = probePosition,
+                earlierPoint = earlierPoint.position,
                 weatherData = verticalWeatherProfile,
                 nextSpeedConstraint = nextSpeedConstraint,
                 aircraftGroundSpeed = aircraftPosition.groundspeedKts,
             )
 
             descentSteps.forEach { step ->
-                val stepLength = currentPosition.distanceTo(step.position).toFloat()
-                remainingDistance += stepLength
-                remainingTime += (stepLength / step.groundSpeed * 3600.0).roundToInt().seconds
+                val stepLength = probePosition.distanceTo(step.position).toFloat()
+                probingDistance += stepLength
+                accumulatedTimeFromDestination += (stepLength / step.groundSpeed * 3600.0).roundToInt().seconds
 
                 estimatedProfilePoints.add(
                     EstimatedProfilePoint(
-                        inbound = fromWaypoint.id,
+                        inbound = laterPoint.id,
                         position = step.position,
                         altitude = step.altitudeFt,
-                        remainingDistance = remainingDistance,
-                        remainingTime = remainingTime,
+                        remainingDistance = probingDistance,
+                        remainingTime = accumulatedTimeFromDestination,
                         groundSpeed = step.groundSpeed,
                         tas = step.tas,
                         wind = step.wind,
-                        heading = step.position.bearingTo(currentPosition)
+                        heading = step.position.bearingTo(probePosition),
+                        ias = step.ias
                     )
                 )
 
-                currentAltitude = step.altitudeFt
-                currentPosition = step.position
+                probeAltitude = step.altitudeFt
+                probePosition = step.position
             }
 
             // We have reached cruise
             if (descentSteps.isEmpty()) {
-                val weather = verticalWeatherProfile?.interpolateWeatherAtAltitude(currentAltitude)
-                val bearing = currentPosition.bearingTo(this.first().position)
+                val weather = verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)
+                val bearing = probePosition.bearingTo(this.first().position)
+                val expectedIas = aircraftPerformance.getPreferredIas(probeAltitude, weather?.temperatureC)
                 val expectedTas = iasToTas(
-                    aircraftPerformance.getPreferredIas(currentAltitude, weather?.temperatureC),
-                    currentAltitude,
-                    tempCelsius = weather?.temperatureC ?: getStandardTemperaturAt(currentAltitude)
+                    expectedIas,
+                    probeAltitude,
+                    tempCelsius = weather?.temperatureC ?: getStandardTemperaturAt(probeAltitude)
                 )
 
                 estimatedProfilePoints.add(
                     EstimatedProfilePoint(
-                        inbound = fromWaypoint.id,
-                        position = targetWaypoint.position,
-                        altitude = currentAltitude,
-                        remainingDistance = remainingDistance,
-                        remainingTime = remainingTime,
+                        inbound = laterPoint.id,
+                        position = earlierPoint.position,
+                        altitude = probeAltitude,
+                        remainingDistance = probingDistance,
+                        remainingTime = accumulatedTimeFromDestination,
                         groundSpeed = tasToGs(expectedTas, weather?.wind ?: defaultWind, bearing),
                         tas = expectedTas,
                         wind = weather?.wind ?: defaultWind,
-                        heading = bearing
+                        heading = bearing,
+                        ias = expectedIas
                     )
                 )
             }
@@ -153,58 +161,55 @@ object DescentProfileService {
         aircraftGroundSpeed: Int,
     ): List<DescentStep> {
         val descentPath = mutableListOf<DescentStep>()
-        var currentAltitude = lowerAltitude
-        var currentPosition = laterPoint
-
-        val aircraftWind = weatherData?.interpolateWeatherAtAltitude(currentAltitude)?.wind
-        val currentTas = gsToTas(aircraftGroundSpeed, aircraftWind ?: defaultWind, currentPosition.bearingTo(earlierPoint))
+        var probeAltitude = lowerAltitude
+        var probePosition = laterPoint
 
         val deltaTime = 10.seconds
-        val descentRateFpm = this.estimateDescentRate(currentAltitude)
+        val descentRateFpm = this.estimateDescentRate(probeAltitude)
         val verticalSpeed = descentRateFpm / 60.0 // ft/sec
 
-        var remainingDistance = laterPoint.distanceTo(earlierPoint)
-        val estimatedOutsideTemperature = getStandardTemperaturAt(currentAltitude)
+        var remainingProbingDistance = laterPoint.distanceTo(earlierPoint)
+        val estimatedOutsideTemperature = getStandardTemperaturAt(probeAltitude)
 
         while (true) {
-            val stepWeather = weatherData?.interpolateWeatherAtAltitude(currentAltitude)
-            val stepTas =
-                nextSpeedConstraint
-                    ?.let { iasToTas(nextSpeedConstraint, currentAltitude, stepWeather?.temperatureC ?: estimatedOutsideTemperature) }
-                    ?: iasToTas(getPreferredIas(currentAltitude, stepWeather?.temperatureC), currentAltitude, stepWeather?.temperatureC ?: estimatedOutsideTemperature)
+            val probeWeather = weatherData?.interpolateWeatherAtAltitude(probeAltitude)
 
-            val stepGroundspeedKts = tasToGs(stepTas, stepWeather?.wind ?: defaultWind, currentPosition.bearingTo(earlierPoint))
+            val expectedIas = nextSpeedConstraint ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC)
+            val stepTas = iasToTas(expectedIas, probeAltitude, probeWeather?.temperatureC ?: estimatedOutsideTemperature)
+
+            val stepGroundspeedKts = tasToGs(stepTas, probeWeather?.wind ?: defaultWind, probePosition.bearingTo(earlierPoint))
             val stepDistanceNm = (stepGroundspeedKts * deltaTime.inWholeSeconds) / 3600.0
 
-            val newAltitude = currentAltitude + (verticalSpeed * deltaTime.inWholeSeconds).toInt()
+            val newAltitude = probeAltitude + (verticalSpeed * deltaTime.inWholeSeconds).toInt()
             val reachingTargetAltitude = newAltitude > higherAltitude
-            val reachingTargetPoint = remainingDistance - stepDistanceNm < 0
+            val reachingTargetPoint = remainingProbingDistance - stepDistanceNm < 0
 
-            currentAltitude =
+            probeAltitude =
                 if (reachingTargetAltitude)
                     higherAltitude
                 else
                     newAltitude
 
-            currentPosition =
+            probePosition =
                 if (reachingTargetPoint)
                     earlierPoint
                 else
-                    currentPosition.interpolatePositionAlongPath(earlierPoint, stepDistanceNm)
+                    probePosition.interpolatePositionAlongPath(earlierPoint, stepDistanceNm)
 
-            remainingDistance -=
+            remainingProbingDistance -=
                 if (reachingTargetPoint)
-                    currentPosition.distanceTo(earlierPoint)
+                    probePosition.distanceTo(earlierPoint)
                 else
                     stepDistanceNm
 
             descentPath.add(
                 DescentStep(
-                    position = currentPosition,
-                    altitudeFt = currentAltitude,
+                    position = probePosition,
+                    altitudeFt = probeAltitude,
                     groundSpeed = stepGroundspeedKts,
-                    tas = min(currentTas, stepTas),
-                    wind = stepWeather?.wind ?: defaultWind
+                    tas = stepTas,
+                    wind = probeWeather?.wind ?: defaultWind,
+                    ias = expectedIas
                 )
             )
 
@@ -271,7 +276,6 @@ object DescentProfileService {
             }
         }
     }
-
 
     private fun List<RoutePoint>.routeToNextAltitudeConstraint(star: List<StarFix>): List<RoutePoint> {
         val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.typicalAltitude != null } }

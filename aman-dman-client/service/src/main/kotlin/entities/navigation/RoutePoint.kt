@@ -6,3 +6,8 @@ data class RoutePoint(
     val id: String,
     val position: LatLng
 )
+
+data class RemainingRoute(
+    val arrivalAirportIcao: String,
+    val points: List<RoutePoint>,
+)

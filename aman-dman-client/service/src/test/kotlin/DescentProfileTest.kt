@@ -290,7 +290,8 @@ class DescentProfileTest {
             currentPosition,
             weatherProfile,
             lunip4l,
-            aircraftPerformance
+            aircraftPerformance,
+            "ENGM"
         )
 
         println("Descent segments for route:")

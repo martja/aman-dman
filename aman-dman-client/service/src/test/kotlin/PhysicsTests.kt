@@ -37,6 +37,9 @@ class PhysicsTests {
     fun `Convert MACH to IAS`() {
         val ias = PhysicsUtils.machToIAS(mach = 0.787f, altitudeFt = 35000, satCelsius = -56).toDouble()
         assertEquals(268.0, ias, 5.0)
+
+        val ias2 = PhysicsUtils.machToIAS(mach = 0.416f, altitudeFt = 7000, satCelsius = -6).toDouble()
+        assertEquals(240.0, ias2, 5.0)
     }
 
     @Test
@@ -94,6 +97,5 @@ class PhysicsTests {
             1.0
         )
     }
-
 
 }

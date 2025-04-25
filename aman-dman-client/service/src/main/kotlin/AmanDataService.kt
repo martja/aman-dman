@@ -52,7 +52,8 @@ class AmanDataService {
                 ),
                 weatherData,
                 star,
-                performance
+                performance,
+                arrivalAirportIcao,
             )
 
         return RunwayArrivalOccurrence(

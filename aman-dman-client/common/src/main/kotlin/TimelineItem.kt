@@ -88,6 +88,7 @@ data class EstimatedProfilePoint(
     val remainingTime: Duration,
     val groundSpeed: Int,
     val tas: Int,
+    val ias: Int,
     val wind: Wind,
     val heading: Int
 )
@@ -97,6 +98,7 @@ data class DescentStep(
     val altitudeFt: Int,
     val groundSpeed: Int,
     val tas: Int,
+    val ias: Int,
     val wind: Wind
 )
 
