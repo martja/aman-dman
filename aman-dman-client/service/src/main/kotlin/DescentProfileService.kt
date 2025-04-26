@@ -15,7 +15,7 @@ import kotlin.time.Duration.Companion.seconds
 
 object DescentProfileService {
 
-    val defaultWind = Wind(0, 0)
+    private val calmWind = Wind(0, 0)
 
     fun List<RoutePoint>.generateDescentSegments(
         aircraftPosition: AircraftPosition,
@@ -43,7 +43,7 @@ object DescentProfileService {
                 remainingTime = accumulatedTimeFromDestination,
                 groundSpeed = aircraftPerformance.landingVat, // TODO: convert to ground speed
                 tas = aircraftPerformance.landingVat,
-                wind = defaultWind, // TODO: use wind from METAR
+                wind = calmWind, // TODO: use wind from METAR
                 ias = aircraftPerformance.landingVat,
                 heading =
                     if (this.size >= 2)
@@ -67,8 +67,7 @@ object DescentProfileService {
                 remainingRouteReversed.routeToNextSpeedConstraint(it.fixes)
             }
 
-
-            val nextSpeedConstraint =
+            val laterExpectedSpeed =
                 if (laterPoint.id == landingAirportIcao)
                     aircraftPerformance.landingVat
                 else
@@ -81,9 +80,8 @@ object DescentProfileService {
                 higherAltitude = nextAltitudeConstraint ?: aircraftPosition.altitudeFt,
                 laterPoint = probePosition,
                 earlierPoint = earlierPoint.position,
-                weatherData = verticalWeatherProfile,
-                nextSpeedConstraint = nextSpeedConstraint,
-                aircraftGroundSpeed = aircraftPosition.groundspeedKts,
+                verticalWeatherProfile = verticalWeatherProfile,
+                laterExpectedSpeed = laterExpectedSpeed,
             )
 
             descentSteps.forEach { step ->
@@ -109,35 +107,7 @@ object DescentProfileService {
                 probeAltitude = step.altitudeFt
                 probePosition = step.position
             }
-
-            // We have reached cruise
-            if (descentSteps.isEmpty()) {
-                val weather = verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)
-                val bearing = probePosition.bearingTo(this.first().position)
-                val expectedIas = aircraftPerformance.getPreferredIas(probeAltitude, weather?.temperatureC)
-                val expectedTas = iasToTas(
-                    expectedIas,
-                    probeAltitude,
-                    tempCelsius = weather?.temperatureC ?: getStandardTemperaturAt(probeAltitude)
-                )
-
-                estimatedProfilePoints.add(
-                    EstimatedProfilePoint(
-                        inbound = laterPoint.id,
-                        position = earlierPoint.position,
-                        altitude = probeAltitude,
-                        remainingDistance = probingDistance,
-                        remainingTime = accumulatedTimeFromDestination,
-                        groundSpeed = tasToGs(expectedTas, weather?.wind ?: defaultWind, bearing),
-                        tas = expectedTas,
-                        wind = weather?.wind ?: defaultWind,
-                        heading = bearing,
-                        ias = expectedIas
-                    )
-                )
-            }
         }
-
 
         return estimatedProfilePoints.reversed()
     }
@@ -149,16 +119,15 @@ object DescentProfileService {
      * @param higherAltitude The target altitude we want to reach
      * @param laterPoint The point we are descending towards
      * @param earlierPoint The point we are descending from
-     * @param weatherData The weather data at the current altitude
+     * @param verticalWeatherProfile The weather data above the airport
      */
     private fun AircraftPerformance.computeDescentPathBackward(
         lowerAltitude: Int,
         higherAltitude: Int,
         laterPoint: LatLng,
         earlierPoint: LatLng,
-        weatherData: VerticalWeatherProfile?,
-        nextSpeedConstraint: Int?,
-        aircraftGroundSpeed: Int,
+        verticalWeatherProfile: VerticalWeatherProfile?,
+        laterExpectedSpeed: Int?,
     ): List<DescentStep> {
         val descentPath = mutableListOf<DescentStep>()
         var probeAltitude = lowerAltitude
@@ -172,12 +141,12 @@ object DescentProfileService {
         val estimatedOutsideTemperature = getStandardTemperaturAt(probeAltitude)
 
         while (true) {
-            val probeWeather = weatherData?.interpolateWeatherAtAltitude(probeAltitude)
+            val probeWeather = verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)
 
-            val expectedIas = nextSpeedConstraint ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC)
+            val expectedIas = laterExpectedSpeed ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC)
             val stepTas = iasToTas(expectedIas, probeAltitude, probeWeather?.temperatureC ?: estimatedOutsideTemperature)
 
-            val stepGroundspeedKts = tasToGs(stepTas, probeWeather?.wind ?: defaultWind, earlierPoint.bearingTo(probePosition))
+            val stepGroundspeedKts = tasToGs(stepTas, probeWeather?.wind ?: calmWind, earlierPoint.bearingTo(probePosition))
             val stepDistanceNm = (stepGroundspeedKts * deltaTime.inWholeSeconds) / 3600.0
 
             val newAltitude = probeAltitude + (verticalSpeed * deltaTime.inWholeSeconds).toInt()
@@ -208,7 +177,7 @@ object DescentProfileService {
                     altitudeFt = probeAltitude,
                     groundSpeed = stepGroundspeedKts,
                     tas = stepTas,
-                    wind = probeWeather?.wind ?: defaultWind,
+                    wind = probeWeather?.wind ?: calmWind,
                     ias = expectedIas
                 )
             )
