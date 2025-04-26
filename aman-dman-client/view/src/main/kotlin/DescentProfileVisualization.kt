@@ -1,14 +1,13 @@
-import org.example.EstimatedProfilePoint
+import org.example.ProfilePointEstimation
 import util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
-import javax.swing.ToolTipManager
 
 class DescentProfileVisualization : JPanel(BorderLayout()) {
 
-    private var estimatedProfilePoints: List<EstimatedProfilePoint> = emptyList()
-    private var hoveredPoint: EstimatedProfilePoint? = null
+    private var profilePointEstimations: List<ProfilePointEstimation> = emptyList()
+    private var hoveredPoint: ProfilePointEstimation? = null
 
     init {
         background = java.awt.Color.DARK_GRAY
@@ -25,8 +24,8 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     }
 
 
-    fun setDescentSegments(segments: List<EstimatedProfilePoint>) {
-        this.estimatedProfilePoints = segments
+    fun setDescentSegments(segments: List<ProfilePointEstimation>) {
+        this.profilePointEstimations = segments
         repaint()
     }
 
@@ -36,12 +35,12 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     override fun paintComponent(g: java.awt.Graphics) {
         super.paintComponent(g)
 
-        if (estimatedProfilePoints.isEmpty()) {
+        if (profilePointEstimations.isEmpty()) {
             return
         }
 
-        val minAlt = estimatedProfilePoints.minOf { it.altitude }
-        val maxAlt = estimatedProfilePoints.maxOf { it.altitude }
+        val minAlt = profilePointEstimations.minOf { it.altitude }
+        val maxAlt = profilePointEstimations.maxOf { it.altitude }
 
         // Illustrate the flight levels
         for (i in 0..maxAlt step 1000) {
@@ -55,7 +54,7 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
         var prevY = diagramMarginTop
         var prevInbound: String? = null
 
-        estimatedProfilePoints.forEach {
+        profilePointEstimations.forEach {
             val (xPos, yPos) = calculateComponentCoordinates(it.altitude, it.remainingDistance)
 
             // Visualize remaninging time wrt height
@@ -91,10 +90,10 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     }
 
     private fun calculateComponentCoordinates(altitude: Int, distance: Float): Pair<Int, Int> {
-        val minAlt = estimatedProfilePoints.minOf { it.altitude }
-        val maxAlt = estimatedProfilePoints.maxOf { it.altitude }
+        val minAlt = profilePointEstimations.minOf { it.altitude }
+        val maxAlt = profilePointEstimations.maxOf { it.altitude }
 
-        val totalLengthNm = estimatedProfilePoints.first().remainingDistance
+        val totalLengthNm = profilePointEstimations.first().remainingDistance
 
         val pxPerFt = (height - diagramMarginTop*2).toFloat() / (maxAlt - minAlt).toFloat()
         val pxPerNm = (width - diagramMargin*2).toFloat() / totalLengthNm
@@ -105,9 +104,9 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
         return Pair(xPos, yPos)
     }
 
-    private fun findHoveredDataPoint(x: Int, y: Int): EstimatedProfilePoint? {
+    private fun findHoveredDataPoint(x: Int, y: Int): ProfilePointEstimation? {
         val minDistance = 10
-        for (point in estimatedProfilePoints) {
+        for (point in profilePointEstimations) {
             val (pointX, pointY) = calculateComponentCoordinates(point.altitude, point.remainingDistance)
             if (Math.abs(pointX - x) < minDistance && Math.abs(pointY - y) < minDistance) {
                 return point

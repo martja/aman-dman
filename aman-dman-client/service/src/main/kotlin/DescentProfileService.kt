@@ -23,9 +23,9 @@ object DescentProfileService {
         star: Star?,
         aircraftPerformance: AircraftPerformance,
         landingAirportIcao: String
-    ): List<EstimatedProfilePoint> {
+    ): List<ProfilePointEstimation> {
         val starMap = star?.fixes?.associateBy { it.id }
-        val estimatedProfilePoints = mutableListOf<EstimatedProfilePoint>()
+        val profilePointEstimations = mutableListOf<ProfilePointEstimation>()
         val lastAltitudeConstraint = star?.findFinalAltitude()
 
         // Starts at the airports and works backwards
@@ -34,8 +34,9 @@ object DescentProfileService {
         var probingDistance = 0f
         var accumulatedTimeFromDestination = 0.seconds
 
-        estimatedProfilePoints.add(
-            EstimatedProfilePoint(
+        // Add the last point (the airport) to the profile
+        profilePointEstimations +=
+            ProfilePointEstimation(
                 inbound = this.last().id,
                 position = probePosition,
                 altitude = probeAltitude,
@@ -45,52 +46,44 @@ object DescentProfileService {
                 tas = aircraftPerformance.landingVat,
                 wind = calmWind, // TODO: use wind from METAR
                 ias = aircraftPerformance.landingVat,
-                heading =
-                    if (this.size >= 2)
-                        this[lastIndex - 1].position.bearingTo(this[lastIndex].position)
-                    else 0
+                heading = this.getFinalHeading() ?: aircraftPosition.trackDeg
             )
-        )
 
         // Start from the last waypoint (the airport) and work backward
         for (i in lastIndex downTo 1) {
             val laterPoint = this[i]
             val earlierPoint = this[i-1]
             val remainingRouteReversed = this.subList(0, i).reversed()
-            val nextAltitudeConstraint = star?.let {
-                remainingRouteReversed.routeToNextAltitudeConstraint(star.fixes).lastOrNull()?.let { fix ->
-                    starMap?.get(fix.id)?.typicalAltitude
+
+            val nextAltitudeExpectation = star?.nextAltitudeExpectation(remainingRouteReversed)
+                ?.let { starMap?.get(it.id)?.typicalAltitude }
+                ?: aircraftPosition.altitudeFt
+
+            val nextSpeed =
+                when (laterPoint.id) {
+                    landingAirportIcao ->
+                        aircraftPerformance.landingVat
+                    else ->
+                        star?.nextSpeedConstraint(remainingRouteReversed)
+                            ?.let { starMap?.get(it.id)?.typicalSpeedIas }
                 }
-            }
-
-            val routeToNextSpeedConstraint = star?.let {
-                remainingRouteReversed.routeToNextSpeedConstraint(it.fixes)
-            }
-
-            val laterExpectedSpeed =
-                if (laterPoint.id == landingAirportIcao)
-                    aircraftPerformance.landingVat
-                else
-                    routeToNextSpeedConstraint?.lastOrNull()?.let { fix ->
-                        starMap?.get(fix.id)?.typicalSpeedIas
-                    }
 
             val descentSteps = aircraftPerformance.computeDescentPathBackward(
                 lowerAltitude = probeAltitude,
-                higherAltitude = nextAltitudeConstraint ?: aircraftPosition.altitudeFt,
+                higherAltitude = nextAltitudeExpectation,
                 laterPoint = probePosition,
                 earlierPoint = earlierPoint.position,
                 verticalWeatherProfile = verticalWeatherProfile,
-                laterExpectedSpeed = laterExpectedSpeed,
+                laterExpectedSpeed = nextSpeed,
             )
 
-            descentSteps.forEach { step ->
+            for (step in descentSteps) {
                 val stepLength = probePosition.distanceTo(step.position).toFloat()
                 probingDistance += stepLength
                 accumulatedTimeFromDestination += (stepLength / step.groundSpeed * 3600.0).roundToInt().seconds
 
-                estimatedProfilePoints.add(
-                    EstimatedProfilePoint(
+                profilePointEstimations +=
+                    ProfilePointEstimation(
                         inbound = laterPoint.id,
                         position = step.position,
                         altitude = step.altitudeFt,
@@ -102,14 +95,13 @@ object DescentProfileService {
                         heading = step.position.bearingTo(probePosition),
                         ias = step.ias
                     )
-                )
 
                 probeAltitude = step.altitudeFt
                 probePosition = step.position
             }
         }
 
-        return estimatedProfilePoints.reversed()
+        return profilePointEstimations.reversed()
     }
 
     /**
@@ -251,15 +243,26 @@ object DescentProfileService {
 
 
 
-    private fun List<RoutePoint>.routeToNextAltitudeConstraint(star: List<StarFix>): List<RoutePoint> {
+    private fun List<RoutePoint>.routeToNextAltitudeExpectation(star: List<StarFix>): List<RoutePoint> {
         val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.typicalAltitude != null } }
         return if (i == -1) emptyList() else this.subList(0, i + 1)
     }
 
-    private fun List<RoutePoint>.routeToNextSpeedConstraint(star: List<StarFix>): List<RoutePoint> {
+    private fun List<RoutePoint>.routeToNextSpeedExpectation(star: List<StarFix>): List<RoutePoint> {
         val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.typicalSpeedIas != null } }
         return if (i == -1) emptyList() else this.subList(0, i + 1)
     }
+
+    private fun Star.nextAltitudeExpectation(route: List<RoutePoint>): RoutePoint? =
+        route.routeToNextAltitudeExpectation(fixes).lastOrNull()
+
+    private fun Star.nextSpeedConstraint(route: List<RoutePoint>): RoutePoint? =
+        route.routeToNextSpeedExpectation(fixes).lastOrNull()
+
+    private fun List<RoutePoint>.getFinalHeading(): Int? =
+        if (this.size >= 2)
+            this[this.lastIndex - 1].position.bearingTo(this.last().position)
+        else null
 
     private fun Star.findFinalAltitude(): Int =
         this.fixes.reversed().first {

@@ -4,7 +4,8 @@ import org.example.LatLng
 
 data class RoutePoint(
     val id: String,
-    val position: LatLng
+    val position: LatLng,
+    val isPassed: Boolean,
 )
 
 data class RemainingRoute(

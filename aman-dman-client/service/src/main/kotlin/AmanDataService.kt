@@ -40,9 +40,9 @@ class AmanDataService {
 
         val descentSegments = this.route
             .filter { !it.isPassed }
-            .map { RoutePoint(it.name, LatLng(it.latitude, it.longitude)) }
+            .map { RoutePoint(it.name, LatLng(it.latitude, it.longitude), it.isPassed) }
             .let { route ->
-                listOf(RoutePoint("CURRENT", LatLng(latitude, longitude))) + route
+                listOf(RoutePoint("CURRENT", LatLng(latitude, longitude), false)) + route
             }
             .generateDescentSegments(
                 AircraftPosition(
