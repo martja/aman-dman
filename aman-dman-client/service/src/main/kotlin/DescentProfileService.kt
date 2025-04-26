@@ -177,7 +177,7 @@ object DescentProfileService {
             val expectedIas = nextSpeedConstraint ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC)
             val stepTas = iasToTas(expectedIas, probeAltitude, probeWeather?.temperatureC ?: estimatedOutsideTemperature)
 
-            val stepGroundspeedKts = tasToGs(stepTas, probeWeather?.wind ?: defaultWind, probePosition.bearingTo(earlierPoint))
+            val stepGroundspeedKts = tasToGs(stepTas, probeWeather?.wind ?: defaultWind, earlierPoint.bearingTo(probePosition))
             val stepDistanceNm = (stepGroundspeedKts * deltaTime.inWholeSeconds) / 3600.0
 
             val newAltitude = probeAltitude + (verticalSpeed * deltaTime.inWholeSeconds).toInt()
