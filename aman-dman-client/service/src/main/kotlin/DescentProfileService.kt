@@ -244,38 +244,43 @@ object DescentProfileService {
     }
 
     private fun AircraftPerformance.getPreferredIas(altitudeFt: Int, temperatureC: Int?): Int {
-        // Define key IAS values
-        val ias10kTo5k = approachIAS  // Assuming approach IAS value
-        val ias24kTo10k = descentIAS  // Assuming descent IAS value
-        val iasAbove24k = initialDescentMACH?.let {
-            machToIAS(it, altitudeFt, temperatureC ?: getStandardTemperaturAt(altitudeFt))
+        val standardTemp = temperatureC ?: getStandardTemperaturAt(altitudeFt)
+
+        val machIas = initialDescentMACH?.let {
+            machToIAS(it, altitudeFt, standardTemp)
         } ?: descentIAS
 
-        // Interpolation for 10k to ground
         return when {
-            altitudeFt < 5000 -> {
-                // Interpolation between ias10kTo5k and landingVAT (5k to ground)
-                val ratio = (altitudeFt / 5000.0)
-                val iasAtAltitude = (1 - ratio) * ias10kTo5k + ratio * landingVat
-                iasAtAltitude.toInt()
+            altitudeFt > 30000 -> {
+                // High cruise descent: Mach hold
+                machIas
+            }
+            altitudeFt in 28000..30000 -> {
+                // Blend Mach to IAS between FL280-FL300
+                val ratio = (30000 - altitudeFt) / 2000.0
+                val blendedIas = machIas * ratio + descentIAS * (1 - ratio)
+                blendedIas.toInt()
+            }
+            altitudeFt in 10000..28000 -> {
+                // Constant descent IAS below Mach hold
+                descentIAS
             }
             altitudeFt in 5000 until 10000 -> {
-                // Interpolate between ias10kToGnd and ias24kTo10k (approach section)
+                // From 10k to 5k, interpolate approach IAS from descent IAS
                 val ratio = (altitudeFt - 5000) / 5000.0
-                val iasAtAltitude = (1 - ratio) * ias10kTo5k + ratio * ias24kTo10k
-                iasAtAltitude.toInt()
-            }
-            altitudeFt in 10000 until 24000 -> {
-                // Linear interpolation from ias10kToGnd to ias24kTo10k
-                val ratio = (altitudeFt - 10000) / 14000.0
-                val iasAtAltitude = (1 - ratio) * ias24kTo10k + ratio * iasAbove24k
-                iasAtAltitude.toInt()
+                val interpolatedIas = (1 - ratio) * approachIAS + ratio * descentIAS
+                interpolatedIas.coerceAtMost(240.0).toInt() // Cap at 250 kt
             }
             else -> {
-                iasAbove24k
+                // From 5k to ground, interpolate landing speed
+                val ratio = (altitudeFt / 5000.0)
+                val interpolatedIas = (1 - ratio) * landingVat + ratio * approachIAS
+                interpolatedIas.coerceAtMost(240.0).toInt() // Still cap at 250 kt
             }
         }
     }
+
+
 
     private fun List<RoutePoint>.routeToNextAltitudeConstraint(star: List<StarFix>): List<RoutePoint> {
         val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.typicalAltitude != null } }
