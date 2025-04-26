@@ -76,7 +76,7 @@ int AmanPlugIn::getFirstViaFixIndex(CFlightPlanExtractedRoute extractedRoute, st
     return -1;
 }
 
-std::vector<RouteFix> AmanPlugIn::findRemainingRoutePoints(CRadarTarget radarTarget) {
+std::vector<RouteFix> AmanPlugIn::findExtractedRoutePoints(CRadarTarget radarTarget) {
     auto extractedRoute = radarTarget.GetCorrelatedFlightPlan().GetExtractedRoute();
     int closestFixIndex = extractedRoute.GetPointsCalculatedIndex();
     int assignedDirectFixIndex = extractedRoute.GetPointsAssignedIndex();
@@ -86,18 +86,19 @@ std::vector<RouteFix> AmanPlugIn::findRemainingRoutePoints(CRadarTarget radarTar
 
     int nextFixIndex = assignedDirectFixIndex > -1 ? assignedDirectFixIndex : closestFixIndex;
 
-    std::vector<RouteFix> remainingRoute;
+    std::vector<RouteFix> route;
 
     // Ignore waypoints prior to nextFixIndex
-    for (int i = nextFixIndex; i < routeLength; i++) {
+    for (int i = 0; i < routeLength; i++) {
         RouteFix fix;
         fix.name = extractedRoute.GetPointName(i);
         fix.isOnStar = assignedStar == extractedRoute.GetPointAirwayName(i);
         fix.latitude = extractedRoute.GetPointPosition(i).m_Latitude;
         fix.longitude = extractedRoute.GetPointPosition(i).m_Longitude;
-        remainingRoute.push_back(fix);
+        fix.isPassed = i < nextFixIndex;
+        route.push_back(fix);
     }
-    return remainingRoute;
+    return route;
 }
 
 std::vector<AmanAircraft> AmanPlugIn::collectResponseToInboundsSubscription(std::shared_ptr<InboundsToFixSubscription> timeline) {
@@ -222,7 +223,7 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& a
         ac.groundSpeed = rt.GetPosition().GetReportedGS();
         ac.pressureAltitude = rt.GetPosition().GetPressureAltitude();
         ac.flightLevel = rt.GetPosition().GetFlightLevel();
-        ac.remainingRoute = findRemainingRoutePoints(rt);
+        ac.remainingRoute = findExtractedRoutePoints(rt);
         ac.arrivalAirportIcao = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetDestination();
         ac.latitude = rt.GetPosition().GetPosition().m_Latitude;
         ac.longitude = rt.GetPosition().GetPosition().m_Longitude;

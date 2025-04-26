@@ -16,6 +16,7 @@ struct RouteFix {
     bool isOnStar;
     double latitude;
     double longitude;
+    bool isPassed;
 };
 
 class AmanAircraft {

@@ -33,17 +33,18 @@ const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std
         arrivalObject.AddMember("scratchPad", inbound.scratchPad, allocator);
         arrivalObject.AddMember("arrivalAirportIcao", inbound.arrivalAirportIcao, allocator);
 
-        Value remainingRoutePoints(kArrayType);
+        Value routePoints(kArrayType);
         for (auto& point : inbound.remainingRoute) {
             Value pointObject(kObjectType);
             pointObject.AddMember("name", point.name, allocator);
             pointObject.AddMember("isOnStar", point.isOnStar, allocator);
             pointObject.AddMember("latitude", point.latitude, allocator);
             pointObject.AddMember("longitude", point.longitude, allocator);
-            remainingRoutePoints.PushBack(pointObject, allocator);
+            pointObject.AddMember("isPassed", point.isPassed, allocator);
+            routePoints.PushBack(pointObject, allocator);
         }
 
-        arrivalObject.AddMember("remainingRoute", remainingRoutePoints, allocator);
+        arrivalObject.AddMember("route", routePoints, allocator);
 
         arrivalsArray.PushBack(arrivalObject, allocator);
     }

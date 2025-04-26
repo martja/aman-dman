@@ -14,7 +14,7 @@ data class ArrivalJson(
     val pressureAltitude: Int,
     val groundSpeed: Int,
     val track: Int,
-    val remainingRoute: List<FixPointJson>,
+    val route: List<FixPointJson>,
     val arrivalAirportIcao: String,
 )
 
@@ -22,5 +22,6 @@ data class FixPointJson(
     val name: String,
     val isOnStar: String?,
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+    val isPassed: Boolean,
 )

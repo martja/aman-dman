@@ -38,7 +38,8 @@ class AmanDataService {
             println("Star not found for ${this.callsign}: $assignedStar")
         }
 
-        val descentSegments = this.remainingRoute
+        val descentSegments = this.route
+            .filter { !it.isPassed }
             .map { RoutePoint(it.name, LatLng(it.latitude, it.longitude)) }
             .let { route ->
                 listOf(RoutePoint("CURRENT", LatLng(latitude, longitude))) + route
