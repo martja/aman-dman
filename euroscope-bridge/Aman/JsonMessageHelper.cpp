@@ -43,6 +43,9 @@ const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std
         if (!inbound.trackingController.empty())
             arrivalObject.AddMember("trackingController", inbound.trackingController, allocator);
 
+        if (inbound.flightPlanTas > 0)
+            arrivalObject.AddMember("flightPlanTas", inbound.flightPlanTas, allocator);
+
         Value routePoints(kArrayType);
         for (auto& point : inbound.remainingRoute) {
             Value pointObject(kObjectType);

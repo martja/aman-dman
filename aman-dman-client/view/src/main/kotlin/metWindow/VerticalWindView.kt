@@ -47,7 +47,7 @@ class VerticalWindView: JPanel(BorderLayout()) {
                     barbMaxLength = 12,
                 )
 
-                g.drawString("FL${(it.flightLevelFt / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.wind.directionDeg.toString().padStart(3, '0')} / ${it.wind.speedKts} kt", 30, yPos)
+                g.drawString("FL${(it.flightLevelFt / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.wind.directionDeg.toString().padStart(3, '0')} / ${it.wind.speedKts} kt / ${it.temperatureC} C", 30, yPos)
             }
 
             g.drawString("Valid " + currentProfile.time.format("yyyy/MM/dd HH:mm") + "Z", 5, height - 5)

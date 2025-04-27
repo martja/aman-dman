@@ -1,4 +1,5 @@
 import org.example.EstimationService.toRunwayArrivalOccurrence
+import org.example.config.AircraftPerformanceData
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
 import org.example.integration.entities.ArrivalJson
@@ -6,10 +7,12 @@ import org.example.integration.entities.FixPointJson
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class DescentTrajectoryServiceTest {
 
-    val star = Star(
+    val inrex4m = Star(
         id="INREX4M",
         airport="ENGM",
         runway="19L",
@@ -56,12 +59,124 @@ class DescentTrajectoryServiceTest {
                 FixPointJson(name="GME40", isOnStar=true, latitude=60.26238277777778, longitude=11.157691944444444, isPassed=false),
                 FixPointJson(name="ENGM", isOnStar=false, latitude=60.20277800000001, longitude=11.083889000000001, isPassed=false)
             ),
-            arrivalAirportIcao="ENGM"
+            arrivalAirportIcao="ENGM",
+            450
+        )
+
+    val arrivalJson2 =
+        ArrivalJson(
+            callsign="EZY9",
+            icaoType="A320",
+            assignedRunway="19L",
+            assignedStar="ESEBA4M",
+            assignedDirect=null,
+            trackingController=null,
+            scratchPad=null,
+            latitude=59.77381134033203,
+            longitude=14.915430068969727,
+            flightLevel=31222,
+            pressureAltitude=31476,
+            groundSpeed=407,
+            track=0,
+            route= listOf(
+                FixPointJson(name="ESSA", isOnStar=false, latitude=59.65194399999999, longitude=17.918611, isPassed=true),
+                FixPointJson(name="ARS", isOnStar=false, latitude=59.586222, longitude=16.650333, isPassed=true),
+                FixPointJson(name="BEDLA", isOnStar=false, latitude=59.628944000000004, longitude=16.225028, isPassed=true),
+                FixPointJson(name="IBGAX", isOnStar=false, latitude=59.72222200000001, longitude=15.395833000000001, isPassed=true),
+                FixPointJson(name="EBURI", isOnStar=false, latitude=59.8, longitude=14.660556000000001, isPassed=false),
+                FixPointJson(name="TEKVA", isOnStar=false, latitude=59.984722, longitude=12.719444000000001, isPassed=false),
+                FixPointJson(name="ESEBA", isOnStar=false, latitude=60.012778000000004, longitude=12.392222, isPassed=false),
+                FixPointJson(name="KEGET", isOnStar=true, latitude=60.08972194444445, longitude=12.254888888888889, isPassed=false),
+                FixPointJson(name="GM422", isOnStar=true, latitude=60.26261083333333, longitude=11.954832777777778, isPassed=false),
+                FixPointJson(name="GM423", isOnStar=true, latitude=60.36525, longitude=12.033749722222222, isPassed=false),
+                FixPointJson(name="TITLA", isOnStar=true, latitude=60.42136083333333, longitude=11.402721944444444, isPassed=false),
+                FixPointJson(name="OSPAD", isOnStar=true, latitude=60.40099194444444, longitude=11.238730833333333, isPassed=false),
+                FixPointJson(name="XIVTA", isOnStar=true, latitude=60.34008277777778, longitude=11.203132777777776, isPassed=false),
+                FixPointJson(name="GME40", isOnStar=true, latitude=60.26238277777778, longitude=11.157691944444444, isPassed=false),
+                FixPointJson(name="ENGM", isOnStar=false, latitude=60.20277800000001, longitude=11.083889000000001, isPassed=false)
+            ),
+            arrivalAirportIcao="ENGM",
+            450
+        )
+
+    val adopi3m =
+        Star(
+            id="ADOPI3M",
+            airport="ENGM",
+            runway="19L",
+            fixes=listOf(
+                StarFix(id="ADOPI", typicalAltitude=null, typicalSpeedIas=250),
+                StarFix(id="GM428", typicalAltitude=10000, typicalSpeedIas=220),
+                StarFix(id="BAVAD", typicalAltitude=5000, typicalSpeedIas=200),
+                StarFix(id="OSPAD", typicalAltitude=4000, typicalSpeedIas=180),
+                StarFix(id="XIVTA", typicalAltitude=3500, typicalSpeedIas=170),
+                StarFix(id="ENGM", typicalAltitude=700, typicalSpeedIas=null)
+            )
+        )
+
+    val arrivalWithDirectRouting = ArrivalJson(
+        callsign="SRR22X",
+        icaoType="B77L",
+        assignedRunway="19L",
+        assignedStar="ADOPI3M",
+        assignedDirect="BAVAD",
+        trackingController="GWR",
+        scratchPad=null,
+        latitude=60.36001968383789,
+        longitude=9.892060279846191,
+        flightLevel=15670,
+        pressureAltitude=15851,
+        groundSpeed=402,
+        track=0,
+        route=listOf(
+            FixPointJson(name="EIDW", isOnStar=false, latitude=53.421389, longitude=-6.2700000000000005, isPassed=true),
+            FixPointJson(name="ROTEV", isOnStar=false, latitude=54.028806, longitude=-6.066222000000001, isPassed=true),
+            FixPointJson(name="GOTNA", isOnStar=false, latitude=54.594842, longitude=-5.598013999999999, isPassed=true),
+            FixPointJson(name="TRN", isOnStar=false, latitude=55.313410999999995, longitude=-4.783864, isPassed=true),
+            FixPointJson(name="KLONN", isOnStar=false, latitude=58.390122000000005, longitude=2.828922, isPassed=true),
+            FixPointJson(name="ADOPI", isOnStar=false, latitude=60.323611, longitude=9.383333, isPassed=true),
+            FixPointJson(name="EXUDA", isOnStar=true, latitude=60.39744388888889, longitude=9.926332777777777, isPassed=true),
+            FixPointJson(name="GM428", isOnStar=true, latitude=60.46558277777778, longitude=10.442388888888889, isPassed=true),
+            FixPointJson(name="GM429", isOnStar=true, latitude=60.572943888888894, longitude=10.479721944444444, isPassed=true),
+            FixPointJson(name="BAVAD", isOnStar=true, latitude=60.46611083333334, longitude=11.08444388888889, isPassed=false),
+            FixPointJson(name="OSPAD", isOnStar=true, latitude=60.40099194444444, longitude=11.238730833333333, isPassed=false),
+            FixPointJson(name="XIVTA", isOnStar=true, latitude=60.34008277777778, longitude=11.203132777777776, isPassed=false),
+            FixPointJson(name="GME40", isOnStar=true, latitude=60.26238277777778, longitude=11.157691944444444, isPassed=false),
+            FixPointJson(name="ENGM", isOnStar=false, latitude=60.20277800000001, longitude=11.083889000000001, isPassed=false)
+        ),
+        arrivalAirportIcao="ENGM",
+        450
+    )
+
+    val eseba4m =
+        Star(
+            id="ESEBA4M",
+            airport="ENGM",
+            runway="19L",
+            fixes= listOf(
+                StarFix(id="ESEBA", typicalAltitude=null, typicalSpeedIas=250),
+                StarFix(id="GM422", typicalAltitude=10000, typicalSpeedIas=220),
+                StarFix(id="TITLA", typicalAltitude=5000, typicalSpeedIas=200),
+                StarFix(id="OSPAD", typicalAltitude=4000, typicalSpeedIas=180),
+                StarFix(id="XIVTA", typicalAltitude=3500, typicalSpeedIas=170),
+                StarFix(id="ENGM", typicalAltitude=700, typicalSpeedIas=null)
+            )
         )
 
     @Test
+    fun `When direct routing, use preferred speed until next typical speed`() {
+        val descentTrajectory = arrivalWithDirectRouting.toRunwayArrivalOccurrence(adopi3m, null)!!.descentTrajectory
+        val directRoutingIndex = descentTrajectory.indexOfFirst { it.fixId == arrivalWithDirectRouting.assignedDirect }
+        val expectedSpeedAtDirectRouting = adopi3m.fixes.find { it.id == arrivalWithDirectRouting.assignedDirect }!!.typicalSpeedIas!!
+
+        descentTrajectory.subList(0, directRoutingIndex).forEach {
+            assertTrue { it.ias > expectedSpeedAtDirectRouting }
+        }
+    }
+
+    @Test
     fun `Descent trajectory should contain all fixes that has not been passed`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(star, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
 
         val remainingFixesOnRoute = arrivalJson.route.filter { !it.isPassed }.map { it.name }
         val fixesOnDescentTrajectory = descentTrajectory.mapNotNull { it.fixId }
@@ -71,7 +186,13 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated TAS should not jump by more than 10 knots`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(star, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson2.toRunwayArrivalOccurrence(eseba4m, null)!!.descentTrajectory
+
+        descentTrajectory.forEach {
+            println(
+                "FixId: ${it.fixId}, ias: ${it.ias}, altitude: ${it.altitude}, remainingDistance: ${it.remainingDistance}, remainingTime: ${it.remainingTime}, groundSpeed: ${it.groundSpeed}, tas: ${it.tas}"
+            )
+        }
 
         val tasList = descentTrajectory.map { it.tas }
         val isJumping = tasList.zipWithNext().any { (prev, next) -> abs(prev - next) > 10 }
@@ -80,7 +201,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated IAS should not jump by more than 5 knots`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(star, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
 
         val iasList = descentTrajectory.map { it.ias }
         val isJumping = iasList.zipWithNext().any { (prev, next) -> abs(prev - next) > 5 }
@@ -90,7 +211,7 @@ class DescentTrajectoryServiceTest {
     @Test
     fun `Estimated IAS should never exceed typical speed on STAR point`() {
         val descentTrajectory = arrivalJson
-            .toRunwayArrivalOccurrence(star, null)!!
+            .toRunwayArrivalOccurrence(inrex4m, null)!!
             .descentTrajectory.filter { it.fixId != null }
 
         assertEquals(descentTrajectory.size, 9)
@@ -98,7 +219,7 @@ class DescentTrajectoryServiceTest {
         val isExceeding = descentTrajectory
             .filter { it.fixId != null }
             .any { point ->
-                val starFix = star.fixes.find { it.id == point.fixId }
+                val starFix = inrex4m.fixes.find { it.id == point.fixId }
                 if (starFix?.typicalSpeedIas == null) return@any false
                 point.ias > starFix.typicalSpeedIas!!
             }
@@ -109,7 +230,7 @@ class DescentTrajectoryServiceTest {
     @Test
     fun `Trajectory points that have a fix id should have the same coordinates as the corresponding fix on the aircraft's route`() {
         val descentTrajectory = arrivalJson
-            .toRunwayArrivalOccurrence(star, null)!!
+            .toRunwayArrivalOccurrence(inrex4m, null)!!
             .descentTrajectory
             .filter { it.fixId != null }
 
@@ -123,7 +244,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated IAS should not be more than 250 below FL100`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(star, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
 
         val isExceeding = descentTrajectory.any { it.altitude < 10_000 && it.ias > 250 }
         assertEquals(false, isExceeding, "IAS should not exceed 250 below FL100")
@@ -131,7 +252,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Altitude should never be increasing`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(star, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
 
         val altitudeList = descentTrajectory.map { it.altitude }
         val isIncreasing = altitudeList.zipWithNext().any { (prev, next) -> prev < next }

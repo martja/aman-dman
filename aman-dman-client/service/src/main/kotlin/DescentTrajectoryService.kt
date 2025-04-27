@@ -7,6 +7,7 @@ import org.example.entities.navigation.star.StarFix
 import org.example.util.PhysicsUtils.iasToTas
 import org.example.util.PhysicsUtils.tasToGs
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
+import org.example.util.PhysicsUtils
 import org.example.util.PhysicsUtils.machToIAS
 import org.example.util.WeatherUtils.getStandardTemperatureAt
 import org.example.util.WeatherUtils.interpolateWeatherAtAltitude
@@ -25,6 +26,7 @@ object DescentTrajectoryService {
         star: Star?,
         aircraftPerformance: AircraftPerformance,
         landingAirportIcao: String,
+        flightPlanTas: Int?
     ): List<TrajectoryPoint> {
         val starMap = star?.fixes?.associateBy { it.id }
         val trajectoryPoints = mutableListOf<TrajectoryPoint>()
@@ -66,7 +68,11 @@ object DescentTrajectoryService {
 
             val earlierSpeedExpectation = star?.let {
                 getInterpolatedSpeedExpectation(star = it.fixes, atRoutePoint = earlierPoint)
-            }
+            } ?: aircraftPerformance.getPreferredIas(
+                altitudeFt = nextAltitudeExpectation,
+                temperatureC = verticalWeatherProfile?.interpolateWeatherAtAltitude(nextAltitudeExpectation)?.temperatureC,
+                flightPlanTas = flightPlanTas
+            )
 
             val descentSteps = aircraftPerformance.computeDescentPathBackward(
                 lowerAltitude = probeAltitude,
@@ -75,7 +81,8 @@ object DescentTrajectoryService {
                 earlierPoint = earlierPoint.position,
                 verticalWeatherProfile = verticalWeatherProfile,
                 earlierExpectedSpeed = earlierSpeedExpectation,
-                laterExpectedSpeed = trajectoryPoints.last().ias
+                laterExpectedSpeed = trajectoryPoints.last().ias,
+                flightPlanTas = flightPlanTas
             )
 
             for (step in descentSteps) {
@@ -122,7 +129,8 @@ object DescentTrajectoryService {
         earlierPoint: LatLng,
         verticalWeatherProfile: VerticalWeatherProfile?,
         earlierExpectedSpeed: Int?,
-        laterExpectedSpeed: Int?
+        laterExpectedSpeed: Int?,
+        flightPlanTas: Int?
     ): List<DescentStep> {
         val descentPath = mutableListOf<DescentStep>()
         var probeAltitude = lowerAltitude
@@ -133,13 +141,13 @@ object DescentTrajectoryService {
         val verticalSpeed = descentRateFpm / 60.0 // ft/sec
 
         var remainingProbingDistance = laterPoint.distanceTo(earlierPoint)
-        var currentExpectedSpeed = laterExpectedSpeed ?: this.getPreferredIas(probeAltitude, verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)?.temperatureC)
+        var currentExpectedSpeed = laterExpectedSpeed ?: this.getPreferredIas(probeAltitude, verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)?.temperatureC, flightPlanTas)
 
         while (true) {
             val probeWeather = verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)
             val estimatedOutsideTemperature = getStandardTemperatureAt(probeAltitude)
 
-            val targetSpeed = earlierExpectedSpeed ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC)
+            val targetSpeed = earlierExpectedSpeed ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC, flightPlanTas)
             val maxSpeedChange = deltaTime.inWholeSeconds.toInt() * DECELERATION_RATE
             val speedDifference = (targetSpeed - currentExpectedSpeed).toDouble()
             val speedAdjustment = speedDifference.coerceIn(-maxSpeedChange, maxSpeedChange)
@@ -203,7 +211,7 @@ object DescentTrajectoryService {
         }
 
         if (priorSpeedRestriction == null) {
-            return laterSpeedRestriction.first.typicalSpeedIas
+            return null
         }
 
         val distanceToSpeedExpectation = distanceBetweenPoints(atRoutePoint, laterSpeedRestriction.second)
@@ -238,12 +246,13 @@ object DescentTrajectoryService {
         }
     }
 
-    private fun AircraftPerformance.getPreferredIas(altitudeFt: Int, temperatureC: Int?): Int {
-        val standardTemp = temperatureC ?: getStandardTemperatureAt(altitudeFt)
+    private fun AircraftPerformance.getPreferredIas(altitudeFt: Int, temperatureC: Int?, flightPlanTas: Int?): Int {
+        val tempOrStandardTemp = temperatureC ?: getStandardTemperatureAt(altitudeFt)
 
-        val machIas = initialDescentMACH?.let {
-            machToIAS(it, altitudeFt, standardTemp)
-        } ?: descentIAS
+        val machIas =
+            flightPlanTas?.let { PhysicsUtils.tasToIAS(it, altitudeFt, tempOrStandardTemp) }
+                ?: initialDescentMACH?.let { machToIAS(it, altitudeFt, tempOrStandardTemp) }
+                ?: descentIAS
 
         return when {
             altitudeFt > 30000 -> {

@@ -34,6 +34,7 @@ object EstimationService {
                 star,
                 performance,
                 arrivalAirportIcao,
+                flightPlanTas,
             )
 
         return RunwayArrivalOccurrence(

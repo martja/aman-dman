@@ -230,6 +230,18 @@ class DescentProfileTest {
     }
 
     @Test
+    fun `Convert TAS to IAS and back correctly`() {
+        val tas = 450
+        val altitudeFt = 37000
+        val tempCelsius = -20
+
+        val ias = PhysicsUtils.tasToIAS(tas, altitudeFt, tempCelsius)
+        val convertedTas = PhysicsUtils.iasToTas(ias, altitudeFt, tempCelsius)
+
+        assertEquals(tas, convertedTas)
+    }
+
+    @Test
     fun `Interpolate distance along path`() {
         val origin = LatLng(60.0, 11.0)
         val newPoint = origin.interpolatePositionAlongPath(LatLng(60.0, 12.0), 0.5)
@@ -291,7 +303,8 @@ class DescentProfileTest {
             weatherProfile,
             lunip4l,
             aircraftPerformance,
-            "ENGM"
+            "ENGM",
+            450
         )
 
         println("Descent segments for route:")

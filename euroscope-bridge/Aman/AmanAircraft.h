@@ -41,4 +41,5 @@ public:
     int groundSpeed;
     int pressureAltitude;
     int flightLevel;
+    int flightPlanTas;
 };

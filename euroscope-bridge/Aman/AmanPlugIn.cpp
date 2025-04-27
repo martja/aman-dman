@@ -228,6 +228,7 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& a
         ac.arrivalAirportIcao = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetDestination();
         ac.latitude = rt.GetPosition().GetPosition().m_Latitude;
         ac.longitude = rt.GetPosition().GetPosition().m_Longitude;
+        ac.flightPlanTas = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetTrueAirspeed();
         aircraftList.push_back(ac);
     }
 
