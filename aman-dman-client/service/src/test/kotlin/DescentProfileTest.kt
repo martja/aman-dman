@@ -8,13 +8,12 @@ import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
 import org.example.util.NavigationUtils.dmsToDecimal
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
-import org.example.util.PhysicsUtils
+import org.example.util.SpeedConversion
 import org.junit.jupiter.api.Test
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 fun starFix(id: String, block: StarFix.StarFixBuilder.() -> Unit): StarFix {
     return StarFix.StarFixBuilder(id).apply(block).build()
@@ -59,7 +58,6 @@ class DescentProfileTest {
     )
 
     val testRoute = listOf(
-        RoutePoint("CURRENT", currentPosition.position, isPassed = false, isOnStar = false),
         RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E"""), isPassed = false, isOnStar = true),
         RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E"""), isPassed = false, isOnStar = true),
         RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E"""), isPassed = false, isOnStar = true),
@@ -85,31 +83,6 @@ class DescentProfileTest {
         )
 
         assertEquals(64, lunip4lRoute.getRouteDistance().roundToInt())
-    }
-
-    /*@Test
-    fun `calculate ETA`() {
-        val descentSegments = calculateTestDescent(testRoute)
-        val remainingTime = descentSegments.first().remainingTime
-
-        // To wkt linestring
-        val wkt = "LINESTRING (" + descentSegments.joinToString(",") { it.position.lon.toString() + " " + it.position.lat.toString() } + ")"
-
-        assertEquals(20.minutes + 46.seconds, remainingTime)
-    }*/
-
-    @Test
-    fun `Removing waypoints along a straight line should not affect ETA`() {
-        val descentSegmentsOriginalRoute = calculateTestDescent(testRoute)
-        val remainingTimeOriginalRoute = descentSegmentsOriginalRoute.first().remainingTime
-
-        val testRouteB = testRoute.filter { it.id != "DEVKU" }
-        val descentSegmentsModifiedRoute = calculateTestDescent(testRouteB)
-
-        val remainingTimeModifiedRoute = descentSegmentsModifiedRoute.first().remainingTime
-
-        // Allow 2 seconds difference
-        assertTrue(remainingTimeOriginalRoute - remainingTimeModifiedRoute < 2.0.seconds)
     }
 
     @Test
@@ -167,18 +140,6 @@ class DescentProfileTest {
     }
 
     @Test
-    fun `The length of the descent segments route should be equal to the original route`() {
-        val descentSegments = calculateTestDescent(testRoute)
-        val descentSegmentsLength = descentSegments.zipWithNext { a, b -> a.position.distanceTo(b.position) }.sum()
-
-        val originalRouteLength = testRoute.getRouteDistance()
-
-        // Allow 0.05% difference
-        val maxDifference = originalRouteLength * 0.0005
-        assertEquals(originalRouteLength, descentSegmentsLength, maxDifference)
-    }
-
-    @Test
     fun `Descent segments should not contain duplicates`() {
         val descentSegments = calculateTestDescent(testRoute)
         val nDistinctPoints = descentSegments.map { it.position.lat to it.position.lon }.distinct().size
@@ -220,12 +181,12 @@ class DescentProfileTest {
     fun `Calculates IAS to TAS correctly`() {
         assertEquals(
             304,
-            PhysicsUtils.iasToTas(220, 20000, -20)
+            SpeedConversion.iasToTAS(220, 20000, -20)
         )
 
         assertEquals(
             254,
-            PhysicsUtils.iasToTas(220, 10000, -10)
+            SpeedConversion.iasToTAS(220, 10000, -10)
         )
     }
 
@@ -235,8 +196,8 @@ class DescentProfileTest {
         val altitudeFt = 37000
         val tempCelsius = -20
 
-        val ias = PhysicsUtils.tasToIAS(tas, altitudeFt, tempCelsius)
-        val convertedTas = PhysicsUtils.iasToTas(ias, altitudeFt, tempCelsius)
+        val ias = SpeedConversion.tasToIAS(tas, altitudeFt, tempCelsius)
+        val convertedTas = SpeedConversion.iasToTAS(ias, altitudeFt, tempCelsius)
 
         assertEquals(tas, convertedTas)
     }
@@ -258,19 +219,19 @@ class DescentProfileTest {
         val windFromNorth = Wind(speedKts = 20, directionDeg = 360)
         val aircraftTas = 220
 
-        val gsWithHeadwind = PhysicsUtils.tasToGs(
+        val gsWithHeadwind = SpeedConversion.tasToGS(
             tas = aircraftTas,
             wind = windFromNorth,
             track = 360
         )
 
-        val gsWithTailwind = PhysicsUtils.tasToGs(
+        val gsWithTailwind = SpeedConversion.tasToGS(
             tas = aircraftTas,
             wind = windFromNorth,
             track = 180
         )
 
-        val gsWithCrosswind = PhysicsUtils.tasToGs(
+        val gsWithCrosswind = SpeedConversion.tasToGS(
             tas = aircraftTas,
             wind = windFromNorth,
             track = 90

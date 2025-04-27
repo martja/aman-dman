@@ -1,5 +1,6 @@
 import org.example.EstimationService.toRunwayArrivalOccurrence
-import org.example.config.AircraftPerformanceData
+import org.example.LatLng
+import org.example.distanceTo
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
 import org.example.integration.entities.ArrivalJson
@@ -9,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class DescentTrajectoryServiceTest {
 
@@ -257,6 +259,76 @@ class DescentTrajectoryServiceTest {
         val altitudeList = descentTrajectory.map { it.altitude }
         val isIncreasing = altitudeList.zipWithNext().any { (prev, next) -> prev < next }
         assertEquals(false, isIncreasing, "Altitude should never be increasing")
+    }
+
+    @Test
+    fun `Removing waypoint along a straight line should not affect ETA`() {
+        val originalTrajectory = arrivalJson2.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+
+        val modifiedRoute = arrivalJson2.copy(
+            route = arrivalJson2.route.filter { it.name != "TEKVA" }
+        )
+
+        val newTrajectory = modifiedRoute.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+
+        assertEquals(
+            expected = originalTrajectory.first().remainingTime.inWholeSeconds.toDouble(),
+            actual = newTrajectory.first().remainingTime.inWholeSeconds.toDouble(),
+            absoluteTolerance = 1.0,
+            "ETA should not change when removing a waypoint along a straight line"
+        )
+    }
+
+    @Test
+    fun `Removing waypoint along a curve should affect ETA`() {
+        val originalTrajectory = arrivalJson2.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+
+        val modifiedRoute = arrivalJson2.copy(
+            route = arrivalJson2.route.filter { it.name != "GM423" }
+        )
+
+        val newTrajectory = modifiedRoute.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+
+        val timeGained = originalTrajectory.first().remainingTime - newTrajectory.first().remainingTime
+
+        assertTrue { timeGained > 30.seconds && timeGained < 60.seconds }
+
+        assertNotEquals(
+            illegal = originalTrajectory.first().remainingTime.inWholeSeconds.toDouble(),
+            actual = newTrajectory.first().remainingTime.inWholeSeconds.toDouble(),
+            absoluteTolerance = 45.0,
+            "ETA should change when removing a waypoint along a curve"
+        )
+    }
+
+    @Test
+    fun `Descent trajectory should have same length as the remaining route`() {
+        val remainingRoute =
+            arrivalJson.route.filter { !it.isPassed }
+
+        val descentTrajectoryLength =
+            arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!
+                .descentTrajectory
+                .zipWithNext()
+                .sumOf { (previous, next) -> previous.position.distanceTo(next.position) }
+
+        val remainingRouteLength = remainingRoute.zipWithNext()
+            .sumOf { (current, next) ->
+                val currentPosition = LatLng(current.latitude, current.longitude)
+                val nextPosition = LatLng(next.latitude, next.longitude)
+                currentPosition.distanceTo(nextPosition)
+            }
+
+        val distanceToFirstFix =
+            LatLng(arrivalJson.latitude, arrivalJson.longitude)
+                .distanceTo(LatLng(remainingRoute.first().latitude, remainingRoute.first().longitude))
+
+        assertEquals(
+            expected = descentTrajectoryLength,
+            actual = remainingRouteLength + distanceToFirstFix,
+            absoluteTolerance = 0.001,
+            "Descent trajectory should have same length as the remaining route"
+        )
     }
 
 }

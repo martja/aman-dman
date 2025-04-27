@@ -6,11 +6,11 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-object PhysicsUtils {
+object SpeedConversion {
     /**
      * Convert Indicated Airspeed (IAS) to True Airspeed (TAS)
      */
-    fun iasToTas(ias: Int, altitudeFt: Int, tempCelsius: Int): Int {
+    fun iasToTAS(ias: Int, altitudeFt: Int, tempCelsius: Int): Int {
         val tempKelvin = tempCelsius + 273.15
         val altitudeMeters = altitudeFt * 0.3048
 
@@ -34,43 +34,55 @@ object PhysicsUtils {
 
     /**
      * Convert Mach number to Indicated Airspeed (IAS)
+     *
+     * TODO: Improve accuracy
+     *
+     * @param mach Mach number
+     * @param altitudeFt Altitude in feet
+     * @param satCelsius Static air temperature in Celsius (this is what the weather forecast provides)
      */
     fun machToIAS(mach: Float, altitudeFt: Int, satCelsius: Int): Int {
         val satKelvin = satCelsius + 273.15
-        val tatKelvin = satKelvin * (1.0 + 0.2 * mach * mach)
-        val speedOfSound = sqrt(1.4 * 287.05 * tatKelvin)  // m/s
+        val speedOfSound = sqrt(1.4 * 287.05 * satKelvin)  // Use SAT directly
         val tas = mach * speedOfSound
         val tasKts = tas * 1.94384
-        val cas = tasToCAS(tasKts, altitudeFt)
+        val cas = tasToCAS(tasKts, altitudeFt, satCelsius)
         return cas.roundToInt()
     }
 
     /**
      * Convert True Airspeed (TAS) to Calibrated Airspeed (CAS)
+     *
+     *  TODO: Improve accuracy
      */
-    private fun tasToCAS(tasKts: Double, altitudeFt: Int): Double {
-        val P0 = 101325.0     // Sea-level pressure (Pa)
-        val T0 = 288.15       // Sea-level temp (K)
+    fun tasToCAS(tasKts: Double, altitudeFt: Int, satCelsius: Int): Double {
         val gamma = 1.4
         val R = 287.05
+        val P0 = 101325.0     // Sea-level pressure (Pa)
+        val T0 = 288.15       // Sea-level temp (K)
 
+        val tas = tasKts / 1.94384 // knots → m/s
         val altitudeM = altitudeFt * 0.3048
+
+        val satKelvin = satCelsius + 273.15
+
         val L = 0.0065
-        val T = T0 - L * altitudeM
+        val T = satKelvin
         val P = P0 * (1 - (L * altitudeM) / T0).pow(5.2561)
 
-        val a = sqrt(gamma * R * T)
-        val tas = tasKts / 1.94384  // knots → m/s
-        val M = tas / a
+        val rho = P / (R * T)
+        val rho0 = P0 / (R * T0)
 
-        // Calculate impact pressure (q_c) for TAS (compressible flow)
-        val q_c = P * ((1 + ((gamma - 1) / 2) * M * M).pow(gamma / (gamma - 1)) - 1)
+        val eas = tas * sqrt(rho / rho0)
 
-        // Now invert q_c to get CAS (at sea level)
-        val cas = sqrt((2 * P0 / (gamma - 1)) *
-                ((q_c / P0 + 1).pow((gamma - 1) / gamma) - 1))
+        val a0 = sqrt(gamma * R * T0) // speed of sound at sea level standard
+        val M_eas = eas / a0
 
-        return cas * 1.94384  // m/s → knots
+        val q_c = P0 * ((1 + (gamma - 1) / 2 * M_eas * M_eas).pow(gamma / (gamma - 1)) - 1)
+
+        val cas = sqrt((2 * P0 / (gamma - 1)) * ((q_c / P0 + 1).pow((gamma - 1) / gamma) - 1))
+
+        return cas * 1.94384 // m/s → knots
     }
 
     /**
@@ -101,7 +113,7 @@ object PhysicsUtils {
     /**
      * Convert Ground Speed (GS) to True Airspeed (TAS) based on wind direction and flown track
      */
-    fun gsToTas(gs: Int, wind: Wind, track: Int): Int {
+    fun gsToTAS(gs: Int, wind: Wind, track: Int): Int {
         val windAngleRad = Math.toRadians((wind.directionDeg - track).toDouble())
         val windSpeed = wind.speedKts.toDouble()
         val gsDouble = gs.toDouble()
@@ -125,7 +137,7 @@ object PhysicsUtils {
     /**
      * Convert True Airspeed (TAS) to Ground Speed (GS) based on wind direction and flown track
      */
-    fun tasToGs(tas: Int, wind: Wind, track: Int): Int {
+    fun tasToGS(tas: Int, wind: Wind, track: Int): Int {
         val windAngleRad = Math.toRadians((wind.directionDeg - track).toDouble())
         val windSpeed = wind.speedKts.toDouble()
 

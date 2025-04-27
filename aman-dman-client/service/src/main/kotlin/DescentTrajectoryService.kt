@@ -4,11 +4,8 @@ import org.example.entities.navigation.AircraftPosition
 import org.example.entities.navigation.RoutePoint
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
-import org.example.util.PhysicsUtils.iasToTas
-import org.example.util.PhysicsUtils.tasToGs
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
-import org.example.util.PhysicsUtils
-import org.example.util.PhysicsUtils.machToIAS
+import org.example.util.SpeedConversion
 import org.example.util.WeatherUtils.getStandardTemperatureAt
 import org.example.util.WeatherUtils.interpolateWeatherAtAltitude
 import kotlin.math.roundToInt
@@ -154,8 +151,8 @@ object DescentTrajectoryService {
 
             currentExpectedSpeed += speedAdjustment.roundToInt()
 
-            val stepTas = iasToTas(currentExpectedSpeed, probeAltitude, probeWeather?.temperatureC ?: estimatedOutsideTemperature)
-            val stepGroundSpeedKts = tasToGs(stepTas, probeWeather?.wind ?: calmWind, earlierPoint.bearingTo(probePosition))
+            val stepTas = SpeedConversion.iasToTAS(currentExpectedSpeed, probeAltitude, probeWeather?.temperatureC ?: estimatedOutsideTemperature)
+            val stepGroundSpeedKts = SpeedConversion.tasToGS(stepTas, probeWeather?.wind ?: calmWind, earlierPoint.bearingTo(probePosition))
             val stepDistanceNm = (stepGroundSpeedKts * deltaTime.inWholeSeconds) / 3600.0
 
             val newAltitude = probeAltitude + (verticalSpeed * deltaTime.inWholeSeconds).toInt()
@@ -250,8 +247,8 @@ object DescentTrajectoryService {
         val tempOrStandardTemp = temperatureC ?: getStandardTemperatureAt(altitudeFt)
 
         val machIas =
-            flightPlanTas?.let { PhysicsUtils.tasToIAS(it, altitudeFt, tempOrStandardTemp) }
-                ?: initialDescentMACH?.let { machToIAS(it, altitudeFt, tempOrStandardTemp) }
+            flightPlanTas?.let { SpeedConversion.tasToIAS(it, altitudeFt, tempOrStandardTemp) }
+                ?: initialDescentMACH?.let { SpeedConversion.machToIAS(it, altitudeFt, tempOrStandardTemp) }
                 ?: descentIAS
 
         return when {
