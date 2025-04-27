@@ -10,7 +10,7 @@ object WeatherUtils {
     /**
      * TODO: verify this function
      */
-    fun getStandardTemperaturAt(altitudeFt: Int): Int {
+    fun getStandardTemperatureAt(altitudeFt: Int): Int {
         // Standard temperature lapse rate is 2°C per 1000ft
         val lapseRate = 2.0 / 1000.0
         val seaLevelTemperature = 15 // Standard sea level temperature in °C

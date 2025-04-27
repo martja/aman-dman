@@ -38,7 +38,7 @@ data class FixInboundOccurrence(
     val trackingController: String,
     val finalFixEta: Instant,
     var timeToLooseOrGain: Duration? = null,
-    val descentProfile: List<ProfilePointEstimation>,
+    val descentProfile: List<TrajectoryPoint>,
     var windDelay: Duration? = null
 ) : RunwayOccurrence(timelineId, time, runway, airportIcao), Flight
 
@@ -70,18 +70,18 @@ data class RunwayArrivalOccurrence(
     override val icaoType: String,
     override val wakeCategory: Char,
     override val airportIcao: String,
-    val assignedStar: String,
+    val assignedStar: String?,
     val flightLevel: Int,
     val pressureAltitude: Int,
     val groundSpeed: Int,
-    val trackingController: String,
-    val descentProfile: List<ProfilePointEstimation>,
+    val trackingController: String?,
+    val descentTrajectory: List<TrajectoryPoint>,
     val basedOnNavdata: Boolean,
     var timeToLooseOrGain: Duration? = null
 ) : RunwayOccurrence(timelineId, time, runway, airportIcao), Flight
 
-data class ProfilePointEstimation(
-    val inbound: String,
+data class TrajectoryPoint(
+    val fixId: String?,
     val position: LatLng,
     val altitude: Int,
     val remainingDistance: Float,

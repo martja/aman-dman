@@ -91,8 +91,9 @@ std::vector<RouteFix> AmanPlugIn::findExtractedRoutePoints(CRadarTarget radarTar
     // Ignore waypoints prior to nextFixIndex
     for (int i = 0; i < routeLength; i++) {
         RouteFix fix;
+        auto airwayName = extractedRoute.GetPointAirwayName(i);
         fix.name = extractedRoute.GetPointName(i);
-        fix.isOnStar = assignedStar == extractedRoute.GetPointAirwayName(i);
+        fix.isOnStar = strcmp(airwayName, assignedStar) == 0;
         fix.latitude = extractedRoute.GetPointPosition(i).m_Latitude;
         fix.longitude = extractedRoute.GetPointPosition(i).m_Longitude;
         fix.isPassed = i < nextFixIndex;
@@ -212,7 +213,7 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& a
         AmanAircraft ac;
         ac.callsign = rt.GetCallsign();
         ac.arrivalRunway = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetArrivalRwy();
-        ac.assignedStar = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetStarName();
+        ac.assignedStar = assignedStarName;
         ac.icaoType = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetAircraftFPType();
         ac.assignedDirectRouting = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetDirectToPointName();
         ac.trackingController = rt.GetCorrelatedFlightPlan().GetTrackingControllerId();

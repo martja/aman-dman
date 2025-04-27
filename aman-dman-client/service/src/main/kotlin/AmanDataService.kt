@@ -2,13 +2,8 @@ package org.example
 
 import atcClient.AtcClient
 import atcClient.AtcClientEuroScope
-import kotlinx.datetime.Clock
-import org.example.DescentProfileService.generateDescentSegments
-import org.example.config.AircraftPerformanceData
-import org.example.entities.navigation.AircraftPosition
-import org.example.entities.navigation.RoutePoint
+import org.example.EstimationService.toRunwayArrivalOccurrence
 import org.example.eventHandling.AmanDataListener
-import org.example.integration.entities.ArrivalJson
 
 class AmanDataService {
     var amanDataListener: AmanDataListener? = null
@@ -22,57 +17,17 @@ class AmanDataService {
 
     fun subscribeForInbounds(icao: String) {
         atcClient?.collectArrivalsFor(icao) { arrivals ->
-            amanDataListener?.onLiveData(arrivals.map { it.toRunwayArrivalOccurrence() })
+            amanDataListener?.onLiveData(arrivals.mapNotNull { arrival ->
+                arrival.toRunwayArrivalOccurrence(
+                    star = navdataService.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway },
+                    weatherData = weatherData
+                )
+            })
         }
     }
 
     fun updateWeatherData(data: VerticalWeatherProfile?) {
         weatherData = data
-    }
-
-    private fun ArrivalJson.toRunwayArrivalOccurrence(): RunwayArrivalOccurrence {
-        val performance = AircraftPerformanceData.get(icaoType)
-        val star = navdataService.stars.find { it.id == assignedStar && it.runway == assignedRunway }
-
-        if (star == null) {
-            println("Star not found for ${this.callsign}: $assignedStar")
-        }
-
-        val descentSegments = this.route
-            .filter { !it.isPassed }
-            .map { RoutePoint(it.name, LatLng(it.latitude, it.longitude), it.isPassed) }
-            .let { route ->
-                listOf(RoutePoint("CURRENT", LatLng(latitude, longitude), false)) + route
-            }
-            .generateDescentSegments(
-                AircraftPosition(
-                    position = LatLng(latitude, longitude),
-                    altitudeFt = flightLevel,
-                    groundspeedKts = groundSpeed,
-                    trackDeg = track
-                ),
-                weatherData,
-                star,
-                performance,
-                arrivalAirportIcao,
-            )
-
-        return RunwayArrivalOccurrence(
-            callsign = callsign,
-            icaoType = icaoType,
-            flightLevel = flightLevel,
-            groundSpeed = groundSpeed,
-            wakeCategory = performance.takeOffWTC,
-            assignedStar = assignedStar,
-            trackingController = trackingController,
-            runway = assignedRunway,
-            time = Clock.System.now() + descentSegments.first().remainingTime,
-            pressureAltitude = pressureAltitude,
-            airportIcao = arrivalAirportIcao,
-            descentProfile = descentSegments,
-            timelineId = 0,
-            basedOnNavdata = star != null,
-        )
     }
 
 }

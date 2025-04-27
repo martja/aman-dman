@@ -8,24 +8,26 @@ import org.example.util.PhysicsUtils.iasToTas
 import org.example.util.PhysicsUtils.tasToGs
 import org.example.util.NavigationUtils.interpolatePositionAlongPath
 import org.example.util.PhysicsUtils.machToIAS
-import org.example.util.WeatherUtils.getStandardTemperaturAt
+import org.example.util.WeatherUtils.getStandardTemperatureAt
 import org.example.util.WeatherUtils.interpolateWeatherAtAltitude
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
-object DescentProfileService {
+object DescentTrajectoryService {
 
+    private const val CURRENT_ID = "CURRENT"
+    private const val DECELERATION_RATE = 0.5
     private val calmWind = Wind(0, 0)
 
-    fun List<RoutePoint>.generateDescentSegments(
+    fun List<RoutePoint>.calculateDescentTrajectory(
         aircraftPosition: AircraftPosition,
         verticalWeatherProfile: VerticalWeatherProfile?,
         star: Star?,
         aircraftPerformance: AircraftPerformance,
-        landingAirportIcao: String
-    ): List<ProfilePointEstimation> {
+        landingAirportIcao: String,
+    ): List<TrajectoryPoint> {
         val starMap = star?.fixes?.associateBy { it.id }
-        val profilePointEstimations = mutableListOf<ProfilePointEstimation>()
+        val trajectoryPoints = mutableListOf<TrajectoryPoint>()
         val lastAltitudeConstraint = star?.findFinalAltitude()
 
         // Starts at the airports and works backwards
@@ -34,10 +36,12 @@ object DescentProfileService {
         var probingDistance = 0f
         var accumulatedTimeFromDestination = 0.seconds
 
+        val remainingRoute =
+            listOf(RoutePoint(id = CURRENT_ID, position = aircraftPosition.position, isOnStar = false, isPassed = false)) + this.filter { !it.isPassed }
+
         // Add the last point (the airport) to the profile
-        profilePointEstimations +=
-            ProfilePointEstimation(
-                inbound = this.last().id,
+        trajectoryPoints +=
+            TrajectoryPoint(
                 position = probePosition,
                 altitude = probeAltitude,
                 remainingDistance = probingDistance,
@@ -46,27 +50,23 @@ object DescentProfileService {
                 tas = aircraftPerformance.landingVat,
                 wind = calmWind, // TODO: use wind from METAR
                 ias = aircraftPerformance.landingVat,
-                heading = this.getFinalHeading() ?: aircraftPosition.trackDeg
+                heading = this.getFinalHeading() ?: aircraftPosition.trackDeg,
+                fixId = landingAirportIcao
             )
 
         // Start from the last waypoint (the airport) and work backward
-        for (i in lastIndex downTo 1) {
-            val laterPoint = this[i]
-            val earlierPoint = this[i-1]
-            val remainingRouteReversed = this.subList(0, i).reversed()
+        for (i in remainingRoute.lastIndex downTo 1) {
+            val laterPoint = remainingRoute[i]
+            val earlierPoint = remainingRoute[i-1]
+            val remainingRouteReversed = remainingRoute.subList(0, i).reversed()
 
             val nextAltitudeExpectation = star?.nextAltitudeExpectation(remainingRouteReversed)
                 ?.let { starMap?.get(it.id)?.typicalAltitude }
                 ?: aircraftPosition.altitudeFt
 
-            val nextSpeed =
-                when (laterPoint.id) {
-                    landingAirportIcao ->
-                        aircraftPerformance.landingVat
-                    else ->
-                        star?.nextSpeedConstraint(remainingRouteReversed)
-                            ?.let { starMap?.get(it.id)?.typicalSpeedIas }
-                }
+            val earlierSpeedExpectation = star?.let {
+                getInterpolatedSpeedExpectation(star = it.fixes, atRoutePoint = earlierPoint)
+            }
 
             val descentSteps = aircraftPerformance.computeDescentPathBackward(
                 lowerAltitude = probeAltitude,
@@ -74,17 +74,18 @@ object DescentProfileService {
                 laterPoint = probePosition,
                 earlierPoint = earlierPoint.position,
                 verticalWeatherProfile = verticalWeatherProfile,
-                laterExpectedSpeed = nextSpeed,
+                earlierExpectedSpeed = earlierSpeedExpectation,
+                laterExpectedSpeed = trajectoryPoints.last().ias
             )
 
             for (step in descentSteps) {
+                val isLastStep = step == descentSteps.last()
                 val stepLength = probePosition.distanceTo(step.position).toFloat()
                 probingDistance += stepLength
                 accumulatedTimeFromDestination += (stepLength / step.groundSpeed * 3600.0).roundToInt().seconds
 
-                profilePointEstimations +=
-                    ProfilePointEstimation(
-                        inbound = laterPoint.id,
+                trajectoryPoints +=
+                    TrajectoryPoint(
                         position = step.position,
                         altitude = step.altitudeFt,
                         remainingDistance = probingDistance,
@@ -93,7 +94,8 @@ object DescentProfileService {
                         tas = step.tas,
                         wind = step.wind,
                         heading = step.position.bearingTo(probePosition),
-                        ias = step.ias
+                        ias = step.ias,
+                        fixId = if (isLastStep && earlierPoint.id != CURRENT_ID) earlierPoint.id else null
                     )
 
                 probeAltitude = step.altitudeFt
@@ -101,7 +103,7 @@ object DescentProfileService {
             }
         }
 
-        return profilePointEstimations.reversed()
+        return trajectoryPoints.reversed()
     }
 
     /**
@@ -119,7 +121,8 @@ object DescentProfileService {
         laterPoint: LatLng,
         earlierPoint: LatLng,
         verticalWeatherProfile: VerticalWeatherProfile?,
-        laterExpectedSpeed: Int?,
+        earlierExpectedSpeed: Int?,
+        laterExpectedSpeed: Int?
     ): List<DescentStep> {
         val descentPath = mutableListOf<DescentStep>()
         var probeAltitude = lowerAltitude
@@ -130,16 +133,22 @@ object DescentProfileService {
         val verticalSpeed = descentRateFpm / 60.0 // ft/sec
 
         var remainingProbingDistance = laterPoint.distanceTo(earlierPoint)
-        val estimatedOutsideTemperature = getStandardTemperaturAt(probeAltitude)
+        var currentExpectedSpeed = laterExpectedSpeed ?: this.getPreferredIas(probeAltitude, verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)?.temperatureC)
 
         while (true) {
             val probeWeather = verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)
+            val estimatedOutsideTemperature = getStandardTemperatureAt(probeAltitude)
 
-            val expectedIas = laterExpectedSpeed ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC)
-            val stepTas = iasToTas(expectedIas, probeAltitude, probeWeather?.temperatureC ?: estimatedOutsideTemperature)
+            val targetSpeed = earlierExpectedSpeed ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC)
+            val maxSpeedChange = deltaTime.inWholeSeconds.toInt() * DECELERATION_RATE
+            val speedDifference = (targetSpeed - currentExpectedSpeed).toDouble()
+            val speedAdjustment = speedDifference.coerceIn(-maxSpeedChange, maxSpeedChange)
 
-            val stepGroundspeedKts = tasToGs(stepTas, probeWeather?.wind ?: calmWind, earlierPoint.bearingTo(probePosition))
-            val stepDistanceNm = (stepGroundspeedKts * deltaTime.inWholeSeconds) / 3600.0
+            currentExpectedSpeed += speedAdjustment.roundToInt()
+
+            val stepTas = iasToTas(currentExpectedSpeed, probeAltitude, probeWeather?.temperatureC ?: estimatedOutsideTemperature)
+            val stepGroundSpeedKts = tasToGs(stepTas, probeWeather?.wind ?: calmWind, earlierPoint.bearingTo(probePosition))
+            val stepDistanceNm = (stepGroundSpeedKts * deltaTime.inWholeSeconds) / 3600.0
 
             val newAltitude = probeAltitude + (verticalSpeed * deltaTime.inWholeSeconds).toInt()
             val reachingTargetAltitude = newAltitude > higherAltitude
@@ -167,10 +176,10 @@ object DescentProfileService {
                 DescentStep(
                     position = probePosition,
                     altitudeFt = probeAltitude,
-                    groundSpeed = stepGroundspeedKts,
+                    groundSpeed = stepGroundSpeedKts,
                     tas = stepTas,
                     wind = probeWeather?.wind ?: calmWind,
-                    ias = expectedIas
+                    ias = currentExpectedSpeed
                 )
             )
 
@@ -180,6 +189,31 @@ object DescentProfileService {
         }
 
         return descentPath
+    }
+
+    /**
+     * Interpolate typical speed for a STAR fix that doesn't have a typical speed, but is between two fixes that do.
+     */
+    private fun List<RoutePoint>.getInterpolatedSpeedExpectation(star: List<StarFix>, atRoutePoint: RoutePoint): Int? {
+        val laterSpeedRestriction = this.nextSpeedExpectation(atRoutePoint, star)
+        val priorSpeedRestriction = this.previousSpeedExpectation(atRoutePoint, star)
+
+        if (laterSpeedRestriction == null) {
+            return priorSpeedRestriction?.first?.typicalSpeedIas
+        }
+
+        if (priorSpeedRestriction == null) {
+            return laterSpeedRestriction.first.typicalSpeedIas
+        }
+
+        val distanceToSpeedExpectation = distanceBetweenPoints(atRoutePoint, laterSpeedRestriction.second)
+        val distanceToSpeedExpectationBehind = distanceBetweenPoints(atRoutePoint, priorSpeedRestriction.second)
+
+        // Interpolate
+        val ratio = distanceToSpeedExpectation / (distanceToSpeedExpectation + distanceToSpeedExpectationBehind)
+        val speedAhead = laterSpeedRestriction.first.typicalSpeedIas ?: return null
+        val speedBehind = priorSpeedRestriction.first.typicalSpeedIas ?: return null
+        return (speedBehind * ratio + speedAhead * (1 - ratio)).toInt()
     }
 
     private fun AircraftPerformance.estimateDescentRate(altitudeFt: Int): Int {
@@ -205,7 +239,7 @@ object DescentProfileService {
     }
 
     private fun AircraftPerformance.getPreferredIas(altitudeFt: Int, temperatureC: Int?): Int {
-        val standardTemp = temperatureC ?: getStandardTemperaturAt(altitudeFt)
+        val standardTemp = temperatureC ?: getStandardTemperatureAt(altitudeFt)
 
         val machIas = initialDescentMACH?.let {
             machToIAS(it, altitudeFt, standardTemp)
@@ -241,7 +275,50 @@ object DescentProfileService {
         }
     }
 
+    private fun List<RoutePoint>.nextSpeedExpectation(atRoutePoint: RoutePoint, star: List<StarFix>): Pair<StarFix, RoutePoint>? {
+        val currentPointIndex = this.indexOf(atRoutePoint)
+        if (currentPointIndex == -1) return null
 
+        for (i in currentPointIndex until this.size) {
+            val routePoint = this[i]
+            val starFix = star.find { it.id == routePoint.id }
+            if (starFix?.typicalSpeedIas != null) {
+                return Pair(starFix, routePoint)
+            }
+        }
+        return null
+    }
+
+    private fun List<RoutePoint>.previousSpeedExpectation(atRoutePoint: RoutePoint, star: List<StarFix>): Pair<StarFix, RoutePoint>? {
+        val currentPointIndex = this.indexOf(atRoutePoint)
+        if (currentPointIndex == -1) return null
+
+        for (i in currentPointIndex - 1 downTo 0) {
+            val routePoint = this[i]
+            val starFix = star.find { it.id == routePoint.id }
+            if (starFix?.typicalSpeedIas != null) {
+                return Pair(starFix, routePoint)
+            }
+        }
+        return null
+    }
+
+    private fun List<RoutePoint>.distanceBetweenPoints(fromPoint: RoutePoint, toRoutePoint: RoutePoint): Double {
+        val fromIndex = this.indexOf(fromPoint)
+        val toIndex = this.indexOf(toRoutePoint)
+
+        val subList =
+            if (fromIndex > toIndex) {
+                this.subList(toIndex, fromIndex + 1)
+            } else {
+                this.subList(fromIndex, toIndex + 1)
+            }
+
+       return subList
+            .map { it.position }
+            .zipWithNext()
+            .sumOf { (from, to) -> from.distanceTo(to) }
+    }
 
     private fun List<RoutePoint>.routeToNextAltitudeExpectation(star: List<StarFix>): List<RoutePoint> {
         val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.typicalAltitude != null } }
@@ -252,6 +329,9 @@ object DescentProfileService {
         val i = this.indexOfFirst { star.any { fix -> fix.id == it.id && fix.typicalSpeedIas != null } }
         return if (i == -1) emptyList() else this.subList(0, i + 1)
     }
+
+    private fun List<RoutePoint>.totalLength() =
+        this.sumOf { it.position.distanceTo(this.last().position) }
 
     private fun Star.nextAltitudeExpectation(route: List<RoutePoint>): RoutePoint? =
         route.routeToNextAltitudeExpectation(fixes).lastOrNull()

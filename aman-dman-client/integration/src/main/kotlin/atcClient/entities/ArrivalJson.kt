@@ -3,11 +3,11 @@ package org.example.integration.entities
 data class ArrivalJson(
     val callsign: String,
     val icaoType: String,
-    val assignedRunway: String,
-    val assignedStar: String,
-    val assignedDirect: String,
-    val trackingController: String,
-    val scratchPad: String,
+    val assignedRunway: String?,
+    val assignedStar: String?,
+    val assignedDirect: String?,
+    val trackingController: String?,
+    val scratchPad: String?,
     val latitude: Double,
     val longitude: Double,
     val flightLevel: Int,
@@ -20,7 +20,7 @@ data class ArrivalJson(
 
 data class FixPointJson(
     val name: String,
-    val isOnStar: String?,
+    val isOnStar: Boolean,
     val latitude: Double,
     val longitude: Double,
     val isPassed: Boolean,

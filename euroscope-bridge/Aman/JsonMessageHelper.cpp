@@ -21,17 +21,27 @@ const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std
 
         arrivalObject.AddMember("callsign", inbound.callsign, allocator);
         arrivalObject.AddMember("icaoType", inbound.icaoType, allocator);
-        arrivalObject.AddMember("assignedRunway", inbound.arrivalRunway, allocator);
-        arrivalObject.AddMember("assignedStar", inbound.assignedStar, allocator);
-        arrivalObject.AddMember("assignedDirect", inbound.assignedDirectRouting, allocator);
-        arrivalObject.AddMember("trackingController", inbound.trackingController, allocator);
         arrivalObject.AddMember("latitude", inbound.latitude, allocator);
         arrivalObject.AddMember("longitude", inbound.longitude, allocator);
         arrivalObject.AddMember("flightLevel", inbound.flightLevel, allocator);
         arrivalObject.AddMember("pressureAltitude", inbound.pressureAltitude, allocator);
         arrivalObject.AddMember("groundSpeed", inbound.groundSpeed, allocator);
-        arrivalObject.AddMember("scratchPad", inbound.scratchPad, allocator);
         arrivalObject.AddMember("arrivalAirportIcao", inbound.arrivalAirportIcao, allocator);
+
+        if (!inbound.scratchPad.empty())
+            arrivalObject.AddMember("scratchPad", inbound.scratchPad, allocator);
+
+        if (!inbound.assignedStar.empty())
+            arrivalObject.AddMember("assignedStar", inbound.assignedStar, allocator);
+
+        if (!inbound.assignedDirectRouting.empty())
+            arrivalObject.AddMember("assignedDirect", inbound.assignedDirectRouting, allocator);
+
+        if (!inbound.arrivalRunway.empty())
+            arrivalObject.AddMember("assignedRunway", inbound.arrivalRunway, allocator);
+
+        if (!inbound.trackingController.empty())
+            arrivalObject.AddMember("trackingController", inbound.trackingController, allocator);
 
         Value routePoints(kArrayType);
         for (auto& point : inbound.remainingRoute) {

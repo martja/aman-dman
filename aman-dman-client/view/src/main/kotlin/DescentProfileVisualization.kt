@@ -1,4 +1,4 @@
-import org.example.ProfilePointEstimation
+import org.example.TrajectoryPoint
 import util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.event.MouseEvent
@@ -6,8 +6,8 @@ import javax.swing.JPanel
 
 class DescentProfileVisualization : JPanel(BorderLayout()) {
 
-    private var profilePointEstimations: List<ProfilePointEstimation> = emptyList()
-    private var hoveredPoint: ProfilePointEstimation? = null
+    private var trajectoryPoints: List<TrajectoryPoint> = emptyList()
+    private var hoveredPoint: TrajectoryPoint? = null
 
     init {
         background = java.awt.Color.DARK_GRAY
@@ -24,8 +24,8 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     }
 
 
-    fun setDescentSegments(segments: List<ProfilePointEstimation>) {
-        this.profilePointEstimations = segments
+    fun setDescentSegments(segments: List<TrajectoryPoint>) {
+        this.trajectoryPoints = segments
         repaint()
     }
 
@@ -35,12 +35,12 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     override fun paintComponent(g: java.awt.Graphics) {
         super.paintComponent(g)
 
-        if (profilePointEstimations.isEmpty()) {
+        if (trajectoryPoints.isEmpty()) {
             return
         }
 
-        val minAlt = profilePointEstimations.minOf { it.altitude }
-        val maxAlt = profilePointEstimations.maxOf { it.altitude }
+        val minAlt = trajectoryPoints.minOf { it.altitude }
+        val maxAlt = trajectoryPoints.maxOf { it.altitude }
 
         // Illustrate the flight levels
         for (i in 0..maxAlt step 1000) {
@@ -52,9 +52,8 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
 
         var prevX = diagramMargin
         var prevY = diagramMarginTop
-        var prevInbound: String? = null
 
-        profilePointEstimations.forEach {
+        trajectoryPoints.forEach {
             val (xPos, yPos) = calculateComponentCoordinates(it.altitude, it.remainingDistance)
 
             // Visualize remaninging time wrt height
@@ -66,14 +65,12 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
             prevX = xPos
             prevY = yPos
 
-            if (prevInbound != it.inbound && prevInbound != null) {
-                g.drawString(prevInbound, xPos, yPos - 5)
+            it.fixId?.let { fixId ->
+                g.drawString(fixId, xPos, yPos - 5)
                 g.drawString(it.remainingTime.toString(), xPos, yPos + 15)
                 g.drawString(it.groundSpeed.toString() + " kts", xPos, yPos + 15 + 12)
                 g.drawString(it.altitude.toString() + " ft", xPos, yPos + 15 + 10 + 12)
             }
-
-            prevInbound = it.inbound
 
             g.drawOval(xPos - 3, yPos - 3, 6, 6)
 
@@ -90,10 +87,10 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     }
 
     private fun calculateComponentCoordinates(altitude: Int, distance: Float): Pair<Int, Int> {
-        val minAlt = profilePointEstimations.minOf { it.altitude }
-        val maxAlt = profilePointEstimations.maxOf { it.altitude }
+        val minAlt = trajectoryPoints.minOf { it.altitude }
+        val maxAlt = trajectoryPoints.maxOf { it.altitude }
 
-        val totalLengthNm = profilePointEstimations.first().remainingDistance
+        val totalLengthNm = trajectoryPoints.first().remainingDistance
 
         val pxPerFt = (height - diagramMarginTop*2).toFloat() / (maxAlt - minAlt).toFloat()
         val pxPerNm = (width - diagramMargin*2).toFloat() / totalLengthNm
@@ -104,9 +101,9 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
         return Pair(xPos, yPos)
     }
 
-    private fun findHoveredDataPoint(x: Int, y: Int): ProfilePointEstimation? {
+    private fun findHoveredDataPoint(x: Int, y: Int): TrajectoryPoint? {
         val minDistance = 10
-        for (point in profilePointEstimations) {
+        for (point in trajectoryPoints) {
             val (pointX, pointY) = calculateComponentCoordinates(point.altitude, point.remainingDistance)
             if (Math.abs(pointX - x) < minDistance && Math.abs(pointY - y) < minDistance) {
                 return point

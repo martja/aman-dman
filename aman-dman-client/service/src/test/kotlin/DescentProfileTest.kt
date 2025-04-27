@@ -1,6 +1,6 @@
 import kotlinx.datetime.Clock
 import org.example.*
-import org.example.DescentProfileService.generateDescentSegments
+import org.example.DescentTrajectoryService.calculateDescentTrajectory
 import org.example.config.AircraftPerformanceData
 import org.example.entities.navigation.AircraftPosition
 import org.example.entities.navigation.RoutePoint
@@ -59,29 +59,29 @@ class DescentProfileTest {
     )
 
     val testRoute = listOf(
-        RoutePoint("CURRENT", currentPosition.position),
-        RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E""")),
-        RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E""")),
-        RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
-        RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E""")),
-        RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E""")),
-        RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E""")),
-        RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E""")),
-        RoutePoint("NOSLA", dmsToDecimal("""59°59'1.2"N  010°59'51.2"E""")),
-        RoutePoint("XEMEN", dmsToDecimal("""60°2'10.4"N  011°1'39.4"E""")),
-        RoutePoint("ONE", dmsToDecimal("""60°10'40.6"N  011°6'41.0"E""")),
+        RoutePoint("CURRENT", currentPosition.position, isPassed = false, isOnStar = false),
+        RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("NOSLA", dmsToDecimal("""59°59'1.2"N  010°59'51.2"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("XEMEN", dmsToDecimal("""60°2'10.4"N  011°1'39.4"E"""), isPassed = false, isOnStar = true),
+        RoutePoint("ONE", dmsToDecimal("""60°10'40.6"N  011°6'41.0"E"""), isPassed = false, isOnStar = true),
     )
 
     @Test
     fun `STAR length matches AIRAC spec`() {
         val lunip4lRoute = listOf(
-            RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E""")),
-            RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E""")),
-            RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
-            RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E""")),
-            RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E""")),
-            RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E""")),
-            RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E""")),
+            RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E"""), isPassed = false, isOnStar = true),
+            RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E"""), isPassed = false, isOnStar = true),
+            RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E"""), isPassed = false, isOnStar = true),
+            RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E"""), isPassed = false, isOnStar = true),
+            RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E"""), isPassed = false, isOnStar = true),
+            RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E"""), isPassed = false, isOnStar = true),
+            RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E"""), isPassed = false, isOnStar = true),
         )
 
         assertEquals(64, lunip4lRoute.getRouteDistance().roundToInt())
@@ -270,7 +270,7 @@ class DescentProfileTest {
         assertEquals(221, gsWithCrosswind)
     }
 
-    private fun calculateTestDescent(remainingRoute: List<RoutePoint>): List<EstimatedProfilePoint> {
+    private fun calculateTestDescent(remainingRoute: List<RoutePoint>): List<TrajectoryPoint> {
         val weatherData = listOf(
             WeatherLayer(0, 0, wind = Wind(180, 0)),
             WeatherLayer(10000, -10, wind = Wind(180, 10)),
@@ -286,7 +286,7 @@ class DescentProfileTest {
 
         val aircraftPerformance = AircraftPerformanceData.get("B738")
 
-        val descentSegments = remainingRoute.generateDescentSegments(
+        val descentSegments = remainingRoute.calculateDescentTrajectory(
             currentPosition,
             weatherProfile,
             lunip4l,

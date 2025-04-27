@@ -71,7 +71,7 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
         if (selectedCallsign != null) {
             val selectedDescentProfile = amanData.filterIsInstance<RunwayArrivalOccurrence>().find { it.callsign == selectedCallsign }
             if (selectedDescentProfile != null) {
-                view.descentProfileVisualizationView.setDescentSegments(selectedDescentProfile.descentProfile)
+                view.descentProfileVisualizationView.setDescentSegments(selectedDescentProfile.descentTrajectory)
             }
         }
     }

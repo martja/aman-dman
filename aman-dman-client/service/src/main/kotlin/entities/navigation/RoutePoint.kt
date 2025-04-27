@@ -6,6 +6,7 @@ data class RoutePoint(
     val id: String,
     val position: LatLng,
     val isPassed: Boolean,
+    val isOnStar: Boolean,
 )
 
 data class RemainingRoute(
