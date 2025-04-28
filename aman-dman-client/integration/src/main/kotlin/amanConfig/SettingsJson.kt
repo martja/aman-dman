@@ -8,6 +8,8 @@ data class AmanDmanSettingsJson(
 
 data class TimelineJson(
     val title: String,
+    val runwayLeft: String,
+    val runwayRight: String,
     val targetFixesLeft: List<String>,
     val targetFixesRight: List<String>,
     val airportIcao: String,

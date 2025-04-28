@@ -166,10 +166,10 @@ class TimelineOverlay(
 
     private fun TimelineOccurrence.isLeftSide(): Boolean =
         when (this) {
-            is RunwayArrivalOccurrence -> false //this.runway == timelineConfig.runwayLeft
-            is DepartureOccurrence -> false // this.runway == timelineConfig.runwayLeft
-            is FixInboundOccurrence -> timelineConfig.targetFixesLeft.contains(this.finalFix)
-            is RunwayDelayOccurrence -> false //this.runway == timelineConfig.runwayLeft
+            is RunwayArrivalOccurrence -> timelineConfig.runwayLeft == this.runway
+            is DepartureOccurrence -> timelineConfig.runwayLeft == this.runway
+            is FixInboundOccurrence -> timelineConfig.runwayLeft == this.runway
+            is RunwayDelayOccurrence -> timelineConfig.runwayLeft == this.runway
         }
 
     private fun paintHourglass(g: Graphics, xPosition: Int) {

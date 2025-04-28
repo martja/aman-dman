@@ -43,7 +43,9 @@ class NewTimelineForm(val viewListener: ViewListener, groupId: String, existingC
                 title = titleField.text,
                 airportIcao = icaoField.text,
                 targetFixesLeft = (0 until leftFixListModel.size()).map { leftFixListModel.getElementAt(it) },
-                targetFixesRight = (0 until rightFixListModel.size()).map { rightFixListModel.getElementAt(it) }
+                targetFixesRight = (0 until rightFixListModel.size()).map { rightFixListModel.getElementAt(it) },
+                runwayLeft = "TODO",
+                runwayRight = "TODO",
             ))
         }
         add(Box.createVerticalStrut(10))

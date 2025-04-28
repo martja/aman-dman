@@ -1,8 +1,7 @@
 package tabpage
 
 import entity.TimeRange
-import org.example.TimelineConfig
-import org.example.TimelineOccurrence
+import org.example.*
 import org.example.eventHandling.ViewListener
 import tabpage.timeline.TimelineView
 import util.SharedValue
@@ -45,8 +44,28 @@ class TimelineScrollPane(
         val items = viewport.view as JPanel
         items.components.forEach { component ->
             if (component is TimelineView) {
-                component.updateTimelineOccurrences(occurrences)
+                component.updateTimelineOccurrences(
+                    occurrences.filter { component.timelineConfig.occurrenceIsRelevant(it) }
+                )
             }
+        }
+    }
+
+    private fun TimelineConfig.occurrenceIsRelevant(occurrence: TimelineOccurrence): Boolean {
+        return when (occurrence) {
+            is RunwayArrivalOccurrence ->
+                occurrence.runway == runwayLeft || occurrence.runway == runwayRight
+            is DepartureOccurrence ->
+                occurrence.runway == runwayLeft || occurrence.runway == runwayRight
+            is FixInboundOccurrence -> {
+                // Check if the route contains any of the target fixes
+                val route = occurrence.descentProfile.map { it.fixId }
+                targetFixesLeft.any { it in route } || targetFixesRight.any { it in route }
+            }
+            is RunwayDelayOccurrence -> {
+                occurrence.runway == runwayLeft || occurrence.runway == runwayRight
+            }
+            else -> false
         }
     }
 }

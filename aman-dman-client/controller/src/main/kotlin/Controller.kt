@@ -25,6 +25,8 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
                     timelines = mutableListOf(
                         TimelineConfig(
                             timelineJson.title,
+                            timelineJson.runwayLeft,
+                            timelineJson.runwayRight,
                             timelineJson.targetFixesLeft,
                             timelineJson.targetFixesRight,
                             timelineJson.airportIcao
@@ -88,7 +90,9 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
                 title = config.title,
                 targetFixesLeft = config.targetFixesLeft,
                 targetFixesRight = config.targetFixesRight,
-                airportIcao = config.airportIcao
+                airportIcao = config.airportIcao,
+                runwayLeft = config.runwayLeft,
+                runwayRight = config.runwayRight
             )
             view.updateTimelineGroups(timelineGroups)
             view.closeTimelineForm()

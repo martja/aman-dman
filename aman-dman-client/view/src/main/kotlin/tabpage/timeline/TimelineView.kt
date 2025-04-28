@@ -13,7 +13,7 @@ import javax.swing.JLayeredPane
 import javax.swing.JPanel
 
 class TimelineView(
-    timelineConfig: TimelineConfig,
+    val timelineConfig: TimelineConfig,
     private val selectedTimeRange: SharedValue<TimeRange>,
     private val viewListener: ViewListener,
 ) : JLayeredPane() {
