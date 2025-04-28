@@ -52,7 +52,6 @@ object DescentTrajectoryService {
                 ias = aircraftPerformance.landingVat,
                 heading = this.getFinalHeading() ?: aircraftPosition.trackDeg,
                 fixId = landingAirportIcao,
-                windComponent = null
             )
 
         // Start from the last waypoint (the airport) and work backward
@@ -102,7 +101,6 @@ object DescentTrajectoryService {
                         heading = step.position.bearingTo(probePosition),
                         ias = step.ias,
                         fixId = if (isLastStep && earlierPoint.id != CURRENT_ID) earlierPoint.id else null,
-                        windComponent = step.wind.windComponent(step.position.bearingTo(probePosition))
                     )
 
                 probeAltitude = step.altitudeFt
@@ -360,12 +358,4 @@ object DescentTrajectoryService {
             fix.typicalAltitude ?: 0
         }
 
-    /**
-     * How much speed is lost or gained due to wind
-     * Tailwind is positive, headwind is negative
-     */
-    private fun Wind.windComponent(track: Int): Int {
-        val angle = (this.directionDeg - track + 360) % 360
-        return -(this.speedKts * cos(Math.toRadians(angle.toDouble()))).roundToInt()
-    }
 }

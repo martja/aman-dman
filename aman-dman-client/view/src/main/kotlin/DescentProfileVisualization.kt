@@ -1,6 +1,7 @@
 import org.example.TrajectoryPoint
 import util.WindBarbs
 import java.awt.BorderLayout
+import java.awt.Color
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import kotlin.math.abs
@@ -18,7 +19,7 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     private val BARB_SPACING = 40
 
     init {
-        background = java.awt.Color.DARK_GRAY
+        background = Color(40, 40, 40)
 
         addMouseMotionListener(object : java.awt.event.MouseMotionAdapter() {
             override fun mouseMoved(e: MouseEvent) {
@@ -49,7 +50,7 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
         repaint()
     }
 
-    private val diagramMargin = 30
+    private val diagramMargin = 40
     private val diagramMarginTop = 90
 
     override fun paintComponent(g: java.awt.Graphics) {
@@ -64,14 +65,15 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
         // Illustrate the flight levels
         for (i in 0..maxAlt step 1000) {
             val yPos = calculateAltitudeCoordinates(altitude = i)
-            g.color = java.awt.Color.GRAY
+            g.color = Color(60, 60, 60)
             g.drawLine(50, yPos, width - diagramMargin, yPos)
             g.drawString("FL" + (i / 100).toString().padStart(3, '0'), 5, yPos + 5)
         }
 
         var prevX = diagramMargin
         var prevY = diagramMarginTop
-        var prevSpeedY: Int? = null
+        var prevGsY: Int? = null
+        var prevTasY: Int? = null
 
         var distFromPreviousBarb = 0
 
@@ -79,24 +81,27 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
             val x = calculateXcoordinate(it.remainingDistance)
             val yPosAlt = calculateAltitudeCoordinates(it.altitude)
             val yPosGs = calculateSpeedCoordinates(it.groundSpeed)
+            val yPosTas = calculateSpeedCoordinates(it.tas)
 
-            // Visualize speed wrt height
-            g.color = java.awt.Color.YELLOW
-            prevSpeedY?.let { y -> g.drawLine(prevX, y, x, yPosGs) }
-            prevSpeedY = yPosGs
+            // Visualize true airspeed
+            g.color = Color.YELLOW
+            prevTasY?.let { y -> g.drawLine(prevX, y, x, yPosTas) }
 
-            // Visualize remaninging distance wrt height
-            g.color = java.awt.Color.WHITE
+            // Visualize ground speed
+            g.color = Color.GREEN
+            prevGsY?.let { y -> g.drawLine(prevX, y, x, yPosGs) }
+
+            // Visualize remaining distance wrt height
+            g.color = Color.MAGENTA
             g.drawLine(prevX, prevY, x, yPosAlt)
 
+            g.color = Color.WHITE
             it.fixId?.let { fixId ->
+                g.drawOval(x - 3, yPosAlt - 3, 6, 6)
                 g.drawString(fixId, x, yPosAlt - 5)
-                g.drawString(it.remainingTime.toString(), x, yPosAlt + 15)
-                g.drawString(it.groundSpeed.toString() + " kts", x, yPosAlt + 15 + 12)
-                g.drawString(it.altitude.toString() + " ft", x, yPosAlt + 15 + 10 + 12)
+                g.drawString(it.groundSpeed.toString() + " kts", x, yPosGs - 5)
             }
 
-            g.drawOval(x - 3, yPosAlt - 3, 6, 6)
 
             if (distFromPreviousBarb > BARB_SPACING) {
                 distFromPreviousBarb = 0
@@ -107,18 +112,19 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
 
             prevX = x
             prevY = yPosAlt
+            prevGsY = yPosGs
+            prevTasY = yPosTas
         }
 
         hoveredPoint?.let {
             val x = calculateXcoordinate(it.remainingDistance)
 
-            it.windComponent?.let { windComponent ->
-                g.drawString(
-                    if (windComponent > 0) "+${it.windComponent} kt" else "${it.windComponent} kt",
-                    x + 5,
-                    height - diagramMargin - 20
-                )
-            }
+            val tailwindComponent = it.groundSpeed - it.tas
+            g.drawString(
+                if (tailwindComponent > 0) "+${tailwindComponent} kt" else "${tailwindComponent} kt",
+                x + 5,
+                height - diagramMargin - 20
+            )
 
             g.drawString(
                 "GS: ${it.groundSpeed} | TAS: ${it.tas} | IAS: ${it.ias} | ETA: ${it.remainingTime} | ${it.remainingDistance.roundToInt()} NM",

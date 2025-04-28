@@ -248,8 +248,14 @@ class DescentTrajectoryServiceTest {
     fun `Estimated IAS should not be more than 250 below FL100`() {
         val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
 
+        val descentTrajectory2 = arrivalWithDirectRouting.toRunwayArrivalOccurrence(adopi3m, null)!!.descentTrajectory
+
         val isExceeding = descentTrajectory.any { it.altitude < 10_000 && it.ias > 250 }
         assertEquals(false, isExceeding, "IAS should not exceed 250 below FL100")
+
+
+        val isExceeding2 = descentTrajectory2.any { it.altitude < 10_000 && it.ias > 250 }
+        assertEquals(false, isExceeding2, "IAS should not exceed 250 below FL100")
     }
 
     @Test
