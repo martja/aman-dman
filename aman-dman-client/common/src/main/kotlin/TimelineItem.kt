@@ -90,7 +90,8 @@ data class TrajectoryPoint(
     val tas: Int,
     val ias: Int,
     val wind: Wind,
-    val heading: Int
+    val heading: Int,
+    val windComponent: Int?,
 )
 
 data class DescentStep(

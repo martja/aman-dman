@@ -8,6 +8,7 @@ import org.example.util.NavigationUtils.interpolatePositionAlongPath
 import org.example.util.SpeedConversion
 import org.example.util.WeatherUtils.getStandardTemperatureAt
 import org.example.util.WeatherUtils.interpolateWeatherAtAltitude
+import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
@@ -50,7 +51,8 @@ object DescentTrajectoryService {
                 wind = calmWind, // TODO: use wind from METAR
                 ias = aircraftPerformance.landingVat,
                 heading = this.getFinalHeading() ?: aircraftPosition.trackDeg,
-                fixId = landingAirportIcao
+                fixId = landingAirportIcao,
+                windComponent = null
             )
 
         // Start from the last waypoint (the airport) and work backward
@@ -99,7 +101,8 @@ object DescentTrajectoryService {
                         wind = step.wind,
                         heading = step.position.bearingTo(probePosition),
                         ias = step.ias,
-                        fixId = if (isLastStep && earlierPoint.id != CURRENT_ID) earlierPoint.id else null
+                        fixId = if (isLastStep && earlierPoint.id != CURRENT_ID) earlierPoint.id else null,
+                        windComponent = step.wind.windComponent(step.position.bearingTo(probePosition))
                     )
 
                 probeAltitude = step.altitudeFt
@@ -356,4 +359,13 @@ object DescentTrajectoryService {
         }.let { fix ->
             fix.typicalAltitude ?: 0
         }
+
+    /**
+     * How much speed is lost or gained due to wind
+     * Tailwind is positive, headwind is negative
+     */
+    private fun Wind.windComponent(track: Int): Int {
+        val angle = (this.directionDeg - track + 360) % 360
+        return -(this.speedKts * cos(Math.toRadians(angle.toDouble()))).roundToInt()
+    }
 }
