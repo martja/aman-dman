@@ -1,3 +1,5 @@
+import entity.TabData
+import entity.TimelineData
 import org.example.dto.CreateOrUpdateTimelineDto
 import org.example.*
 import org.example.config.SettingsManager
@@ -15,23 +17,23 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
     }
 
     override fun onLoadAllTabsRequested() {
-        model.subscribeForInbounds("ENGM")
-
         SettingsManager.getSettings().timelines.forEach { (id, timelineJson) ->
-            timelineGroups.add(
+            registerNewTimelineGroup(
                 TimelineGroup(
                     id = id,
                     name = timelineJson.title,
-                    timelines = mutableListOf(
-                        TimelineConfig(
-                            timelineJson.title,
-                            timelineJson.runwayLeft,
-                            timelineJson.runwayRight,
-                            timelineJson.targetFixesLeft,
-                            timelineJson.targetFixesRight,
-                            timelineJson.airportIcao
-                        )
-                    )
+                    timelines = mutableListOf()
+                )
+            )
+            registerTimeline(
+                id,
+                TimelineConfig(
+                    title = timelineJson.title,
+                    runwayLeft = timelineJson.runwayLeft,
+                    runwayRight = timelineJson.runwayRight,
+                    targetFixesLeft = timelineJson.targetFixesLeft,
+                    targetFixesRight = timelineJson.targetFixesRight,
+                    airportIcao = timelineJson.airportIcao
                 )
             )
         }
@@ -66,7 +68,15 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
                 val relevantData = amanData.filter { occurrence ->
                     group.timelines.any { timeline -> timeline.airportIcao == occurrence.airportIcao }
                 }
-                tab.updateAmanData(relevantData)
+                tab.updateAmanData(TabData(
+                    timelinesData = group.timelines.map { timeline ->
+                        TimelineData(
+                            timelineId = timeline.title,
+                            left = relevantData.filter { it is RunwayArrivalOccurrence && it.runway == timeline.runwayLeft },
+                            right = relevantData.filter { it is RunwayArrivalOccurrence && it.runway == timeline.runwayRight }
+                        )
+                    }
+                ))
             }
         }
 
@@ -78,25 +88,44 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
         }
     }
 
-    override fun onNewTimelineGroup(title: String) {
-        timelineGroups.add(TimelineGroup(title, title, mutableListOf()))
-        view.updateTimelineGroups(timelineGroups)
-    }
+    override fun onNewTimelineGroup(title: String) =
+        registerNewTimelineGroup(
+            TimelineGroup(
+                id = title,
+                name = title,
+                timelines = mutableListOf()
+            )
+        )
 
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
-        val group = timelineGroups.find { it.id == config.groupId }
-        if (group != null) {
-            group.timelines += TimelineConfig(
+        registerTimeline(
+            config.groupId,
+            TimelineConfig(
                 title = config.title,
+                runwayLeft = config.runwayLeft,
+                runwayRight = config.runwayRight,
                 targetFixesLeft = config.targetFixesLeft,
                 targetFixesRight = config.targetFixesRight,
-                airportIcao = config.airportIcao,
-                runwayLeft = config.runwayLeft,
-                runwayRight = config.runwayRight
+                airportIcao = config.airportIcao
             )
+        )
+    }
+
+
+    private fun registerNewTimelineGroup(timelineGroup: TimelineGroup) {
+        timelineGroups.add(timelineGroup)
+        view.updateTimelineGroups(timelineGroups)
+        view.closeTimelineForm()
+    }
+
+    private fun registerTimeline(groupId: String, timelineConfig: TimelineConfig) {
+        val group = timelineGroups.find { it.id == groupId }
+        if (group != null) {
+            group.timelines += timelineConfig
             view.updateTimelineGroups(timelineGroups)
             view.closeTimelineForm()
         }
+        model.subscribeForInbounds(timelineConfig.airportIcao)
     }
 
     override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {

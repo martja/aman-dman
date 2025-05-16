@@ -1,3 +1,4 @@
+import entity.TabData
 import entity.TimeRange
 import kotlinx.datetime.Clock
 import org.example.TimelineGroup
@@ -53,9 +54,9 @@ class TabView(
         timer.start()
     }
 
-    fun updateAmanData(amanData: List<TimelineOccurrence>) {
-        timeWindowScrollbar.setTimelineOccurrences(amanData)
-        timelineScrollPane.updateTimelineOccurrences(amanData)
+    fun updateAmanData(tabData: TabData) {
+        timeWindowScrollbar.setTimelineOccurrences(tabData.timelinesData)
+        timelineScrollPane.updateTimelineOccurrences(tabData.timelinesData)
     }
 
     fun updateTimelines(timelineGroup: TimelineGroup) {

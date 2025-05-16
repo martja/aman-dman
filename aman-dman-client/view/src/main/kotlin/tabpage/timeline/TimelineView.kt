@@ -1,9 +1,9 @@
 package tabpage.timeline
 
 import entity.TimeRange
+import entity.TimelineData
 import kotlinx.datetime.Instant
 import org.example.TimelineConfig
-import org.example.TimelineOccurrence
 import org.example.eventHandling.ViewListener
 import util.SharedValue
 import java.awt.GridBagConstraints
@@ -53,9 +53,9 @@ class TimelineView(
         }
     }
 
-    fun updateTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
-        palettePanel.updateTimelineOccurrences(occurrences)
-        timeScale.updateTimelineOccurrences(occurrences)
+    fun updateTimelineOccurrences(timelineData: TimelineData) {
+        palettePanel.updateTimelineOccurrences(timelineData)
+        timeScale.updateTimelineOccurrences(timelineData)
     }
 
     fun calculateYPositionForInstant(instant: Instant): Int {

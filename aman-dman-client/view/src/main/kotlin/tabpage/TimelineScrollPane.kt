@@ -1,6 +1,7 @@
 package tabpage
 
 import entity.TimeRange
+import entity.TimelineData
 import org.example.*
 import org.example.eventHandling.ViewListener
 import tabpage.timeline.TimelineView
@@ -40,14 +41,13 @@ class TimelineScrollPane(
         items.revalidate()
     }
 
-    fun updateTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
+    fun updateTimelineOccurrences(timelineData: List<TimelineData>) {
         val items = viewport.view as JPanel
-        items.components.forEach { component ->
-            if (component is TimelineView) {
-                component.updateTimelineOccurrences(
-                    occurrences.filter { component.timelineConfig.occurrenceIsRelevant(it) }
-                )
-            }
+        timelineData.forEach {
+            val timeline = items.components.find { component ->
+                (component as? TimelineView)?.timelineConfig?.title == it.timelineId
+            } as? TimelineView
+            timeline?.updateTimelineOccurrences(it)
         }
     }
 

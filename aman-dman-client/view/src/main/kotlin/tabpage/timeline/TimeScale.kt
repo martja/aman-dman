@@ -1,6 +1,7 @@
 package tabpage.timeline
 
 import entity.TimeRange
+import entity.TimelineData
 import kotlinx.datetime.*
 import org.example.RunwayDelayOccurrence
 import org.example.TimelineOccurrence
@@ -19,14 +20,16 @@ class TimeScale(
     private val lineColor = Color.decode("#C8C8C8")
     private val pastColor = Color.decode("#4B4B4B")
 
-    private var timelineOccurrences: List<TimelineOccurrence> = emptyList()
+    private var leftOccurrences: List<TimelineOccurrence> = emptyList()
+    private var rightOccurrences: List<TimelineOccurrence> = emptyList()
 
     init {
         background = Color.decode("#646464")
     }
 
-    fun updateTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
-        timelineOccurrences = occurrences
+    fun updateTimelineOccurrences(timelineData: TimelineData) {
+        leftOccurrences = timelineData.left
+        rightOccurrences = timelineData.right
     }
 
     override fun paintComponent(g: Graphics) {
@@ -65,7 +68,8 @@ class TimeScale(
                 g.drawLine(width, yPos, width - TICK_WIDTH_1_MIN, yPos)
             }
         }
-        drawDelays(g, timelineOccurrences.filterIsInstance<RunwayDelayOccurrence>())
+        drawDelays(g, leftOccurrences.filterIsInstance<RunwayDelayOccurrence>())
+        drawDelays(g, rightOccurrences.filterIsInstance<RunwayDelayOccurrence>())
     }
 
     private fun drawDelays(g: Graphics, delays: List<RunwayDelayOccurrence>) {

@@ -1,5 +1,6 @@
 package tabpage.timeline
 
+import entity.TimelineData
 import kotlinx.datetime.Clock
 import org.example.*
 import org.example.eventHandling.ViewListener
@@ -24,9 +25,11 @@ class TimelineOverlay(
     private val scaleMargin = 30
     private val labelWidth = 320
 
-    private val allLabels = hashMapOf<String, TimelineLabel>()
+    private val leftLabels = hashMapOf<String, TimelineLabel>()
+    private val rightLabels = hashMapOf<String, TimelineLabel>()
 
-    private var timelineOccurrences: List<TimelineOccurrence> = emptyList()
+    private var leftOccurrences: List<TimelineOccurrence> = emptyList()
+    private var rightOccurrences: List<TimelineOccurrence> = emptyList()
 
     private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -41,24 +44,22 @@ class TimelineOverlay(
         add(timelineNameLabel)
     }
 
-    fun updateTimelineOccurrences(timelineOccurrences: List<TimelineOccurrence>) {
-        this.timelineOccurrences = timelineOccurrences
+    fun updateTimelineOccurrences(timelineData: TimelineData) {
+        this.leftOccurrences = timelineData.left
+        this.rightOccurrences = timelineData.right
+
         updateFlightLabels()
+
         repaint()
     }
 
     override fun doLayout() {
         super.doLayout()
 
-        updateFlightLabels()
-
         val scale = timelineView.getScaleBounds()
 
-        val leftSideLabels = allLabels.filter { it.value.timelineOccurrence.isLeftSide() }.values.toList()
-        val rightSideLabels = allLabels.filter { !it.value.timelineOccurrence.isLeftSide() }.values.toList()
-
-        rearrangeLabels(leftSideLabels, scale.x - labelWidth - scaleMargin)
-        rearrangeLabels(rightSideLabels, scale.x + scaleMargin + scale.width)
+        rearrangeLabels(leftLabels.values.toList(), scale.x - labelWidth - scaleMargin)
+        rearrangeLabels(rightLabels.values.toList(), scale.x + scaleMargin + scale.width)
 
         timelineNameLabel.setBounds(scale.x - 10, scale.y + scale.height - 20, 100, 20)
     }
@@ -84,12 +85,23 @@ class TimelineOverlay(
         doLayout()
         val scaleBounds = timelineView.getScaleBounds()
 
-        allLabels.values.forEach {
-            val leftSide = it.timelineOccurrence.isLeftSide()
-
-            val dotX = if (leftSide) scaleBounds.x else scaleBounds.x + scaleBounds.width
+        leftLabels.values.forEach {
+            val dotX = scaleBounds.x
             val dotY = timelineView.calculateYPositionForInstant(it.getTimelinePlacement())
-            val labelX = if (leftSide) it.x + it.width else it.x
+            val labelX = it.x + it.width
+            g.drawLine(labelX, it.y + it.height / 2, dotX, dotY)
+            g.fillOval(
+                dotX - pointDiameter / 2,
+                dotY - pointDiameter / 2,
+                pointDiameter,
+                pointDiameter,
+            )
+        }
+
+        rightLabels.values.forEach {
+            val dotX = scaleBounds.x + scaleBounds.width
+            val dotY = timelineView.calculateYPositionForInstant(it.getTimelinePlacement())
+            val labelX = it.x
             g.drawLine(labelX, it.y + it.height / 2, dotX, dotY)
             g.fillOval(
                 dotX - pointDiameter / 2,
@@ -104,22 +116,16 @@ class TimelineOverlay(
     }
 
     private fun updateFlightLabels() {
-        val currentCallsigns = timelineOccurrences.mapNotNull { it.getFlight()?.callsign }
+        syncLabelsWithOccurrences(leftLabels, leftOccurrences)
+        syncLabelsWithOccurrences(rightLabels, rightOccurrences)
+    }
 
-        // Remove labels for flights that are no longer in the timeline
-        val iterator = allLabels.entries.iterator()
-        while (iterator.hasNext()) {
-            val (callsign, label) = iterator.next()
-            if (callsign !in currentCallsigns) {
-                iterator.remove()
-                remove(label)
-            }
-        }
-
-        timelineOccurrences.forEach { timelineOccurrence ->
+    private fun syncLabelsWithOccurrences(currentLabels: HashMap<String, TimelineLabel>, occurrences: List<TimelineOccurrence>) {
+        removeOld(currentLabels, occurrences.mapNotNull { it.getFlight()?.callsign })
+        occurrences.forEach { timelineOccurrence ->
             val flight = timelineOccurrence.getFlight()
             if (flight != null) {
-                val label = allLabels[flight.callsign]
+                val label = currentLabels[flight.callsign]
                 if (label != null) {
                     label.timelineOccurrence = timelineOccurrence
                     label.updateText()
@@ -131,10 +137,20 @@ class TimelineOverlay(
                             handleLabelClick(newLabel)
                         }
                     })
-
-                    allLabels[flight.callsign] = newLabel
+                    currentLabels[flight.callsign] = newLabel
                     add(newLabel)
                 }
+            }
+        }
+    }
+
+    private fun removeOld(fromLabels: HashMap<String, TimelineLabel>, currentCallsigns: List<String>) {
+        val iterator = fromLabels.entries.iterator()
+        while (iterator.hasNext()) {
+            val (callsign, label) = iterator.next()
+            if (callsign !in currentCallsigns) {
+                iterator.remove()
+                remove(label)
             }
         }
     }
@@ -163,14 +179,6 @@ class TimelineOverlay(
             else -> throw IllegalArgumentException("Unsupported occurrence type")
         }
     }
-
-    private fun TimelineOccurrence.isLeftSide(): Boolean =
-        when (this) {
-            is RunwayArrivalOccurrence -> timelineConfig.runwayLeft == this.runway
-            is DepartureOccurrence -> timelineConfig.runwayLeft == this.runway
-            is FixInboundOccurrence -> timelineConfig.runwayLeft == this.runway
-            is RunwayDelayOccurrence -> timelineConfig.runwayLeft == this.runway
-        }
 
     private fun paintHourglass(g: Graphics, xPosition: Int) {
         val nowY = timelineView.calculateYPositionForInstant(Clock.System.now())

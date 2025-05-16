@@ -1,6 +1,7 @@
 package tabpage
 
 import entity.TimeRange
+import entity.TimelineData
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.example.DepartureOccurrence
@@ -12,7 +13,6 @@ import java.awt.event.*
 import javax.swing.*
 import kotlin.math.roundToInt
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -142,8 +142,10 @@ class TimeRangeScrollBar(
         return (relativeTimeEnd * height).toInt()
     }
 
-    fun setTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
-        this.timelineOccurrences = occurrences
+    fun setTimelineOccurrences(timelineDatas: List<TimelineData>) {
+        this.timelineOccurrences = timelineDatas.flatMap { timelineData ->
+            timelineData.left + timelineData.right
+        }
         repaint()
     }
 

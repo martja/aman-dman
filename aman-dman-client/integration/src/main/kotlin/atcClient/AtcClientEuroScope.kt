@@ -1,14 +1,10 @@
 package atcClient
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.example.integration.entities.IncomingMessageJson
 import org.example.integration.entities.MessageToServer
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
+import java.io.*
 import java.net.Socket
 
 class AtcClientEuroScope(
@@ -20,12 +16,37 @@ class AtcClientEuroScope(
     private var reader: InputStreamReader? = null
 
     private val objectMapper = jacksonObjectMapper()
+    private var isConnected = false
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     init {
-        connect()
+        startConnectionLoop()
     }
 
-    // Method to send a message to the server
+    private fun startConnectionLoop() {
+        scope.launch {
+            while (true) {
+                if (!isConnected) {
+                    println("Attempting to connect to $host:$port")
+                    try {
+                        socket = Socket(host, port)
+                        writer = OutputStreamWriter(socket!!.getOutputStream(), Charsets.UTF_8)
+                        reader = InputStreamReader(socket!!.getInputStream(), Charsets.UTF_8)
+                        isConnected = true
+                        println("Connected to $host:$port")
+
+                        launch { receiveMessages() }
+                    } catch (e: Exception) {
+                        println("Connection failed: ${e.message}")
+                        delay(1000)
+                    }
+                } else {
+                    delay(1000)
+                }
+            }
+        }
+    }
+
     override fun sendMessage(message: MessageToServer) {
         try {
             val jsonMessage = objectMapper.writeValueAsString(message)
@@ -36,41 +57,23 @@ class AtcClientEuroScope(
         }
     }
 
-    private fun connect() {
-        try {
-            socket = Socket(host, port)
-            writer = socket?.getOutputStream()?.let { OutputStreamWriter(it, "UTF-8") }
-            reader = socket?.getInputStream()?.let { InputStreamReader(it, "UTF-8") }
-
-            // Start a coroutine to handle receiving messages
-            CoroutineScope(Dispatchers.IO).launch {
-                receiveMessages()
-            }
-        } catch (e: Exception) {
-            println("Error connecting to server: ${e.message}")
-        }
-    }
-
-    // Method to continuously receive messages and trigger the callback when a message is received
-    private fun receiveMessages() {
+    private suspend fun receiveMessages() {
         try {
             val bufferedReader = BufferedReader(reader)
-            while (true) {
-                val message = bufferedReader.readLine()
+            while (isConnected) {
+                val message = bufferedReader.readLine() ?: break
                 val dataPackage = objectMapper.readValue(message, IncomingMessageJson::class.java)
-                if (message != null) {
-                    super.handleMessage(dataPackage)
-                } else {
-                    break
-                }
+                super.handleMessage(dataPackage)
             }
         } catch (e: Exception) {
             println("Error receiving message: ${e.message}")
-            e.printStackTrace()
+        } finally {
+            println("Disconnected from server.")
+            close()
+            isConnected = false
         }
     }
 
-    // Method to close the connection
     fun close() {
         try {
             socket?.close()
@@ -78,6 +81,10 @@ class AtcClientEuroScope(
             reader?.close()
         } catch (e: Exception) {
             println("Error closing connection: ${e.message}")
+        } finally {
+            socket = null
+            writer = null
+            reader = null
         }
     }
 }

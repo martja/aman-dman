@@ -15,12 +15,8 @@ object EstimationService {
             try { AircraftPerformanceData.get(icaoType) }
             catch (e: IllegalArgumentException) { return null }
 
-        if (star == null) {
-            println("Star not found for ${this.callsign}: $assignedStar")
-        }
 
         if (assignedRunway == null) {
-            println("Runway not assigned for ${this.callsign}")
             return null
         }
 
