@@ -186,12 +186,20 @@ class TimeRangeScrollBar(
             }
         }
 
-        g2.color = Color(0, 0, 0, 50)
-        g2.fillRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, barBottom - barTop, cornerRadius, cornerRadius)
+        val barLeft = scrollHandleMargin
+        val barRight = barLeft + scrollHandleWidth
+
+        val gradient = GradientPaint(
+            barLeft.toFloat(), barTop.toFloat(), Color(0, 0, 0, 50),
+            barRight.toFloat(), barTop.toFloat(), Color(0, 0, 0, 100)
+        )
+        g2.paint = gradient
+        // g2.color = Color(0, 0, 0, 50)
+        g2.fillRoundRect(barLeft, barTop, scrollHandleWidth, barBottom - barTop, cornerRadius, cornerRadius)
         g2.color = Color.WHITE
-        g2.drawRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, barBottom - barTop, cornerRadius, cornerRadius)
-        g2.fillRoundRect(scrollHandleMargin, barTop, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
-        g2.fillRoundRect(scrollHandleMargin, barBottom - resizeHandleThickness, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
+        g2.drawRoundRect(barLeft, barTop, scrollHandleWidth, barBottom - barTop, cornerRadius, cornerRadius)
+        g2.fillRoundRect(barLeft, barTop, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
+        g2.fillRoundRect(barLeft, barBottom - resizeHandleThickness, scrollHandleWidth, resizeHandleThickness, cornerRadius, cornerRadius)
     }
 
     private fun drawHorizontalBar(g: Graphics, instant: Instant, color: Color) {
