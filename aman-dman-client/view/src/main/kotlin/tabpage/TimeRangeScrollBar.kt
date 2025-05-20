@@ -175,7 +175,7 @@ class TimeRangeScrollBar(
         val scrollHandleWidth = width - scrollHandleMargin * 2 - 1
 
         // Draw one line per item
-        timelineOccurrences.forEach { item ->
+        timelineOccurrences.toSet().forEach { item ->
             when (item) {
                 is RunwayDelayOccurrence ->
                     drawVerticalBar(g2, item.time, item.delay, Color.RED)

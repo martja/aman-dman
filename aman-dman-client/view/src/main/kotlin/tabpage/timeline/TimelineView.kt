@@ -6,6 +6,7 @@ import kotlinx.datetime.Instant
 import org.example.TimelineConfig
 import org.example.eventHandling.ViewListener
 import util.SharedValue
+import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Rectangle
@@ -19,8 +20,8 @@ class TimelineView(
 ) : JLayeredPane() {
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
     private val palettePanel = TimelineOverlay(timelineConfig, this, viewListener)
-
-    private val timeScale = TimeScale(this, selectedTimeRange)
+    private val isDual = timelineConfig.runwayLeft != null && timelineConfig.runwayRight != null
+    private val timeScale = TimeScale(this, selectedTimeRange, !isDual)
 
     init {
         layout = null // JLayeredPane requires explicit bounds for components
@@ -29,33 +30,48 @@ class TimelineView(
         setLayer(basePanel, DEFAULT_LAYER)
         setLayer(palettePanel, PALETTE_LAYER)
 
+
+        preferredSize = Dimension(if (isDual) 580 else 240, 0)
+
         val gbc = GridBagConstraints()
         gbc.fill = GridBagConstraints.BOTH // Allow full height expansion
         gbc.weighty = 1.0 // Make components expand vertically
 
-        // Left TrafficSequenceView
-        gbc.gridx = 0
-        gbc.weightx = 1.0
-        basePanel.add(SequenceStack(this, TimelineAlignment.RIGHT), gbc)
+        if (isDual) {
+            // Left TrafficSequenceView
+            gbc.gridx = 0
+            gbc.weightx = 1.0
+            basePanel.add(SequenceStack(this, TimelineAlignment.RIGHT), gbc)
 
-        // Scale visualisation
-        gbc.gridx = 1
-        gbc.weightx = 0.2
-        basePanel.add(timeScale, gbc)
+            // Scale visualisation
+            gbc.gridx = 1
+            gbc.weightx = 0.25
+            basePanel.add(timeScale, gbc)
 
-        // Right TrafficSequenceView
-        gbc.gridx = 2
-        gbc.weightx = 1.0
-        basePanel.add(SequenceStack(this, TimelineAlignment.LEFT), gbc)
+            // Right TrafficSequenceView
+            gbc.gridx = 2
+            gbc.weightx = 1.0
+            basePanel.add(SequenceStack(this, TimelineAlignment.LEFT), gbc)
+        } else {
+            // Scale visualisation
+            gbc.gridx = 0
+            gbc.weightx = 0.2
+            basePanel.add(timeScale, gbc)
+
+            // Single TrafficSequenceView
+            gbc.gridx = 1
+            gbc.weightx = 1.0
+            basePanel.add(SequenceStack(this, TimelineAlignment.RIGHT), gbc)
+        }
 
         selectedTimeRange.addListener {
             palettePanel.repaint()
         }
     }
 
-    fun updateTimelineOccurrences(timelineData: TimelineData) {
-        palettePanel.updateTimelineOccurrences(timelineData)
-        timeScale.updateTimelineOccurrences(timelineData)
+    fun updateTimelineData(timelineData: TimelineData) {
+        palettePanel.updateTimelineData(timelineData)
+        timeScale.updateTimelineData(timelineData)
     }
 
     fun calculateYPositionForInstant(instant: Instant): Int {

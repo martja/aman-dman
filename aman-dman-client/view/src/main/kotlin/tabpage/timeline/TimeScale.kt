@@ -12,7 +12,8 @@ import javax.swing.JPanel
 
 class TimeScale(
     private val timelineView: TimelineView,
-    private val selectedRange: SharedValue<TimeRange>
+    private val selectedRange: SharedValue<TimeRange>,
+    private val scaleOnRightSideOnly: Boolean,
 ) : JPanel(null) {
     private val TICK_WIDTH_1_MIN = 5
     private val TICK_WIDTH_5_MIN = 10
@@ -20,14 +21,14 @@ class TimeScale(
     private val lineColor = Color.decode("#C8C8C8")
     private val pastColor = Color.decode("#4B4B4B")
 
-    private var leftOccurrences: List<TimelineOccurrence> = emptyList()
-    private var rightOccurrences: List<TimelineOccurrence> = emptyList()
+    private var leftOccurrences: List<TimelineOccurrence>? = null
+    private var rightOccurrences: List<TimelineOccurrence>? = null
 
     init {
         background = Color.decode("#646464")
     }
 
-    fun updateTimelineOccurrences(timelineData: TimelineData) {
+    fun updateTimelineData(timelineData: TimelineData) {
         leftOccurrences = timelineData.left
         rightOccurrences = timelineData.right
     }
@@ -55,7 +56,9 @@ class TimeScale(
             val yPos = timelineView.calculateYPositionForInstant(Instant.fromEpochSeconds(accSeconds))
 
             if (accSeconds % (60L * 5L) == 0L) {
-                g.drawLine(0, yPos, TICK_WIDTH_5_MIN, yPos)
+                if (!scaleOnRightSideOnly) {
+                    g.drawLine(0, yPos, TICK_WIDTH_5_MIN, yPos)
+                }
                 g.drawLine(width, yPos, width - TICK_WIDTH_5_MIN, yPos)
 
                 if (accSeconds % (60L * 10L) == 0L) {
@@ -64,12 +67,19 @@ class TimeScale(
                     g.drawCenteredString(accInstant.format("mm"), Rectangle(0, yPos - g.fontMetrics.height / 2, width, g.fontMetrics.height), g.font)
                 }
             } else if (accSeconds % 60L == 0L) {
-                g.drawLine(0, yPos, TICK_WIDTH_1_MIN, yPos)
+                if (!scaleOnRightSideOnly) {
+                    g.drawLine(0, yPos, TICK_WIDTH_1_MIN, yPos)
+                }
                 g.drawLine(width, yPos, width - TICK_WIDTH_1_MIN, yPos)
             }
         }
-        drawDelays(g, leftOccurrences.filterIsInstance<RunwayDelayOccurrence>())
-        drawDelays(g, rightOccurrences.filterIsInstance<RunwayDelayOccurrence>())
+
+        leftOccurrences?.let {
+            drawDelays(g, it.filterIsInstance<RunwayDelayOccurrence>())
+        }
+        rightOccurrences?.let {
+            drawDelays(g, it.filterIsInstance<RunwayDelayOccurrence>())
+        }
     }
 
     private fun drawDelays(g: Graphics, delays: List<RunwayDelayOccurrence>) {

@@ -1,19 +1,29 @@
 import entity.TabData
 import entity.TimelineData
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.example.dto.CreateOrUpdateTimelineDto
 import org.example.*
 import org.example.config.SettingsManager
 import org.example.eventHandling.AmanDataListener
 import org.example.eventHandling.ViewListener
 import org.example.weather.WindApi
+import kotlin.time.Duration.Companion.seconds
 
 class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : ViewListener, AmanDataListener {
     private var weatherProfile: VerticalWeatherProfile? = null
     private val timelineGroups = mutableListOf<TimelineGroup>()
     private var selectedCallsign: String? = null
 
+    private val cachedAmanData = mutableMapOf<String, CachedOccurrence>()
+    private val lock = Object()
+
     init {
         model.connectToAtcClient()
+
+        javax.swing.Timer(1000) {
+            updateViewFromCachedData()
+        }.start()
     }
 
     override fun onLoadAllTabsRequested() {
@@ -63,27 +73,52 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
     }
 
     override fun onLiveData(amanData: List<TimelineOccurrence>) {
+        synchronized(lock) {
+            amanData.filterIsInstance<RunwayArrivalOccurrence>().forEach {
+                cachedAmanData[it.callsign] = CachedOccurrence(
+                    lastTimestamp = Clock.System.now(),
+                    timelineOccurrence = it
+                )
+            }
+
+            // Delete stale data
+            val cutoffTime = Clock.System.now() - 5.seconds
+            cachedAmanData.entries.removeIf { entry ->
+                entry.value.lastTimestamp < cutoffTime
+            }
+        }
+    }
+
+    private fun updateViewFromCachedData() {
+        val snapshot: List<TimelineOccurrence>
+        synchronized(lock) {
+            snapshot = cachedAmanData.values.toList().map { it.timelineOccurrence }
+        }
+
         timelineGroups.forEach { group ->
             view.getTabByGroupId(group.id)?.let { tab ->
-                val relevantData = amanData.filter { occurrence ->
-                    group.timelines.any { timeline -> timeline.airportIcao == occurrence.airportIcao }
+                val relevantDataForTab = snapshot.filter { occurrence ->
+                    group.timelines.any { it.airportIcao == occurrence.airportIcao }
                 }
+
                 tab.updateAmanData(TabData(
                     timelinesData = group.timelines.map { timeline ->
                         TimelineData(
                             timelineId = timeline.title,
-                            left = relevantData.filter { it is RunwayArrivalOccurrence && it.runway == timeline.runwayLeft },
-                            right = relevantData.filter { it is RunwayArrivalOccurrence && it.runway == timeline.runwayRight }
+                            left = relevantDataForTab.filter { it is RunwayArrivalOccurrence && it.runway == timeline.runwayLeft },
+                            right = relevantDataForTab.filter { it is RunwayArrivalOccurrence && it.runway == timeline.runwayRight }
                         )
                     }
                 ))
             }
         }
 
-        if (selectedCallsign != null) {
-            val selectedDescentProfile = amanData.filterIsInstance<RunwayArrivalOccurrence>().find { it.callsign == selectedCallsign }
-            if (selectedDescentProfile != null) {
-                view.descentProfileVisualizationView.setDescentSegments(selectedDescentProfile.descentTrajectory)
+        selectedCallsign?.let { callsign ->
+            val selectedDescentProfile = snapshot.filterIsInstance<RunwayArrivalOccurrence>()
+                .find { it.callsign == callsign }
+
+            selectedDescentProfile?.let {
+                view.descentProfileVisualizationView.setDescentSegments(it.descentTrajectory)
             }
         }
     }
@@ -95,27 +130,27 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
                 name = title,
                 timelines = mutableListOf()
             )
-        )
+        ).also {
+            view.closeTimelineForm()
+        }
 
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
         registerTimeline(
             config.groupId,
             TimelineConfig(
                 title = config.title,
-                runwayLeft = config.runwayLeft,
-                runwayRight = config.runwayRight,
-                targetFixesLeft = config.targetFixesLeft,
-                targetFixesRight = config.targetFixesRight,
+                runwayLeft = config.left.targetRunways.first(),
+                runwayRight = config.right.targetRunways.first(),
+                targetFixesLeft = config.left.targetFixes,
+                targetFixesRight = config.right.targetFixes,
                 airportIcao = config.airportIcao
             )
         )
     }
 
-
     private fun registerNewTimelineGroup(timelineGroup: TimelineGroup) {
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
-        view.closeTimelineForm()
     }
 
     private fun registerTimeline(groupId: String, timelineConfig: TimelineConfig) {
@@ -141,4 +176,9 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
     override fun onNewTimelineClicked(groupId: String) {
         view.openTimelineConfigForm(groupId)
     }
+
+    private data class CachedOccurrence(
+        val lastTimestamp: Instant,
+        val timelineOccurrence: TimelineOccurrence
+    )
 }

@@ -23,13 +23,12 @@ class TimelineOverlay(
 ) : JPanel(null) {
     private val pointDiameter = 6
     private val scaleMargin = 30
-    private val labelWidth = 320
+    private val labelWidth = 220
 
-    private val leftLabels = hashMapOf<String, TimelineLabel>()
-    private val rightLabels = hashMapOf<String, TimelineLabel>()
+    private val labels: HashMap<String, TimelineLabel> = hashMapOf()
 
-    private var leftOccurrences: List<TimelineOccurrence> = emptyList()
-    private var rightOccurrences: List<TimelineOccurrence> = emptyList()
+    private var leftOccurrences: List<TimelineOccurrence>? = null
+    private var rightOccurrences: List<TimelineOccurrence>? = null
 
     private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -44,85 +43,94 @@ class TimelineOverlay(
         add(timelineNameLabel)
     }
 
-    fun updateTimelineOccurrences(timelineData: TimelineData) {
+    fun updateTimelineData(timelineData: TimelineData) {
         this.leftOccurrences = timelineData.left
         this.rightOccurrences = timelineData.right
-
-        updateFlightLabels()
-
+        val allOccurrences = (leftOccurrences ?: emptyList()) + (rightOccurrences ?: emptyList())
+        syncLabelsWithOccurrences(labels, allOccurrences)
         repaint()
     }
 
     override fun doLayout() {
         super.doLayout()
-
+        rearrangeLabels()
         val scale = timelineView.getScaleBounds()
-
-        rearrangeLabels(leftLabels.values.toList(), scale.x - labelWidth - scaleMargin)
-        rearrangeLabels(rightLabels.values.toList(), scale.x + scaleMargin + scale.width)
-
         timelineNameLabel.setBounds(scale.x - 10, scale.y + scale.height - 20, 100, 20)
     }
 
-    private fun rearrangeLabels(selectedLabels: List<TimelineLabel>, x: Int) {
-        var previousTop: Int? = null
-        selectedLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
+    private fun rearrangeLabels() {
+        var previousTopLeft: Int? = null
+        var previousTopRight: Int? = null
+
+        val leftLabels = labels.values.filter { leftOccurrences?.contains(it.timelineOccurrence) ?: false }
+        val rightLabels = labels.values.filter { rightOccurrences?.contains(it.timelineOccurrence) ?: false }
+
+        leftLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
             val centerY = dotY - label.height / 2
+
+            val labelX = timelineView.getScaleBounds().x - labelWidth - scaleMargin
             val labelY =
-                if (previousTop == null)
+                if (previousTopLeft == null)
                     centerY
                 else
-                    min(previousTop!! - 3, centerY)
+                    min(previousTopLeft!! - 3, centerY)
 
-            label.setBounds(x, labelY, labelWidth, 20)
-            previousTop = label.y - label.height
+            label.setBounds(labelX, labelY, labelWidth, 20)
+            previousTopLeft = label.y - label.height
+        }
+
+        rightLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
+            val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
+            val centerY = dotY - label.height / 2
+
+            val labelX = timelineView.getScaleBounds().x + timelineView.getScaleBounds().width + scaleMargin
+            val labelY =
+                if (previousTopRight == null)
+                    centerY
+                else
+                    min(previousTopRight!! - 3, centerY)
+
+            label.setBounds(labelX, labelY, labelWidth, 20)
+            previousTopRight = label.y - label.height
         }
     }
 
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
         doLayout()
+
+        drawLineFromLabelsToTimeScale(g)
+
         val scaleBounds = timelineView.getScaleBounds()
-
-        leftLabels.values.forEach {
-            val dotX = scaleBounds.x
-            val dotY = timelineView.calculateYPositionForInstant(it.getTimelinePlacement())
-            val labelX = it.x + it.width
-            g.drawLine(labelX, it.y + it.height / 2, dotX, dotY)
-            g.fillOval(
-                dotX - pointDiameter / 2,
-                dotY - pointDiameter / 2,
-                pointDiameter,
-                pointDiameter,
-            )
-        }
-
-        rightLabels.values.forEach {
-            val dotX = scaleBounds.x + scaleBounds.width
-            val dotY = timelineView.calculateYPositionForInstant(it.getTimelinePlacement())
-            val labelX = it.x
-            g.drawLine(labelX, it.y + it.height / 2, dotX, dotY)
-            g.fillOval(
-                dotX - pointDiameter / 2,
-                dotY - pointDiameter / 2,
-                pointDiameter,
-                pointDiameter,
-            )
-        }
-
         paintHourglass(g, scaleBounds.x)
         paintHourglass(g, scaleBounds.x + scaleBounds.width)
     }
 
-    private fun updateFlightLabels() {
-        syncLabelsWithOccurrences(leftLabels, leftOccurrences)
-        syncLabelsWithOccurrences(rightLabels, rightOccurrences)
+    private fun drawLineFromLabelsToTimeScale(g: Graphics) {
+        val scaleBounds = timelineView.getScaleBounds()
+        labels.values.forEach { label ->
+            val isOnRightSide = label.x > scaleBounds.x
+
+            val labelX = if (isOnRightSide) label.x else label.x + label.width
+            val dotX = if (isOnRightSide) scaleBounds.x + scaleBounds.width  else scaleBounds.x
+            val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
+            g.drawLine(labelX, label.y + label.height / 2, dotX, dotY)
+            g.fillOval(
+                dotX - pointDiameter / 2,
+                dotY - pointDiameter / 2,
+                pointDiameter,
+                pointDiameter,
+            )
+        }
     }
 
-    private fun syncLabelsWithOccurrences(currentLabels: HashMap<String, TimelineLabel>, occurrences: List<TimelineOccurrence>) {
-        removeOld(currentLabels, occurrences.mapNotNull { it.getFlight()?.callsign })
-        occurrences.forEach { timelineOccurrence ->
+    private fun syncLabelsWithOccurrences(currentLabels: HashMap<String, TimelineLabel>, occurrences: List<TimelineOccurrence>?) {
+        removeOld(
+            fromLabels = currentLabels,
+            currentCallsigns = occurrences?.mapNotNull { it.getFlight()?.callsign } ?: emptyList()
+        )
+        occurrences?.forEach { timelineOccurrence ->
             val flight = timelineOccurrence.getFlight()
             if (flight != null) {
                 val label = currentLabels[flight.callsign]

@@ -30,42 +30,48 @@ class TimelineScrollPane(
 
     fun insertTimeline(timelineConfig: TimelineConfig) {
         val tl = TimelineView(timelineConfig, selectedTimeRange, viewListener)
-        tl.preferredSize = Dimension(800, 0)
-        val gbc = GridBagConstraints()
-        gbc.weighty = 1.0
-        gbc.anchor = GridBagConstraints.WEST
-        gbc.fill = GridBagConstraints.VERTICAL
         val items = viewport.view as JPanel
+
+        // Remove the previous glue (assumes it’s always the last component and a JLabel)
+        if (items.componentCount > 0) {
+            val last = items.getComponent(items.componentCount - 1)
+            if (last is JLabel) {
+                items.remove(last)
+            }
+        }
+
+        val gbc = GridBagConstraints().apply {
+            gridx = items.componentCount
+            weightx = 0.0
+            weighty = 1.0
+            anchor = GridBagConstraints.WEST
+            fill = GridBagConstraints.VERTICAL
+        }
         items.add(tl, gbc)
-        items.add(JLabel(), gbc) // Dummy component to force the scrollbars to be left aligned
+
+        // Add new glue at the end
+        val glue = JLabel()
+        val glueConstraints = GridBagConstraints().apply {
+            gridx = items.componentCount
+            weightx = 1.0
+            weighty = 0.0
+            fill = GridBagConstraints.BOTH
+        }
+        items.add(glue, glueConstraints)
+
         items.revalidate()
+        items.repaint()
     }
+
 
     fun updateTimelineOccurrences(timelineData: List<TimelineData>) {
         val items = viewport.view as JPanel
         timelineData.forEach {
-            val timeline = items.components.find { component ->
-                (component as? TimelineView)?.timelineConfig?.title == it.timelineId
-            } as? TimelineView
-            timeline?.updateTimelineOccurrences(it)
-        }
-    }
-
-    private fun TimelineConfig.occurrenceIsRelevant(occurrence: TimelineOccurrence): Boolean {
-        return when (occurrence) {
-            is RunwayArrivalOccurrence ->
-                occurrence.runway == runwayLeft || occurrence.runway == runwayRight
-            is DepartureOccurrence ->
-                occurrence.runway == runwayLeft || occurrence.runway == runwayRight
-            is FixInboundOccurrence -> {
-                // Check if the route contains any of the target fixes
-                val route = occurrence.descentProfile.map { it.fixId }
-                targetFixesLeft.any { it in route } || targetFixesRight.any { it in route }
+           items.components.filterIsInstance<TimelineView>().forEach { timelineView ->
+                if (timelineView.timelineConfig.title == it.timelineId) {
+                    timelineView.updateTimelineData(it)
+                }
             }
-            is RunwayDelayOccurrence -> {
-                occurrence.runway == runwayLeft || occurrence.runway == runwayRight
-            }
-            else -> false
         }
     }
 }
