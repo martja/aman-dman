@@ -46,10 +46,10 @@ class NewTimelineForm(val viewListener: ViewListener, groupId: String, existingC
 
         existingConfig?.let { config ->
             icaoField.text = config.airportIcao
-            leftFixesInput.text = config.targetFixesLeft.joinToString(", ")
-            leftRunwaysInput.text = config.runwayLeft
-            rightFixesInput.text = config.targetFixesRight.joinToString(", ")
-            rightRunwaysInput.text = config.runwayRight
+            leftFixesInput.text = config.targetFixesLeft.joinToString(",")
+            leftRunwaysInput.text = config.runwaysLeft.joinToString(",")
+            rightFixesInput.text = config.targetFixesRight.joinToString(",")
+            rightRunwaysInput.text = config.runwaysRight.joinToString(",")
         }
 
         val submitButton = JButton("Submit")

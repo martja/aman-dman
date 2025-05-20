@@ -39,8 +39,8 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
                 id,
                 TimelineConfig(
                     title = timelineJson.title,
-                    runwayLeft = timelineJson.runwayLeft,
-                    runwayRight = timelineJson.runwayRight,
+                    runwaysLeft = timelineJson.runwaysLeft,
+                    runwaysRight = timelineJson.runwaysRight,
                     targetFixesLeft = timelineJson.targetFixesLeft,
                     targetFixesRight = timelineJson.targetFixesRight,
                     airportIcao = timelineJson.airportIcao
@@ -105,8 +105,8 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
                     timelinesData = group.timelines.map { timeline ->
                         TimelineData(
                             timelineId = timeline.title,
-                            left = relevantDataForTab.filter { it is RunwayArrivalOccurrence && it.runway == timeline.runwayLeft },
-                            right = relevantDataForTab.filter { it is RunwayArrivalOccurrence && it.runway == timeline.runwayRight }
+                            left = relevantDataForTab.filter { it is RunwayArrivalOccurrence && timeline.runwaysLeft.contains(it.runway) },
+                            right = relevantDataForTab.filter { it is RunwayArrivalOccurrence && timeline.runwaysRight.contains(it.runway) }
                         )
                     }
                 ))
@@ -139,8 +139,8 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
             config.groupId,
             TimelineConfig(
                 title = config.title,
-                runwayLeft = config.left.targetRunways.first(),
-                runwayRight = config.right.targetRunways.first(),
+                runwaysLeft = config.left.targetRunways,
+                runwaysRight = config.right.targetRunways,
                 targetFixesLeft = config.left.targetFixes,
                 targetFixesRight = config.right.targetFixes,
                 airportIcao = config.airportIcao

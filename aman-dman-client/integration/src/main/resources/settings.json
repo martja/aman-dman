@@ -3,15 +3,15 @@
   "timelines": {
     "GM 19R/19L": {
       "title": "GM 19R/19L",
-      "runwayLeft": "19R",
-      "runwayRight": "19L",
+      "runwaysLeft": ["19R"],
+      "runwaysRight": ["19L"],
       "targetFixesLeft": [ "GSW1" ],
       "targetFixesRight": [ "GME1" ],
       "airportIcao": "ENGM"
     },
     "GM 01L/01R": {
-        "runwayLeft": "01L",
-        "runwayRight": "01R",
+        "runwaysLeft": ["01L"],
+        "runwaysRight": ["01R"],
       "title": "GM 01L/01R",
       "targetFixesLeft": [ "OBW10" ],
       "targetFixesRight": [ "ONE10" ],

@@ -20,7 +20,7 @@ class TimelineView(
 ) : JLayeredPane() {
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
     private val palettePanel = TimelineOverlay(timelineConfig, this, viewListener)
-    private val isDual = timelineConfig.runwayLeft != null && timelineConfig.runwayRight != null
+    private val isDual = timelineConfig.runwaysLeft != null && timelineConfig.runwaysRight != null
     private val timeScale = TimeScale(this, selectedTimeRange, !isDual)
 
     init {
