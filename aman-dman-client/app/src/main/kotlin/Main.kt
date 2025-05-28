@@ -37,7 +37,7 @@ fun main() {
         val model = AmanDataService()
         val controller = Controller(model, view)
 
-        model.amanDataListener = controller
+        model.livedataInferface = controller
         view.openWindow(controller)
 
         controller.refreshWeatherData(60.0, 11.0)

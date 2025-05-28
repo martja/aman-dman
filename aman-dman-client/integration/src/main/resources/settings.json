@@ -1,7 +1,7 @@
 {
   "openAutomatically": false,
-  "timelines": {
-    "GM 19R/19L": {
+  "timelines": [
+    {
       "title": "GM 19R/19L",
       "runwaysLeft": ["19R"],
       "runwaysRight": ["19L"],
@@ -9,15 +9,15 @@
       "targetFixesRight": [ "GME1" ],
       "airportIcao": "ENGM"
     },
-    "GM 01L/01R": {
-        "runwaysLeft": ["01L"],
-        "runwaysRight": ["01R"],
+    {
+      "runwaysLeft": ["01L"],
+      "runwaysRight": ["01R"],
       "title": "GM 01L/01R",
       "targetFixesLeft": [ "OBW10" ],
       "targetFixesRight": [ "ONE10" ],
       "airportIcao": "ENGM"
-    }},
-
+    }
+  ],
   "tagLayouts": {
     "DualrunwayLayout": [
       { "source": "assignedRunway", "width": 4 },

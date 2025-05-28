@@ -2,6 +2,6 @@ package org.example.eventHandling
 
 import org.example.TimelineOccurrence
 
-interface AmanDataListener {
+interface LivedataInferface {
     fun onLiveData(amanData: List<TimelineOccurrence>)
 }

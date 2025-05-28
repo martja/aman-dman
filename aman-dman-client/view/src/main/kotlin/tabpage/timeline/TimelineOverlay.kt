@@ -1,9 +1,9 @@
 package tabpage.timeline
 
-import entity.TimelineData
+import org.example.dto.TimelineData
 import kotlinx.datetime.Clock
 import org.example.*
-import org.example.eventHandling.ViewListener
+import ControllerInterface
 import tabpage.timeline.labels.ArrivalLabel
 import tabpage.timeline.labels.DepartureLabel
 import tabpage.timeline.labels.TimelineLabel
@@ -19,7 +19,7 @@ import kotlin.math.min
 class TimelineOverlay(
     val timelineConfig: TimelineConfig,
     val timelineView: TimelineView,
-    val viewListener: ViewListener
+    val controllerInterface: ControllerInterface
 ) : JPanel(null) {
     private val pointDiameter = 6
     private val scaleMargin = 30
@@ -166,7 +166,7 @@ class TimelineOverlay(
     private fun handleLabelClick(label: TimelineLabel) {
         val flight = label.timelineOccurrence.getFlight()
         if (flight != null) {
-            viewListener.onAircraftSelected(flight.callsign)
+            controllerInterface.onAircraftSelected(flight.callsign)
         }
     }
 

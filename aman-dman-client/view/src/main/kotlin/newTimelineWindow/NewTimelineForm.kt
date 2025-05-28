@@ -2,14 +2,12 @@ package newTimelineWindow
 
 import org.example.TimelineConfig
 import org.example.dto.CreateOrUpdateTimelineDto
-import org.example.eventHandling.ViewListener
+import ControllerInterface
+import util.Form.enforceUppercase
 import java.awt.*
 import javax.swing.*
-import javax.swing.text.AbstractDocument
-import javax.swing.text.AttributeSet
-import javax.swing.text.DocumentFilter
 
-class NewTimelineForm(val viewListener: ViewListener, groupId: String, existingConfig: TimelineConfig?) : JPanel() {
+class NewTimelineForm(val controllerInterface: ControllerInterface, groupId: String, existingConfig: TimelineConfig?) : JPanel() {
     private val icaoField = JTextField(4)
 
     private val radioButtonRunway = JRadioButton("Runway")
@@ -55,7 +53,7 @@ class NewTimelineForm(val viewListener: ViewListener, groupId: String, existingC
         val submitButton = JButton("Submit")
         submitButton.alignmentX = CENTER_ALIGNMENT
         submitButton.addActionListener {
-            viewListener.onCreateNewTimeline(
+            controllerInterface.onCreateNewTimeline(
                 CreateOrUpdateTimelineDto(
                     groupId = groupId,
                     title = "${icaoField.text} Timeline",
@@ -109,7 +107,7 @@ class NewTimelineForm(val viewListener: ViewListener, groupId: String, existingC
         }
 
         val idInput = createLabeledField("Timeline label*:")
-        val fixesInput = createLabeledField("Target fixes* (comma separated):")
+        val fixesInput = createLabeledField("Threshold fixes* (comma separated):")
         val runwayInput = createLabeledField("Assigned runways (comma separated):")
 
         // Store references
@@ -132,24 +130,5 @@ class NewTimelineForm(val viewListener: ViewListener, groupId: String, existingC
         panel.add(JLabel(label))
         panel.add(component)
         return panel
-    }
-
-    fun enforceUppercase(textField: JTextField) {
-        val doc = textField.document
-        if (doc is AbstractDocument) {
-            doc.documentFilter = object : DocumentFilter() {
-                override fun insertString(fb: FilterBypass, offset: Int, string: String?, attr: AttributeSet?) {
-                    if (string != null) {
-                        super.insertString(fb, offset, string.uppercase(), attr)
-                    }
-                }
-
-                override fun replace(fb: FilterBypass, offset: Int, length: Int, text: String?, attrs: AttributeSet?) {
-                    if (text != null) {
-                        super.replace(fb, offset, length, text.uppercase(), attrs)
-                    }
-                }
-            }
-        }
     }
 }

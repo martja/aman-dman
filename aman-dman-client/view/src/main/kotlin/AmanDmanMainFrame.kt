@@ -1,21 +1,21 @@
 import metWindow.VerticalWindView
 import newTimelineWindow.NewTimelineForm
 import org.example.*
-import org.example.eventHandling.ViewListener
+import org.example.dto.TabData
 import tabpage.Footer
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.*
+import kotlin.math.roundToInt
 
-
-class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
+class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
     private val tabPane = JTabbedPane()
 
-    var viewListener: ViewListener? = null
+    private var controllerInterface: ControllerInterface? = null
 
     private val verticalWindView = VerticalWindView()
-    val descentProfileVisualizationView = DescentProfileVisualization()
+    private val descentProfileVisualizationView = DescentProfileVisualization()
 
     private var newTimelineForm: JDialog? = null
     private var windDialog: JDialog? = null
@@ -26,13 +26,13 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
         layout = BorderLayout()
     }
 
-    fun openWindow(viewListener: ViewListener) {
-        this.viewListener = viewListener
+    fun openWindow(controllerInterface: ControllerInterface) {
+        this.controllerInterface = controllerInterface
 
         setSize(1000, 800)
         setLocationRelativeTo(null) // Center the window
         add(tabPane, BorderLayout.CENTER)
-        add(Footer(viewListener), BorderLayout.SOUTH)
+        add(Footer(controllerInterface), BorderLayout.SOUTH)
 
         isVisible = true // Show the frame
 
@@ -49,7 +49,8 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
                 if (e.isPopupTrigger) {
                     val tabIndex = tabPane.indexAtLocation(e.x, e.y)
                     if (tabIndex >= 0) {
-                        showTabContextMenu(e.x, e.y, tabIndex)
+                        val airportIcao = (tabPane.getComponentAt(tabIndex) as TabView).airportIcao
+                        controllerInterface.onTabMenu(tabIndex, airportIcao)
                     }
                 }
             }
@@ -57,36 +58,59 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
         //isAlwaysOnTop = true
     }
 
-    private fun showTabContextMenu(x: Int, y: Int, tabIndex: Int) {
+    override fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>) {
         val popup = JPopupMenu()
         val tab = tabPane.getComponentAt(tabIndex) as TabView
 
-        val addTimelineItem = JMenuItem("New timeline ...")
+        val loadTimelineMenu = JMenu("Add timeline")
+        if (availableTimelines.isEmpty()) {
+            loadTimelineMenu.isEnabled = false
+        } else {
+            availableTimelines.sortedBy { it.title }.forEach { timeline ->
+                val item = JMenuItem(timeline.title)
+                item.addActionListener {
+                    controllerInterface!!.onAddTimelineButtonClicked(tab.airportIcao, timeline)
+                }
+                loadTimelineMenu.add(item)
+            }
+        }
+
+        val addTimelineItem = JMenuItem("Create timeline ...")
         addTimelineItem.addActionListener {
-            viewListener!!.onNewTimelineClicked(tab.groupId)
+            controllerInterface!!.onCreateNewTimelineClicked(tab.airportIcao)
         }
 
         val removeItem = JMenuItem("Remove tab")
         removeItem.addActionListener {
-            tabPane.removeTabAt(tabIndex)
+            controllerInterface!!.onRemoveTab(tab.airportIcao)
         }
 
+        popup.add(loadTimelineMenu)
         popup.add(addTimelineItem)
         popup.add(removeItem)
-        popup.show(tabPane, x, y)
+        popup.show(tabPane, tab.x, tab.y)
     }
 
-    fun getTabByGroupId(groupId: String): TabView? {
-        return tabPane.components.filterIsInstance<TabView>().find { it.groupId == groupId }
+    override fun updateTab(airportIcao: String, tabData: TabData) {
+        tabPane.components.filterIsInstance<TabView>()
+            .find { it.airportIcao == airportIcao }
+            ?.updateAmanData(tabData)
     }
 
-    fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig? = null) {
+    override fun removeTab(airportIcao: String) {
+        val tabIndex = tabPane.components.indexOfFirst { (it as TabView).airportIcao == airportIcao }
+        if (tabIndex >= 0) {
+            tabPane.removeTabAt(tabIndex)
+        }
+    }
+
+    override fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig?) {
         if (newTimelineForm != null) {
             newTimelineForm?.isVisible = true
         } else {
             newTimelineForm = JDialog(this, "New timeline for $groupId").apply {
                 defaultCloseOperation = DISPOSE_ON_CLOSE
-                contentPane = NewTimelineForm(viewListener!!, groupId, existingConfig)
+                contentPane = NewTimelineForm(controllerInterface!!, groupId, existingConfig)
                 pack()
                 setLocationRelativeTo(null)
                 isVisible = true
@@ -94,13 +118,24 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
         }
     }
 
-    fun closeTimelineForm() {
+    override fun closeTimelineForm() {
         newTimelineForm?.isVisible = false
         newTimelineForm?.dispose()
         newTimelineForm = null
     }
 
-    fun openMetWindow() {
+    override fun updateDescentTrajectory(callsign: String, trajectory: List<TrajectoryPoint>) {
+        val currentFlightLevel = (trajectory.first().altitude / 100.0).roundToInt() // Convert to FL
+        descentProfileDialog?.title = "$callsign - calculated descent profile from FL$currentFlightLevel"
+        descentProfileVisualizationView.setDescentSegments(trajectory)
+    }
+
+    override fun showTabContextMenu(tabIndex: Int, airportIcao: String) {
+        val tab = tabPane.getComponentAt(tabIndex) as TabView
+        controllerInterface?.onTabMenu(tabIndex, airportIcao)
+    }
+
+    override fun openMetWindow() {
         if (windDialog != null) {
             windDialog?.isVisible = true
         } else {
@@ -115,15 +150,15 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
         }
     }
 
-    fun updateWeatherData(weather: VerticalWeatherProfile?) {
+    override fun updateWeatherData(weather: VerticalWeatherProfile?) {
         verticalWindView.update(weather)
     }
 
-    fun openDescentProfileWindow() {
+    override fun openDescentProfileWindow() {
         if (descentProfileDialog != null) {
             descentProfileDialog?.isVisible = true
         } else {
-            descentProfileDialog = JDialog(this, "Descent profile").apply {
+            descentProfileDialog = JDialog(this).apply {
                 add(descentProfileVisualizationView)
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
@@ -134,19 +169,19 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
         }
     }
 
-    fun updateTimelineGroups(groups: List<TimelineGroup>) {
+    override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) {
         // Close tabs that are not in the groups
         for (i in tabPane.tabCount - 1 downTo 0) {
             val tab = tabPane.getComponentAt(i) as TabView
-            if (groups.none { it.id == tab.groupId }) {
+            if (timelineGroups.none { it.id == tab.airportIcao }) {
                 tabPane.removeTabAt(i)
             }
         }
 
         // Add new tabs for groups that are not already present
-        for (group in groups) {
-            if (tabPane.components.none { (it as TabView).groupId == group.id }) {
-                val tabView = TabView(viewListener!!, group.id)
+        for (group in timelineGroups) {
+            if (tabPane.components.none { (it as TabView).airportIcao == group.id }) {
+                val tabView = TabView(controllerInterface!!, group.id)
                 tabPane.addTab(group.name, tabView)
             }
         }
@@ -154,7 +189,7 @@ class AmanDmanMainFrame : JFrame("AMAN / DMAN") {
         // Update existing tabs with new data
         for (i in 0 until tabPane.tabCount) {
             val tab = tabPane.getComponentAt(i) as TabView
-            val group = groups.find { it.id == tab.groupId }
+            val group = timelineGroups.find { it.id == tab.airportIcao }
             if (group != null) {
                 tab.updateTimelines(group)
             }

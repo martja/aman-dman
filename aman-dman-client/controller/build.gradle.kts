@@ -5,7 +5,6 @@ dependencies {
     implementation(project(":model"))
     implementation(project(":service"))
     implementation(project(":common"))
-    implementation(project(":view"))
     implementation(project(":integration"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
 }

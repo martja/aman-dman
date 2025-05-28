@@ -1,19 +1,20 @@
-import entity.TabData
-import entity.TimelineData
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.example.dto.CreateOrUpdateTimelineDto
 import org.example.*
 import org.example.config.SettingsManager
-import org.example.eventHandling.AmanDataListener
-import org.example.eventHandling.ViewListener
+import org.example.dto.TabData
+import org.example.dto.TimelineData
+import org.example.eventHandling.LivedataInferface
 import org.example.weather.WindApi
 import kotlin.time.Duration.Companion.seconds
 
-class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : ViewListener, AmanDataListener {
+class Controller(val model: AmanDataService, val view: ViewInterface) : ControllerInterface, LivedataInferface {
     private var weatherProfile: VerticalWeatherProfile? = null
     private val timelineGroups = mutableListOf<TimelineGroup>()
     private var selectedCallsign: String? = null
+
+    private var timelineConfigs = mutableMapOf<String, TimelineConfig>()
 
     private val cachedAmanData = mutableMapOf<String, CachedOccurrence>()
     private val lock = Object()
@@ -27,25 +28,24 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
     }
 
     override fun onLoadAllTabsRequested() {
-        SettingsManager.getSettings().timelines.forEach { (id, timelineJson) ->
+        SettingsManager.getSettings().timelines.forEach { timelineJson ->
+            val newTimelineConfig = TimelineConfig(
+                title = timelineJson.title,
+                runwaysLeft = timelineJson.runwaysLeft,
+                runwaysRight = timelineJson.runwaysRight,
+                targetFixesLeft = timelineJson.targetFixesLeft,
+                targetFixesRight = timelineJson.targetFixesRight,
+                airportIcao = timelineJson.airportIcao
+            )
             registerNewTimelineGroup(
                 TimelineGroup(
-                    id = id,
-                    name = timelineJson.title,
+                    id = timelineJson.airportIcao,
+                    name = timelineJson.airportIcao,
                     timelines = mutableListOf()
                 )
             )
-            registerTimeline(
-                id,
-                TimelineConfig(
-                    title = timelineJson.title,
-                    runwaysLeft = timelineJson.runwaysLeft,
-                    runwaysRight = timelineJson.runwaysRight,
-                    targetFixesLeft = timelineJson.targetFixesLeft,
-                    targetFixesRight = timelineJson.targetFixesRight,
-                    airportIcao = timelineJson.airportIcao
-                )
-            )
+            registerTimeline(timelineJson.airportIcao, newTimelineConfig)
+            timelineConfigs[timelineJson.title] = newTimelineConfig
         }
 
         view.updateTimelineGroups(timelineGroups)
@@ -96,21 +96,18 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
         }
 
         timelineGroups.forEach { group ->
-            view.getTabByGroupId(group.id)?.let { tab ->
-                val relevantDataForTab = snapshot.filter { occurrence ->
-                    group.timelines.any { it.airportIcao == occurrence.airportIcao }
-                }
-
-                tab.updateAmanData(TabData(
-                    timelinesData = group.timelines.map { timeline ->
-                        TimelineData(
-                            timelineId = timeline.title,
-                            left = relevantDataForTab.filter { it is RunwayArrivalOccurrence && timeline.runwaysLeft.contains(it.runway) },
-                            right = relevantDataForTab.filter { it is RunwayArrivalOccurrence && timeline.runwaysRight.contains(it.runway) }
-                        )
-                    }
-                ))
+            val relevantDataForTab = snapshot.filter { occurrence ->
+                group.timelines.any { it.airportIcao == occurrence.airportIcao }
             }
+            view.updateTab(group.id, TabData(
+                timelinesData = group.timelines.map { timeline ->
+                    TimelineData(
+                        timelineId = timeline.title,
+                        left = relevantDataForTab.filter { it is RunwayArrivalOccurrence && timeline.runwaysLeft.contains(it.runway) },
+                        right = relevantDataForTab.filter { it is RunwayArrivalOccurrence && timeline.runwaysRight.contains(it.runway) }
+                    )
+                }
+            ))
         }
 
         selectedCallsign?.let { callsign ->
@@ -118,21 +115,43 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
                 .find { it.callsign == callsign }
 
             selectedDescentProfile?.let {
-                view.descentProfileVisualizationView.setDescentSegments(it.descentTrajectory)
+                view.updateDescentTrajectory(callsign, it.descentTrajectory)
             }
         }
     }
 
-    override fun onNewTimelineGroup(title: String) =
+    override fun onTabMenu(tabIndex: Int, airportIcao: String) {
+        val availableTimelinesForIcao =
+            timelineConfigs.values
+                .filter { it.airportIcao == airportIcao }
+                .toSet()
+                .toList()
+
+        view.showTabContextMenu(tabIndex, availableTimelinesForIcao)
+    }
+
+    override fun onNewTimelineGroup(airportIcao: String) =
         registerNewTimelineGroup(
             TimelineGroup(
-                id = title,
-                name = title,
+                id = airportIcao,
+                name = airportIcao,
                 timelines = mutableListOf()
             )
         ).also {
             view.closeTimelineForm()
         }
+
+    override fun onAddTimelineButtonClicked(airportIcao: String, timelineConfig: TimelineConfig) {
+        registerTimeline(
+            airportIcao,
+            timelineConfig
+        )
+    }
+
+    override fun onRemoveTab(airportIcao: String) {
+        view.removeTab(airportIcao)
+        timelineGroups.removeAll { it.id == airportIcao }
+    }
 
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
         registerTimeline(
@@ -173,7 +192,7 @@ class Controller(val model: AmanDataService, val view: AmanDmanMainFrame) : View
         }
     }
 
-    override fun onNewTimelineClicked(groupId: String) {
+    override fun onCreateNewTimelineClicked(groupId: String) {
         view.openTimelineConfigForm(groupId)
     }
 

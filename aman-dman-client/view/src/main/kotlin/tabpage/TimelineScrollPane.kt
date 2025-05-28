@@ -1,12 +1,11 @@
 package tabpage
 
 import entity.TimeRange
-import entity.TimelineData
+import org.example.dto.TimelineData
 import org.example.*
-import org.example.eventHandling.ViewListener
+import ControllerInterface
 import tabpage.timeline.TimelineView
 import util.SharedValue
-import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.JLabel
@@ -16,7 +15,7 @@ import javax.swing.JScrollPane
 
 class TimelineScrollPane(
     val selectedTimeRange: SharedValue<TimeRange>,
-    val viewListener: ViewListener
+    val controllerInterface: ControllerInterface
 ) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
     init {
         val items = JPanel(GridBagLayout())
@@ -29,7 +28,7 @@ class TimelineScrollPane(
     }
 
     fun insertTimeline(timelineConfig: TimelineConfig) {
-        val tl = TimelineView(timelineConfig, selectedTimeRange, viewListener)
+        val tl = TimelineView(timelineConfig, selectedTimeRange, controllerInterface)
         val items = viewport.view as JPanel
 
         // Remove the previous glue (assumes it’s always the last component and a JLabel)

@@ -1,17 +1,14 @@
 package tabpage
 
-import org.example.eventHandling.ViewListener
+import ControllerInterface
+import util.Form
 import java.awt.FlowLayout
 import java.awt.Graphics
 import java.awt.event.MouseEvent
 import java.time.Instant
-import javax.swing.JButton
-import javax.swing.JLabel
-import javax.swing.JOptionPane
-import javax.swing.JPanel
-import javax.swing.Timer
+import javax.swing.*
 
-class Footer(viewListener: ViewListener?) : JPanel(FlowLayout(FlowLayout.RIGHT)) {
+class Footer(controllerInterface: ControllerInterface?) : JPanel(FlowLayout(FlowLayout.RIGHT)) {
     private val timeLabel = JLabel("10:00:22")
     private val metButton = JButton("MET")
     private val profileButton = JButton("Profile")
@@ -33,30 +30,43 @@ class Footer(viewListener: ViewListener?) : JPanel(FlowLayout(FlowLayout.RIGHT))
         metButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                viewListener?.onOpenMetWindowClicked()
+                controllerInterface?.onOpenMetWindowClicked()
             }
         })
 
         loadAllButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                viewListener?.onLoadAllTabsRequested()
+                controllerInterface?.onLoadAllTabsRequested()
             }
         })
 
         profileButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                viewListener?.onOpenVerticalProfileWindowClicked()
+                controllerInterface?.onOpenVerticalProfileWindowClicked()
             }
         })
 
         newTabButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                val name = JOptionPane.showInputDialog(this, "Enter timeline name")
-                if (!name.isNullOrBlank()) {
-                    viewListener?.onNewTimelineGroup(name)
+                val textField = JTextField()
+                Form.enforceUppercase(textField, 4)
+
+                val result = JOptionPane.showConfirmDialog(
+                    null,
+                    textField,
+                    "Airport ICAO",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+                )
+
+                if (result == JOptionPane.OK_OPTION) {
+                    val name = textField.text
+                    if (name.isNotBlank()) {
+                        controllerInterface?.onNewTimelineGroup(name)
+                    }
                 }
             }
         })

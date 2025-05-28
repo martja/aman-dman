@@ -2,7 +2,7 @@ package org.example.config
 
 data class AmanDmanSettingsJson(
     val openAutomatically: Boolean,
-    val timelines: Map<String, TimelineJson>,
+    val timelines: List<TimelineJson>,
     val tagLayouts: Map<String, List<TagLayoutElementJson>>
 )
 

@@ -1,7 +1,7 @@
 package tabpage
 
 import entity.TimeRange
-import entity.TimelineData
+import org.example.dto.TimelineData
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.example.DepartureOccurrence

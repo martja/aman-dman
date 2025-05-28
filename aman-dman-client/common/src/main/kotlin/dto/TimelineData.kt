@@ -1,4 +1,4 @@
-package entity
+package org.example.dto
 
 import org.example.TimelineOccurrence
 

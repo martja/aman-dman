@@ -1,9 +1,7 @@
-import entity.TabData
+import org.example.dto.TabData
 import entity.TimeRange
 import kotlinx.datetime.Clock
 import org.example.TimelineGroup
-import org.example.TimelineOccurrence
-import org.example.eventHandling.ViewListener
 import tabpage.TimeRangeScrollBar
 import tabpage.TimelineScrollPane
 import tabpage.TopBar
@@ -17,8 +15,8 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class TabView(
-    viewListener: ViewListener,
-    val groupId: String,
+    controllerInterface: ControllerInterface,
+    val airportIcao: String,
 ) : JPanel(BorderLayout()) {
 
     private val availableTimeRange = SharedValue(
@@ -36,7 +34,7 @@ class TabView(
     )
 
     val timeWindowScrollbar = TimeRangeScrollBar(selectedTimeRange, availableTimeRange)
-    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, viewListener)
+    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, controllerInterface)
 
     init {
         add(TopBar(), BorderLayout.NORTH)

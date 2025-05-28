@@ -1,7 +1,7 @@
 package tabpage.timeline
 
 import entity.TimeRange
-import entity.TimelineData
+import org.example.dto.TimelineData
 import kotlinx.datetime.*
 import org.example.RunwayDelayOccurrence
 import org.example.TimelineOccurrence

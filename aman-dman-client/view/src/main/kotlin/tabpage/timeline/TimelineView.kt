@@ -1,10 +1,10 @@
 package tabpage.timeline
 
 import entity.TimeRange
-import entity.TimelineData
+import org.example.dto.TimelineData
 import kotlinx.datetime.Instant
 import org.example.TimelineConfig
-import org.example.eventHandling.ViewListener
+import ControllerInterface
 import util.SharedValue
 import java.awt.Dimension
 import java.awt.GridBagConstraints
@@ -16,11 +16,11 @@ import javax.swing.JPanel
 class TimelineView(
     val timelineConfig: TimelineConfig,
     private val selectedTimeRange: SharedValue<TimeRange>,
-    private val viewListener: ViewListener,
+    private val controllerInterface: ControllerInterface,
 ) : JLayeredPane() {
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
-    private val palettePanel = TimelineOverlay(timelineConfig, this, viewListener)
-    private val isDual = timelineConfig.runwaysLeft != null && timelineConfig.runwaysRight != null
+    private val palettePanel = TimelineOverlay(timelineConfig, this, controllerInterface)
+    private val isDual = timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
     private val timeScale = TimeScale(this, selectedTimeRange, !isDual)
 
     init {

@@ -43,7 +43,6 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
         }
     }
 
-
     fun setDescentSegments(segments: List<TrajectoryPoint>) {
         this.trajectoryPoints = segments
         doLayout()
