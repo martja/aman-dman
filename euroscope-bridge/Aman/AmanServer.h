@@ -8,9 +8,9 @@
 #include <functional>
 #include <winsock2.h>
 
-#include "MessageProcessor.h"
+#include "ServerEventsHandler.h"
 
-class AmanServer : public MessageProcessor {
+class AmanServer : public ServerEventsHandler {
 public:
     AmanServer();
     ~AmanServer();

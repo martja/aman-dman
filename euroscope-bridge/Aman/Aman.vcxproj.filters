@@ -36,7 +36,7 @@
     <ClCompile Include="incomingJsonStructs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MessageProcessor.cpp">
+    <ClCompile Include="ServerEventsHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -79,7 +79,7 @@
     <ClInclude Include="JsonMessageHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MessageProcessor.h">
+    <ClInclude Include="ServerEventsHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DmanAircraft.h">

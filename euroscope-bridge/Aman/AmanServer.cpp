@@ -136,6 +136,7 @@ void AmanServer::serverLoop() {
             int recvResult = recv(clientSocket, peekBuffer, sizeof(peekBuffer), MSG_PEEK);
             if (recvResult == 0 || (recvResult == SOCKET_ERROR && WSAGetLastError() != WSAEWOULDBLOCK)) {
                 std::cerr << "Client disconnected" << std::endl;
+                onClientDisconnected();
                 break;
             }
         }

@@ -60,4 +60,5 @@ private:
     void onRequestOutboundsFromAirport(long requestId, const std::string& icao) override;
     void onUnsubscribe(long requestId) override;
     void onSetCtot(const std::string& callSign, long ctot) override;
+    void onClientDisconnected() override;
 };

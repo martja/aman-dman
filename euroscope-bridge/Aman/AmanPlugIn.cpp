@@ -188,6 +188,12 @@ void AmanPlugIn::onSetCtot(const std::string& callSign, long ctot) {
     }
 }
 
+void AmanPlugIn::onClientDisconnected() {
+    // Remove all subscriptions when the client disconnects
+    inboundsSubscriptions.clear();
+    outboundsSubscriptions.clear();
+}
+
 std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& airportIcao) {
     long int timeNow = static_cast<long int>(std::time(nullptr)); // Current UNIX-timestamp in seconds
     int transAlt = this->GetTransitionAltitude();
