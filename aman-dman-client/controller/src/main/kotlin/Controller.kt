@@ -1,5 +1,4 @@
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlinx.datetime.*
 import org.example.dto.CreateOrUpdateTimelineDto
 import org.example.*
 import org.example.config.SettingsManager
@@ -39,7 +38,7 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
             )
             registerNewTimelineGroup(
                 TimelineGroup(
-                    id = timelineJson.airportIcao,
+                    airportIcao = timelineJson.airportIcao,
                     name = timelineJson.airportIcao,
                     timelines = mutableListOf()
                 )
@@ -99,7 +98,7 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
             val relevantDataForTab = snapshot.filter { occurrence ->
                 group.timelines.any { it.airportIcao == occurrence.airportIcao }
             }
-            view.updateTab(group.id, TabData(
+            view.updateTab(group.airportIcao, TabData(
                 timelinesData = group.timelines.map { timeline ->
                     TimelineData(
                         timelineId = timeline.title,
@@ -133,7 +132,7 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
     override fun onNewTimelineGroup(airportIcao: String) =
         registerNewTimelineGroup(
             TimelineGroup(
-                id = airportIcao,
+                airportIcao = airportIcao,
                 name = airportIcao,
                 timelines = mutableListOf()
             )
@@ -150,7 +149,11 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
 
     override fun onRemoveTab(airportIcao: String) {
         view.removeTab(airportIcao)
-        timelineGroups.removeAll { it.id == airportIcao }
+        timelineGroups.removeAll { it.airportIcao == airportIcao }
+    }
+
+    override fun onOpenLandingRatesWindow() {
+        view.openLandingRatesWindow()
     }
 
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
@@ -173,7 +176,7 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
     }
 
     private fun registerTimeline(groupId: String, timelineConfig: TimelineConfig) {
-        val group = timelineGroups.find { it.id == groupId }
+        val group = timelineGroups.find { it.airportIcao == groupId }
         if (group != null) {
             group.timelines += timelineConfig
             view.updateTimelineGroups(timelineGroups)
@@ -183,7 +186,7 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
     }
 
     override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {
-        val group = timelineGroups.find { it.id == groupId }
+        val group = timelineGroups.find { it.airportIcao == groupId }
         if (group != null) {
             val existingConfig = group.timelines.find { it.title == timelineTitle }
             if (existingConfig != null) {

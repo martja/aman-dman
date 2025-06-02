@@ -14,4 +14,5 @@ interface ControllerInterface {
     fun onNewTimelineGroup(airportIcao: String)
     fun onAddTimelineButtonClicked(airportIcao: String, timelineConfig: TimelineConfig)
     fun onRemoveTab(airportIcao: String)
+    fun onOpenLandingRatesWindow()
 }

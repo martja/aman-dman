@@ -1,3 +1,4 @@
+import landingRatesWindow.LandingRatesGraph
 import metWindow.VerticalWindView
 import newTimelineWindow.NewTimelineForm
 import org.example.*
@@ -16,10 +17,12 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
     private val verticalWindView = VerticalWindView()
     private val descentProfileVisualizationView = DescentProfileVisualization()
+    private val landingRatesGraph = LandingRatesGraph()
 
     private var newTimelineForm: JDialog? = null
     private var windDialog: JDialog? = null
     private var descentProfileDialog: JDialog? = null
+    private var landingRatesDialog: JDialog? = null
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -95,6 +98,12 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         tabPane.components.filterIsInstance<TabView>()
             .find { it.airportIcao == airportIcao }
             ?.updateAmanData(tabData)
+
+        if (airportIcao == "ENGM") {
+            val allArrivalOccurrences = tabData.timelinesData.flatMap { it.left + it.right }
+            landingRatesGraph.updateData(allArrivalOccurrences)
+        }
+
     }
 
     override fun removeTab(airportIcao: String) {
@@ -150,6 +159,22 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         }
     }
 
+    override fun openLandingRatesWindow() {
+        if (landingRatesDialog != null) {
+            landingRatesDialog?.isVisible = true
+        } else {
+            landingRatesDialog = JDialog(this, "Landing Rates").apply {
+                // Add your landing rates visualization component here
+                add(landingRatesGraph)
+                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+                setLocationRelativeTo(this@AmanDmanMainFrame)
+                preferredSize = Dimension(800, 600)
+                isVisible = true
+                pack()
+            }
+        }
+    }
+
     override fun updateWeatherData(weather: VerticalWeatherProfile?) {
         verticalWindView.update(weather)
     }
@@ -173,15 +198,15 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         // Close tabs that are not in the groups
         for (i in tabPane.tabCount - 1 downTo 0) {
             val tab = tabPane.getComponentAt(i) as TabView
-            if (timelineGroups.none { it.id == tab.airportIcao }) {
+            if (timelineGroups.none { it.airportIcao == tab.airportIcao }) {
                 tabPane.removeTabAt(i)
             }
         }
 
         // Add new tabs for groups that are not already present
         for (group in timelineGroups) {
-            if (tabPane.components.none { (it as TabView).airportIcao == group.id }) {
-                val tabView = TabView(controllerInterface!!, group.id)
+            if (tabPane.components.none { (it as TabView).airportIcao == group.airportIcao }) {
+                val tabView = TabView(controllerInterface!!, group.airportIcao)
                 tabPane.addTab(group.name, tabView)
             }
         }
@@ -189,7 +214,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         // Update existing tabs with new data
         for (i in 0 until tabPane.tabCount) {
             val tab = tabPane.getComponentAt(i) as TabView
-            val group = timelineGroups.find { it.id == tab.airportIcao }
+            val group = timelineGroups.find { it.airportIcao == tab.airportIcao }
             if (group != null) {
                 tab.updateTimelines(group)
             }

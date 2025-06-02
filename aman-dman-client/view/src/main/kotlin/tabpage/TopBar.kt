@@ -1,10 +1,13 @@
 package tabpage
 
+import ControllerInterface
 import java.awt.*
 import java.awt.event.*
 import javax.swing.*
 
-class TopBar : JPanel() {
+class TopBar(
+    private val controller: ControllerInterface
+) : JPanel() {
 
     init {
         layout = BorderLayout()
@@ -16,9 +19,14 @@ class TopBar : JPanel() {
             leftPanel.add(ClickableLabel(labelText))
         }
 
+        val landingRatesButton = JButton("Landing Rates")
+        landingRatesButton.addActionListener {
+            controller.onOpenLandingRatesWindow()
+        }
+
         // Right-aligned controls
         val rightPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 10, 5))
-        rightPanel.add(JButton("Landing Rates"))
+        rightPanel.add(landingRatesButton)
 
         add(leftPanel, BorderLayout.WEST)
         add(rightPanel, BorderLayout.EAST)

@@ -15,7 +15,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class TabView(
-    controllerInterface: ControllerInterface,
+    controller: ControllerInterface,
     val airportIcao: String,
 ) : JPanel(BorderLayout()) {
 
@@ -34,10 +34,10 @@ class TabView(
     )
 
     val timeWindowScrollbar = TimeRangeScrollBar(selectedTimeRange, availableTimeRange)
-    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, controllerInterface)
+    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, controller)
 
     init {
-        add(TopBar(), BorderLayout.NORTH)
+        add(TopBar(controller), BorderLayout.NORTH)
 
         add(timeWindowScrollbar, BorderLayout.WEST)
         add(timelineScrollPane, BorderLayout.CENTER)
