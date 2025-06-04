@@ -96,8 +96,8 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
     override fun updateTab(airportIcao: String, tabData: TabData) {
         tabPane.components.filterIsInstance<TabView>()
-            .find { it.airportIcao == airportIcao }
-            ?.updateAmanData(tabData)
+            .filter { it.airportIcao == airportIcao }
+            .forEach { it.updateAmanData(tabData) }
 
         if (airportIcao == "ENGM") {
             val allArrivalOccurrences = tabData.timelinesData.flatMap { it.left + it.right }

@@ -171,6 +171,10 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
     }
 
     private fun registerNewTimelineGroup(timelineGroup: TimelineGroup) {
+        if (timelineGroups.any { it.airportIcao == timelineGroup.airportIcao }) {
+            return // Group already exists
+        }
+
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
     }

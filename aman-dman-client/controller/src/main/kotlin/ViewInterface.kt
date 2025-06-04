@@ -3,7 +3,6 @@ import org.example.TimelineGroup
 import org.example.TrajectoryPoint
 import org.example.VerticalWeatherProfile
 import org.example.dto.TabData
-import java.time.Instant
 
 interface ViewInterface {
     fun updateTimelineGroups(timelineGroups: List<TimelineGroup>)

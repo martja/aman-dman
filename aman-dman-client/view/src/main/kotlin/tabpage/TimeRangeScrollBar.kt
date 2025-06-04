@@ -44,22 +44,6 @@ class TimeRangeScrollBar(
             repaint()
         }
 
-        // Update the scrollbar values when the state changes
-        /*tabState.addListener { evt ->
-            totalRangeSeconds = tabState.selectedViewMax.epochSeconds - tabState.timelineMinTime.epochSeconds
-            availableTimelineSeconds = tabState.timelineMaxTime.epochSeconds - tabState.timelineMinTime.epochSeconds
-
-            val startPositionOffset = tabState.selectedViewMin.epochSeconds - tabState.timelineMinTime.epochSeconds
-            val endPositionOffset = tabState.selectedViewMax.epochSeconds - tabState.timelineMinTime.epochSeconds
-            val nowTimePositionOffset = tabState.timeNow.epochSeconds - tabState.timelineMinTime.epochSeconds
-
-            relativeTimeEnd = 1 - endPositionOffset.toFloat() / availableTimelineSeconds.toFloat()
-            relativeTimeStart = 1 - startPositionOffset.toFloat() / availableTimelineSeconds.toFloat()
-            nowRelativeTime = 1 - nowTimePositionOffset.toFloat() / availableTimelineSeconds.toFloat()
-
-            repaint()
-        }*/
-
         addMouseListener(object : MouseAdapter() {
             override fun mousePressed(e: MouseEvent) {
                 when {
@@ -122,20 +106,16 @@ class TimeRangeScrollBar(
         })
     }
 
-    fun calculateBarBottom(): Int {
+    private fun calculateBarBottom(): Int {
         val totalRangeSeconds = availableTimelineSeconds()
-
         val startPositionOffset = selectedRange.value.start.epochSeconds - availableRange.value.start.epochSeconds
-        val endPositionOffset = selectedRange.value.end.epochSeconds - availableRange.value.start.epochSeconds
 
         val relativeTimeStart = 1 - startPositionOffset.toFloat() / totalRangeSeconds.toFloat()
         return (relativeTimeStart * height).toInt()
     }
 
-    fun calculateBarTop(): Int {
+    private fun calculateBarTop(): Int {
         val totalRangeSeconds = availableTimelineSeconds()
-
-        val startPositionOffset = selectedRange.value.start.epochSeconds - availableRange.value.start.epochSeconds
         val endPositionOffset = selectedRange.value.end.epochSeconds - availableRange.value.start.epochSeconds
 
         val relativeTimeEnd = 1 - endPositionOffset.toFloat() / totalRangeSeconds.toFloat()
