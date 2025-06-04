@@ -2,7 +2,7 @@ import org.example.dto.TabData
 import entity.TimeRange
 import kotlinx.datetime.Clock
 import org.example.TimelineGroup
-import tabpage.TimeRangeScrollBar
+import tabpage.TimeRangeScrollBarVertical
 import tabpage.TimelineScrollPane
 import tabpage.TopBar
 import tabpage.timeline.TimelineView
@@ -33,7 +33,7 @@ class TabView(
         )
     )
 
-    val timeWindowScrollbar = TimeRangeScrollBar(selectedTimeRange, availableTimeRange)
+    val timeWindowScrollbar = TimeRangeScrollBarVertical(selectedTimeRange, availableTimeRange)
     val timelineScrollPane = TimelineScrollPane(selectedTimeRange, controller)
 
     init {
@@ -53,7 +53,7 @@ class TabView(
     }
 
     fun updateAmanData(tabData: TabData) {
-        timeWindowScrollbar.setTimelineOccurrences(tabData.timelinesData)
+        timeWindowScrollbar.updateTimelineOccurrences(tabData.timelinesData)
         timelineScrollPane.updateTimelineOccurrences(tabData.timelinesData)
     }
 

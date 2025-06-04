@@ -1,6 +1,9 @@
 package landingRatesWindow
 
+import entity.TimeRange
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toJavaInstant
 import org.example.TimelineOccurrence
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartPanel
@@ -20,13 +23,15 @@ import org.jfree.data.time.Minute
 import org.jfree.data.time.TimeSeries
 import org.jfree.data.time.TimeSeriesCollection
 import org.jfree.data.xy.XYBarDataset
+import tabpage.TimeRangeScrollBarHorizontal
+import util.SharedValue
 import java.awt.*
-import java.text.FieldPosition
 import java.text.SimpleDateFormat
-import java.time.ZoneOffset
 import java.util.*
 import javax.swing.JComboBox
 import javax.swing.JPanel
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 
 class LandingRatesGraph : JPanel() {
@@ -39,6 +44,22 @@ class LandingRatesGraph : JPanel() {
     private var currentBucketMillis = 10 * 60 * 1000L // default: 10 min
 
     private val bucketSelector = JComboBox(arrayOf("10 min", "30 min", "60 min"))
+
+    private val availableTimeRange = SharedValue(
+        initialValue = TimeRange(
+            Clock.System.now() - 1.hours,
+            Clock.System.now() + 3.hours,
+        )
+    )
+
+    private val selectedTimeRange = SharedValue(
+        initialValue = TimeRange(
+            Clock.System.now() - 10.minutes,
+            Clock.System.now() + 60.minutes,
+        )
+    )
+
+    private val timeWindowScrollbar = TimeRangeScrollBarHorizontal(selectedTimeRange, availableTimeRange)
 
     init {
         layout = BorderLayout()
@@ -63,8 +84,14 @@ class LandingRatesGraph : JPanel() {
             updateChartBarWidth()
         }
 
+        selectedTimeRange.addListener {
+            updateXAxisRange()
+        }
+
         add(controlPanel, BorderLayout.NORTH)
         add(chartPanel, BorderLayout.CENTER)
+        add(timeWindowScrollbar, BorderLayout.SOUTH)
+        updateXAxisRange()
     }
 
     private fun createChart(): JFreeChart {
@@ -92,19 +119,12 @@ class LandingRatesGraph : JPanel() {
         baseChart.removeLegend()
 
         val domainAxis = plot!!.domainAxis as DateAxis
+        domainAxis.timeZone = TimeZone.getTimeZone("UTC") // <- Add this line
         domainAxis.labelPaint = Color.WHITE
         domainAxis.tickLabelPaint = Color.WHITE
         domainAxis.tickUnit = DateTickUnit(DateTickUnitType.MINUTE, 15)
-        domainAxis.dateFormatOverride = object : SimpleDateFormat("HH:mm") {
-            override fun format(date: Date, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer {
-                val cal = Calendar.getInstance()
-                cal.time = date
-                return if (cal.get(Calendar.MINUTE) == 0) {
-                    super.format(date, toAppendTo, pos)
-                } else {
-                    toAppendTo
-                }
-            }
+        domainAxis.dateFormatOverride = SimpleDateFormat("HH:mm").apply {
+            timeZone = TimeZone.getTimeZone("UTC")
         }
 
         val rangeAxis = plot!!.rangeAxis as NumberAxis
@@ -161,12 +181,21 @@ class LandingRatesGraph : JPanel() {
         timeSeries.clear()
 
         for ((instant, count) in grouped.entries.sortedBy { it.key }) {
-            val zdt = java.time.Instant.ofEpochSecond(instant.epochSeconds)
-                .atZone(ZoneOffset.UTC)
-            val minute = Minute(zdt.minute, zdt.hour, zdt.dayOfMonth, zdt.monthValue, zdt.year)
+            val date = Date(instant.toEpochMilliseconds())
+            val calendar = Calendar.getInstance()
+            calendar.time = date
+            val minute = Minute(date, calendar)
             timeSeries.addOrUpdate(minute, count)
         }
 
         updateChartBarWidth()
+    }
+
+    private fun updateXAxisRange() {
+        val domainAxis = plot?.domainAxis as? DateAxis ?: return
+        domainAxis.setRange(
+            Date(selectedTimeRange.value.start.toEpochMilliseconds()),
+            Date(selectedTimeRange.value.end.toEpochMilliseconds())
+        )
     }
 }
