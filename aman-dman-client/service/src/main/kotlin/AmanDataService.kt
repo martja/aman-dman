@@ -3,6 +3,7 @@ package org.example
 import atcClient.AtcClient
 import atcClient.AtcClientEuroScope
 import org.example.EstimationService.toRunwayArrivalOccurrence
+import org.example.config.AircraftPerformanceData
 import org.example.eventHandling.LivedataInferface
 
 class AmanDataService {
@@ -20,7 +21,8 @@ class AmanDataService {
             livedataInferface?.onLiveData(arrivals.mapNotNull { arrival ->
                 arrival.toRunwayArrivalOccurrence(
                     star = navdataService.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway },
-                    weatherData = weatherData
+                    weatherData = weatherData,
+                    performance = AircraftPerformanceData.get(arrival.icaoType)
                 )
             })
         }

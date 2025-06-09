@@ -1,19 +1,24 @@
 plugins {
+    application
     kotlin("jvm") version "2.0.0"
+    id("com.gradleup.shadow") version "8.3.6"
 }
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
 
 dependencies {
-    testImplementation(kotlin("test"))
-    implementation("org.jetbrains.kotlin:kotlin-stdlib")
+    implementation(project(":app"))
+
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     implementation("com.squareup.okio:okio:3.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
 
     implementation("com.google.guava:guava:32.1.2-jre")
     implementation("org.jsoup:jsoup:1.19.1")
     runtimeOnly("org.slf4j:slf4j-jdk14:1.7.32")
+
+    testImplementation(kotlin("test"))
 }
 
 tasks.test {
@@ -31,4 +36,8 @@ allprojects {
             url = uri("https://artifacts.unidata.ucar.edu/repository/unidata-all/")
         }
     }
+}
+
+application {
+    mainClass = "org.example.MainKt"
 }

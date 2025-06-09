@@ -2,7 +2,7 @@ import org.example.TimelineConfig
 import org.example.dto.CreateOrUpdateTimelineDto
 
 interface ControllerInterface {
-    fun onLoadAllTabsRequested()
+    fun onReloadSettingsRequested()
     fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto)
     fun onOpenMetWindowClicked()
     fun refreshWeatherData(lat: Double, lon: Double)

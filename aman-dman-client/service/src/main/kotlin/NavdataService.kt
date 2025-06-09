@@ -2,18 +2,26 @@ package org.example
 
 import org.example.entities.navigation.star.Star
 import org.example.entities.navigation.star.StarFix
+import java.io.File
+import java.io.FileNotFoundException
 
 class NavdataService {
 
     val stars: List<Star>
 
     init {
-        stars = parseStars(readFileFromResources("stars.txt"))
+        stars = parseStars(readTextFile("config/stars.txt"))
     }
 
-    fun readFileFromResources(fileName: String): String =
-        this::class.java.classLoader.getResource(fileName)?.readText()
-            ?: throw IllegalArgumentException("File not found: $fileName")
+    fun readTextFile(filePath: String): String {
+        // Try reading from local file system (for development)
+        val localFile = File(filePath)
+        if (localFile.exists()) {
+            return localFile.readText()
+        } else {
+            throw FileNotFoundException("Resource file not found: $filePath")
+        }
+    }
 
     fun parseStars(input: String): List<Star> {
         val lines = input.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("[") }

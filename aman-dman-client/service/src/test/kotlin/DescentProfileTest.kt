@@ -257,13 +257,11 @@ class DescentProfileTest {
             weatherData.toMutableList()
         )
 
-        val aircraftPerformance = AircraftPerformanceData.get("B738")
-
         val descentSegments = remainingRoute.calculateDescentTrajectory(
             currentPosition,
             weatherProfile,
             lunip4l,
-            aircraftPerformance,
+            b738performance,
             "ENGM",
             450
         )

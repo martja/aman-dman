@@ -26,8 +26,15 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
         }.start()
     }
 
-    override fun onLoadAllTabsRequested() {
-        SettingsManager.getSettings().timelines.forEach { timelineJson ->
+    override fun onReloadSettingsRequested() {
+        timelineGroups.clear()
+        timelineConfigs.clear()
+        view.updateTimelineGroups(timelineGroups)
+        loadSettingsAndOpenTabs()
+    }
+
+    private fun loadSettingsAndOpenTabs() {
+        SettingsManager.getSettings(reload = true).timelines.forEach { timelineJson ->
             val newTimelineConfig = TimelineConfig(
                 title = timelineJson.title,
                 runwaysLeft = timelineJson.runwaysLeft,
@@ -43,11 +50,8 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
                     timelines = mutableListOf()
                 )
             )
-            registerTimeline(timelineJson.airportIcao, newTimelineConfig)
             timelineConfigs[timelineJson.title] = newTimelineConfig
         }
-
-        view.updateTimelineGroups(timelineGroups)
     }
 
     override fun onOpenMetWindowClicked() {

@@ -10,13 +10,16 @@ object SettingsManager {
     private var settingsJson: AmanDmanSettingsJson? = null
 
     // Path to the settings file on classpath
-    private const val SETTINGS_FILE_PATH = "settings.json"
+    private const val SETTINGS_FILE_PATH = "config/settings.json"
 
     init {
         loadSettings()
     }
 
-    fun getSettings(): AmanDmanSettingsJson {
+    fun getSettings(reload: Boolean): AmanDmanSettingsJson {
+        if (settingsJson == null || reload) {
+            loadSettings()
+        }
         return settingsJson!!
     }
 
@@ -27,11 +30,12 @@ object SettingsManager {
 
     // Load settings from JSON file
     private fun loadSettings() {
-        val jsonFile = this::class.java.classLoader.getResource(SETTINGS_FILE_PATH)?.file.let { File(it) }
-        if (!jsonFile.exists()) {
-            throw FileNotFoundException("Settings file not found: $SETTINGS_FILE_PATH")
+        val localFile = File(SETTINGS_FILE_PATH)
+        val inputStream = localFile.inputStream()
+
+        inputStream.use {
+            settingsJson = jacksonObjectMapper().readValue(it, AmanDmanSettingsJson::class.java)
         }
-        settingsJson = jacksonObjectMapper().readValue( jsonFile.readText())
     }
 
     private fun saveSettings() {

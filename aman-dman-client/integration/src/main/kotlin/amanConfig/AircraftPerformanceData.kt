@@ -10,19 +10,19 @@ object AircraftPerformanceData {
 
     private val all: List<AircraftPerformance>
 
-    // Path to the settings file on classpath
-    private const val SETTINGS_FILE_PATH = "aircraft_performance.json"
+    // Path to the external config file
+    private const val CONFIG_FILE_PATH = "config/aircraft_performance.json"
 
     init {
-        val jsonFile = this::class.java.classLoader.getResource(SETTINGS_FILE_PATH)?.file.let { File(it) }
+        val jsonFile = File(CONFIG_FILE_PATH)
         if (!jsonFile.exists()) {
-            throw FileNotFoundException("Settings file not found: $SETTINGS_FILE_PATH")
+            throw FileNotFoundException("Settings file not found at: $CONFIG_FILE_PATH")
         }
-        all = jacksonObjectMapper().readValue( jsonFile.readText())
+        all = jacksonObjectMapper().readValue(jsonFile.readText())
     }
 
     fun get(icao: String): AircraftPerformance {
-        return all.find { it.ICAO == icao } ?: throw IllegalArgumentException("No aircraft performance data for ICAO $icao")
+        return all.find { it.ICAO == icao }
+            ?: throw IllegalArgumentException("No aircraft performance data for ICAO $icao")
     }
-
 }

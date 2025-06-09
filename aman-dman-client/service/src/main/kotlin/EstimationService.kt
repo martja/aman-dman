@@ -9,13 +9,7 @@ import org.example.entities.navigation.star.Star
 import org.example.integration.entities.ArrivalJson
 
 object EstimationService {
-    fun ArrivalJson.toRunwayArrivalOccurrence(star: Star?, weatherData: VerticalWeatherProfile?): RunwayArrivalOccurrence? {
-
-        val performance =
-            try { AircraftPerformanceData.get(icaoType) }
-            catch (e: IllegalArgumentException) { return null }
-
-
+    fun ArrivalJson.toRunwayArrivalOccurrence(star: Star?, weatherData: VerticalWeatherProfile?, performance: AircraftPerformance): RunwayArrivalOccurrence? {
         if (assignedRunway == null) {
             return null
         }

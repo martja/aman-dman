@@ -167,7 +167,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `When direct routing, use preferred speed until next typical speed`() {
-        val descentTrajectory = arrivalWithDirectRouting.toRunwayArrivalOccurrence(adopi3m, null)!!.descentTrajectory
+        val descentTrajectory = arrivalWithDirectRouting.toRunwayArrivalOccurrence(adopi3m, null, performance = b738performance)!!.descentTrajectory
         val directRoutingIndex = descentTrajectory.indexOfFirst { it.fixId == arrivalWithDirectRouting.assignedDirect }
         val expectedSpeedAtDirectRouting = adopi3m.fixes.find { it.id == arrivalWithDirectRouting.assignedDirect }!!.typicalSpeedIas!!
 
@@ -178,7 +178,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Descent trajectory should contain all fixes that has not been passed`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!.descentTrajectory
 
         val remainingFixesOnRoute = arrivalJson.route.filter { !it.isPassed }.map { it.name }
         val fixesOnDescentTrajectory = descentTrajectory.mapNotNull { it.fixId }
@@ -188,7 +188,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated TAS should not jump by more than 10 knots`() {
-        val descentTrajectory = arrivalJson2.toRunwayArrivalOccurrence(eseba4m, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson2.toRunwayArrivalOccurrence(eseba4m, null, performance = b738performance)!!.descentTrajectory
 
         descentTrajectory.forEach {
             println(
@@ -203,7 +203,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated IAS should not jump by more than 5 knots`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!.descentTrajectory
 
         val iasList = descentTrajectory.map { it.ias }
         val isJumping = iasList.zipWithNext().any { (prev, next) -> abs(prev - next) > 5 }
@@ -213,7 +213,7 @@ class DescentTrajectoryServiceTest {
     @Test
     fun `Estimated IAS should never exceed typical speed on STAR point`() {
         val descentTrajectory = arrivalJson
-            .toRunwayArrivalOccurrence(inrex4m, null)!!
+            .toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!
             .descentTrajectory.filter { it.fixId != null }
 
         assertEquals(descentTrajectory.size, 9)
@@ -232,7 +232,7 @@ class DescentTrajectoryServiceTest {
     @Test
     fun `Trajectory points that have a fix id should have the same coordinates as the corresponding fix on the aircraft's route`() {
         val descentTrajectory = arrivalJson
-            .toRunwayArrivalOccurrence(inrex4m, null)!!
+            .toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!
             .descentTrajectory
             .filter { it.fixId != null }
 
@@ -246,9 +246,9 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated IAS should not be more than 250 below FL100`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!.descentTrajectory
 
-        val descentTrajectory2 = arrivalWithDirectRouting.toRunwayArrivalOccurrence(adopi3m, null)!!.descentTrajectory
+        val descentTrajectory2 = arrivalWithDirectRouting.toRunwayArrivalOccurrence(adopi3m, null, performance = b738performance)!!.descentTrajectory
 
         val isExceeding = descentTrajectory.any { it.altitude < 10_000 && it.ias > 250 }
         assertEquals(false, isExceeding, "IAS should not exceed 250 below FL100")
@@ -260,7 +260,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Altitude should never be increasing`() {
-        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+        val descentTrajectory = arrivalJson.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!.descentTrajectory
 
         val altitudeList = descentTrajectory.map { it.altitude }
         val isIncreasing = altitudeList.zipWithNext().any { (prev, next) -> prev < next }
@@ -269,13 +269,13 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Removing waypoint along a straight line should not affect ETA`() {
-        val originalTrajectory = arrivalJson2.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+        val originalTrajectory = arrivalJson2.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!.descentTrajectory
 
         val modifiedRoute = arrivalJson2.copy(
             route = arrivalJson2.route.filter { it.name != "TEKVA" }
         )
 
-        val newTrajectory = modifiedRoute.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+        val newTrajectory = modifiedRoute.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!.descentTrajectory
 
         assertEquals(
             expected = originalTrajectory.first().remainingTime.inWholeSeconds.toDouble(),
@@ -287,13 +287,13 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Removing waypoint along a curve should affect ETA`() {
-        val originalTrajectory = arrivalJson2.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+        val originalTrajectory = arrivalJson2.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!.descentTrajectory
 
         val modifiedRoute = arrivalJson2.copy(
             route = arrivalJson2.route.filter { it.name != "GM423" }
         )
 
-        val newTrajectory = modifiedRoute.toRunwayArrivalOccurrence(inrex4m, null)!!.descentTrajectory
+        val newTrajectory = modifiedRoute.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!.descentTrajectory
 
         val timeGained = originalTrajectory.first().remainingTime - newTrajectory.first().remainingTime
 
@@ -313,7 +313,7 @@ class DescentTrajectoryServiceTest {
             arrivalJson.route.filter { !it.isPassed }
 
         val descentTrajectoryLength =
-            arrivalJson.toRunwayArrivalOccurrence(inrex4m, null)!!
+            arrivalJson.toRunwayArrivalOccurrence(inrex4m, null, performance = b738performance)!!
                 .descentTrajectory
                 .zipWithNext()
                 .sumOf { (previous, next) -> previous.position.distanceTo(next.position) }

@@ -32,6 +32,8 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
     fun openWindow(controllerInterface: ControllerInterface) {
         this.controllerInterface = controllerInterface
 
+        controllerInterface.onReloadSettingsRequested()
+
         setSize(1000, 800)
         setLocationRelativeTo(null) // Center the window
         add(tabPane, BorderLayout.CENTER)

@@ -12,14 +12,14 @@ class Footer(controllerInterface: ControllerInterface?) : JPanel(FlowLayout(Flow
     private val timeLabel = JLabel("10:00:22")
     private val metButton = JButton("MET")
     private val profileButton = JButton("Profile")
-    private val loadAllButton = JButton("Load all")
+    private val reloadButton = JButton("Reload settings")
     private val newTabButton = JButton("New tab")
 
     init {
+        add(reloadButton)
         add(metButton)
         add(profileButton)
         add(timeLabel)
-        add(loadAllButton)
         add(newTabButton)
 
         // Every second, repaint the component
@@ -34,10 +34,10 @@ class Footer(controllerInterface: ControllerInterface?) : JPanel(FlowLayout(Flow
             }
         })
 
-        loadAllButton.addMouseListener(object : java.awt.event.MouseAdapter() {
+        reloadButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                controllerInterface?.onLoadAllTabsRequested()
+                controllerInterface?.onReloadSettingsRequested()
             }
         })
 
