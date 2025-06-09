@@ -30,8 +30,13 @@ class TimelineView(
         setLayer(basePanel, DEFAULT_LAYER)
         setLayer(palettePanel, PALETTE_LAYER)
 
+        val scaleWidth = 60
+        val listWidth = 250
+        val totalTimelineWidth =
+            if (isDual) scaleWidth + listWidth * 2
+            else scaleWidth + listWidth
 
-        preferredSize = Dimension(if (isDual) 580 else 240, 0)
+        preferredSize = Dimension(totalTimelineWidth, 0)
 
         val gbc = GridBagConstraints()
         gbc.fill = GridBagConstraints.BOTH // Allow full height expansion
@@ -40,27 +45,27 @@ class TimelineView(
         if (isDual) {
             // Left TrafficSequenceView
             gbc.gridx = 0
-            gbc.weightx = 1.0
+            gbc.weightx = listWidth / totalTimelineWidth.toDouble()
             basePanel.add(SequenceStack(this, TimelineAlignment.RIGHT), gbc)
 
             // Scale visualisation
             gbc.gridx = 1
-            gbc.weightx = 0.25
+            gbc.weightx = scaleWidth / totalTimelineWidth.toDouble()
             basePanel.add(timeScale, gbc)
 
             // Right TrafficSequenceView
             gbc.gridx = 2
-            gbc.weightx = 1.0
+            gbc.weightx = listWidth / totalTimelineWidth.toDouble()
             basePanel.add(SequenceStack(this, TimelineAlignment.LEFT), gbc)
         } else {
             // Scale visualisation
             gbc.gridx = 0
-            gbc.weightx = 0.2
+            gbc.weightx = scaleWidth / totalTimelineWidth.toDouble()
             basePanel.add(timeScale, gbc)
 
             // Single TrafficSequenceView
             gbc.gridx = 1
-            gbc.weightx = 1.0
+            gbc.weightx = listWidth / totalTimelineWidth.toDouble()
             basePanel.add(SequenceStack(this, TimelineAlignment.RIGHT), gbc)
         }
 
