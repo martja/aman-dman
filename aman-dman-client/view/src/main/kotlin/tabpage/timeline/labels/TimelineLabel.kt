@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 import org.example.TimelineOccurrence
 import java.awt.Color
 import javax.swing.JLabel
+import javax.swing.border.EmptyBorder
 
 abstract class TimelineLabel(
     var timelineOccurrence: TimelineOccurrence,
@@ -16,6 +17,7 @@ abstract class TimelineLabel(
         background = defaultBackgroundColor
         foreground = defaultForegroundColor
         isOpaque = defaultBackgroundColor != null
+        border = EmptyBorder(0, 3, 0, 3)
 
         addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mouseEntered(e: java.awt.event.MouseEvent?) {
@@ -44,7 +46,7 @@ abstract class TimelineLabel(
 
     override fun paintBorder(g: java.awt.Graphics) {
         super.paintBorder(g)
-        g.color = getBorderColor()
-        g.drawRoundRect(this.visibleRect.x, visibleRect.y, visibleRect.width - 1, visibleRect.height - 1, 4, 4)
+        //g.color = getBorderColor()
+        //g.drawRoundRect(this.visibleRect.x, visibleRect.y, visibleRect.width - 1, visibleRect.height - 1, 4, 4)
     }
 }

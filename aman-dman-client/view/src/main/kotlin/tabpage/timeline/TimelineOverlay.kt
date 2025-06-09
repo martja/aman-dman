@@ -23,7 +23,7 @@ class TimelineOverlay(
 ) : JPanel(null) {
     private val pointDiameter = 6
     private val scaleMargin = 30
-    private val labelWidth = 220
+    private val labelWidth = 210
 
     private val labels: HashMap<String, TimelineLabel> = hashMapOf()
 
