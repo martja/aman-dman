@@ -31,7 +31,7 @@ class TimelineView(
         setLayer(palettePanel, PALETTE_LAYER)
 
         val scaleWidth = 60
-        val listWidth = 250
+        val listWidth = 260
         val totalTimelineWidth =
             if (isDual) scaleWidth + listWidth * 2
             else scaleWidth + listWidth

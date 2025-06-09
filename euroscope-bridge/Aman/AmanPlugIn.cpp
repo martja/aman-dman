@@ -24,7 +24,7 @@
 #define DISPLAY_WARNING(str) DisplayUserMessage("Aman", "Warning", str, true, true, true, true, false);
 
 AmanPlugIn::AmanPlugIn() 
-    : CPlugIn(COMPATIBILITY_CODE, "Arrival Manager", "3.2.0", "https://git.io/Jt3S8", "Open source")
+    : CPlugIn(COMPATIBILITY_CODE, "AMAN/DMAN bridge", "0.0.1", "EvenAR", "Unstable")
     , AmanServer()
     , jsonSerializer()
 {
@@ -192,6 +192,11 @@ void AmanPlugIn::onClientDisconnected() {
     // Remove all subscriptions when the client disconnects
     inboundsSubscriptions.clear();
     outboundsSubscriptions.clear();
+}
+
+void AmanPlugIn::onErrorProcessingMessage(const std::string& errorMessage) {
+    // Display an error message to the user
+    DISPLAY_WARNING(errorMessage.c_str());
 }
 
 std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& airportIcao) {

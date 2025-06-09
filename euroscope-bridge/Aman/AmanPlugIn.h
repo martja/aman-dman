@@ -61,4 +61,5 @@ private:
     void onUnsubscribe(long requestId) override;
     void onSetCtot(const std::string& callSign, long ctot) override;
     void onClientDisconnected() override;
+    void onErrorProcessingMessage(const std::string& errorMessage) override;
 };
