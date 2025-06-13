@@ -89,7 +89,78 @@ class Controller(val model: AmanDataService, val view: ViewInterface) : Controll
             cachedAmanData.entries.removeIf { entry ->
                 entry.value.lastTimestamp < cutoffTime
             }
+
+            updateTimeToLose(amanData)
         }
+    }
+
+    /**
+     * Updates the time to lose (TTL) for all runway arrivals based on their spacing requirements.
+     */
+    private fun updateTimeToLose(amanData: List<TimelineOccurrence>) {
+        val adjustments = mutableMapOf<String, Long>()
+
+        val sortedArrivals = amanData
+            .filterIsInstance<RunwayArrivalOccurrence>()
+            .sortedBy { it.time }
+
+        if (sortedArrivals.isEmpty()) return
+
+        // Start with the first aircraft's original ETA
+        var referenceTime = sortedArrivals.first().time.epochSeconds
+        adjustments[sortedArrivals.first().callsign] = 0L // no adjustment for the first
+
+        for (i in 1 until sortedArrivals.size) {
+            val leader = sortedArrivals[i - 1]
+            val follower = sortedArrivals[i]
+
+            val spacingNm = nmSpacingMap[
+                Pair(leader.wakeCategory, follower.wakeCategory)
+            ] ?: 3.0
+
+            val requiredDelta = nmToSeconds(spacingNm)
+
+            referenceTime += requiredDelta
+            val actualFollowerTime = follower.time.epochSeconds
+
+            val delta = referenceTime - actualFollowerTime
+
+            // Only time to lose — never time to gain
+            val timeToLose = if (delta > 0) delta else 0L
+            adjustments[follower.callsign] = timeToLose
+
+            // Update reference time to include the actual or delayed follower arrival
+            referenceTime = maxOf(referenceTime, actualFollowerTime + timeToLose)
+        }
+
+        // Apply adjustments
+        amanData.forEach { occurrence ->
+            val runwayArrival = occurrence as? RunwayArrivalOccurrence ?: return@forEach
+            val adjustment = adjustments[occurrence.callsign] ?: 0L
+            runwayArrival.timeToLooseOrGain = adjustment.seconds
+        }
+    }
+
+    /**
+     * A map that defines the required spacing in nautical miles (nm) between aircraft based on their wake turbulence categories.
+     * The keys are pairs of wake categories, and the values are the required spacing in nm.
+     */
+    private val nmSpacingMap = mapOf(
+        Pair('H', 'H') to 4.0,
+        Pair('H', 'M') to 5.0,
+        Pair('H', 'L') to 6.0,
+        Pair('M', 'L') to 5.0,
+        Pair('J', 'H') to 6.0,
+        Pair('J', 'M') to 7.0,
+        Pair('J', 'L') to 8.0,
+    )
+
+    /**
+     * TODO: use estimated ground speed from the aircraft data, both from leading and following aircraft.
+     */
+    private fun nmToSeconds(distanceNm: Double, groundSpeedKt: Double = 140.0): Long {
+        val hours = distanceNm / groundSpeedKt
+        return (hours * 3600).toLong()
     }
 
     private fun updateViewFromCachedData() {

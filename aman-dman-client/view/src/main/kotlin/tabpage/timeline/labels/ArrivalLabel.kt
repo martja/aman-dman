@@ -22,27 +22,9 @@ class ArrivalLabel(
         output += fixInboundOccurrence.callsign.padEnd(9)
         output += fixInboundOccurrence.icaoType.padEnd(5)
         output += wakeCategoryText(fixInboundOccurrence.wakeCategory)
+        output += ttlTtgText(fixInboundOccurrence, 4)
         output += remainingDistance.roundToInt().toString().padStart(5)
         //output += fixInboundOccurrence.viaFix.padEnd(6)
-
-        val secondsToLoseOrGain = fixInboundOccurrence.timeToLooseOrGain?.inWholeSeconds ?: 0
-        var minutesToLoseOrGainFormatted = toNormalizedMinutes(secondsToLoseOrGain).toString()
-
-        when {
-            secondsToLoseOrGain > 0 -> {
-                minutesToLoseOrGainFormatted = "+$minutesToLoseOrGainFormatted"
-                minutesToLoseOrGainFormatted = "<span style='color: yellow;'>${minutesToLoseOrGainFormatted.padStart(4, ' ')}</span>"
-            }
-            secondsToLoseOrGain < 0 -> {
-                minutesToLoseOrGainFormatted = "<span style='color: #00ff00;'>${minutesToLoseOrGainFormatted.padStart(4, ' ')}</span>"
-            }
-            else -> {
-                minutesToLoseOrGainFormatted = "".padStart(4)
-            }
-        }
-
-        output += minutesToLoseOrGainFormatted
-
         output += "</pre></html>"
 
         text = output
@@ -58,6 +40,29 @@ class ArrivalLabel(
                 ""
         }
         return "<span style='$textStyle'>${wakeCategory.toString().padEnd(2)}</span>"
+    }
+
+    /**
+     * Formats the time to lose or gain in minutes, with special formatting for positive and negative values.
+     * Positive values are shown in yellow with a '+' sign, negative values in green, and zero is shown as blank.
+     */
+    private fun ttlTtgText(fixInboundOccurrence: RunwayArrivalOccurrence, leftPadding: Int): String {
+        val secondsToLoseOrGain = fixInboundOccurrence.timeToLooseOrGain?.inWholeSeconds ?: 0
+        var minutesToLoseOrGainFormatted = toNormalizedMinutes(secondsToLoseOrGain).toString()
+
+        when {
+            secondsToLoseOrGain > 0 -> {
+                minutesToLoseOrGainFormatted = "+$minutesToLoseOrGainFormatted"
+                minutesToLoseOrGainFormatted = "<span style='color: yellow;'>${minutesToLoseOrGainFormatted.padStart(leftPadding, ' ')}</span>"
+            }
+            secondsToLoseOrGain < 0 -> {
+                minutesToLoseOrGainFormatted = "<span style='color: #00ff00;'>${minutesToLoseOrGainFormatted.padStart(leftPadding, ' ')}</span>"
+            }
+            else -> {
+                minutesToLoseOrGainFormatted = "".padStart(leftPadding)
+            }
+        }
+        return minutesToLoseOrGainFormatted
     }
 
     override fun getBorderColor(): Color {
