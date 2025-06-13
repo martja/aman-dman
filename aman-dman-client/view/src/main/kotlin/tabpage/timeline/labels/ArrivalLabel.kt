@@ -2,7 +2,6 @@ package tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
 import org.example.RunwayArrivalOccurrence
-import org.example.TrajectoryPoint
 import java.awt.Color
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -16,12 +15,14 @@ class ArrivalLabel(
         var output = "<html><pre>"
         val fixInboundOccurrence = timelineOccurrence as RunwayArrivalOccurrence
 
+        val remainingDistance = fixInboundOccurrence.descentTrajectory.firstOrNull()?.remainingDistance ?: 0f
+
         output += fixInboundOccurrence.runway.padEnd(4)
         output += (fixInboundOccurrence.assignedStar?.substring(0, 3) ?: "").padEnd(4)
         output += fixInboundOccurrence.callsign.padEnd(9)
         output += fixInboundOccurrence.icaoType.padEnd(5)
-        output += fixInboundOccurrence.wakeCategory.toString().padEnd(2)
-        output += fixInboundOccurrence.descentTrajectory.first().remainingDistance.roundToInt().toString().padStart(5)
+        output += wakeCategoryText(fixInboundOccurrence.wakeCategory)
+        output += remainingDistance.roundToInt().toString().padStart(5)
         //output += fixInboundOccurrence.viaFix.padEnd(6)
 
         val secondsToLoseOrGain = fixInboundOccurrence.timeToLooseOrGain?.inWholeSeconds ?: 0
@@ -41,11 +42,22 @@ class ArrivalLabel(
         }
 
         output += minutesToLoseOrGainFormatted
-        //output += fixInboundOccurrence.windDelay?.toString(DurationUnit.MINUTES, 1)?.padStart(6)
 
         output += "</pre></html>"
 
         text = output
+    }
+
+    private fun wakeCategoryText(wakeCategory: Char): String {
+        val textStyle = when (wakeCategory) {
+            'L' ->
+                "color: orange;"
+            'H', 'J' ->
+                "color: yellow;"
+            else ->
+                ""
+        }
+        return "<span style='$textStyle'>${wakeCategory.toString().padEnd(2)}</span>"
     }
 
     override fun getBorderColor(): Color {
