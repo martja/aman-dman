@@ -23,7 +23,7 @@ class TimelineOverlay(
 ) : JPanel(null) {
     private val pointDiameter = 6
     private val scaleMargin = 30
-    private val labelWidth = 210
+    private val labelWidth = 230
 
     private val labels: HashMap<String, TimelineLabel> = hashMapOf()
 
@@ -137,6 +137,7 @@ class TimelineOverlay(
                 if (label != null) {
                     label.timelineOccurrence = timelineOccurrence
                     label.updateText()
+                    label.updateColors()
                 } else {
                     val newLabel = timelineOccurrence.createLabel()
                     newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)

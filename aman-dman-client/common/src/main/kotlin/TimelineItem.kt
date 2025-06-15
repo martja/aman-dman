@@ -5,16 +5,17 @@ import kotlin.time.Duration
 
 sealed class TimelineOccurrence(
     open val timelineId: Int,
-    open val time: Instant,
+    open val scheduledTime: Instant,
     open val airportIcao: String,
 )
 
 sealed class RunwayOccurrence(
     override val timelineId: Int,
-    override val time: Instant,
+    override val scheduledTime: Instant,
     override val airportIcao: String,
     open val runway: String,
-) : TimelineOccurrence(timelineId, time, airportIcao)
+    open val estimatedTime: Instant,
+) : TimelineOccurrence(timelineId, scheduledTime, airportIcao)
 
 interface Flight {
     val callsign: String
@@ -24,7 +25,8 @@ interface Flight {
 
 data class FixInboundOccurrence(
     override val timelineId: Int,
-    override val time: Instant,
+    override val scheduledTime: Instant,
+    override val estimatedTime: Instant,
     override val runway: String,
     override val callsign: String,
     override val icaoType: String,
@@ -37,34 +39,35 @@ data class FixInboundOccurrence(
     val groundSpeed: Int,
     val trackingController: String,
     val finalFixEta: Instant,
-    var timeToLooseOrGain: Duration? = null,
     val descentProfile: List<TrajectoryPoint>,
-    var windDelay: Duration? = null
-) : RunwayOccurrence(timelineId, time, runway, airportIcao), Flight
+) : RunwayOccurrence(timelineId, scheduledTime, runway, airportIcao, estimatedTime), Flight
 
 data class RunwayDelayOccurrence(
     override val timelineId: Int,
-    override val time: Instant,
+    override val scheduledTime: Instant,
+    override val estimatedTime: Instant,
     override val runway: String,
     override val airportIcao: String,
     val delay: Duration,
     val name: String,
-) : RunwayOccurrence(timelineId, time, runway, airportIcao)
+) : RunwayOccurrence(timelineId, scheduledTime, runway, airportIcao, estimatedTime)
 
 data class DepartureOccurrence(
     override val timelineId: Int,
-    override val time: Instant,
+    override val scheduledTime: Instant,
+    override val estimatedTime: Instant,
     override val runway: String,
     override val callsign: String,
     override val icaoType: String,
     override val wakeCategory: Char,
     override val airportIcao: String,
     val sid: String
-) : RunwayOccurrence(timelineId, time, runway, airportIcao), Flight
+) : RunwayOccurrence(timelineId, scheduledTime, runway, airportIcao, estimatedTime), Flight
 
 data class RunwayArrivalOccurrence(
     override val timelineId: Int,
-    override val time: Instant,
+    override val scheduledTime: Instant,
+    override val estimatedTime: Instant,
     override val runway: String,
     override val callsign: String,
     override val icaoType: String,
@@ -77,8 +80,9 @@ data class RunwayArrivalOccurrence(
     val trackingController: String?,
     val descentTrajectory: List<TrajectoryPoint>,
     val basedOnNavdata: Boolean,
-    var timeToLooseOrGain: Duration? = null
-) : RunwayOccurrence(timelineId, time, runway, airportIcao), Flight
+    val withinActiveAdvisoryHorizon: Boolean,
+    val sequenceStatus: SequenceStatus
+) : RunwayOccurrence(timelineId, scheduledTime, runway, airportIcao, estimatedTime), Flight
 
 data class TrajectoryPoint(
     val fixId: String?,
@@ -110,3 +114,9 @@ data class TimelineConfig(
     val targetFixesRight: List<String>,
     val airportIcao: String,
 )
+
+enum class SequenceStatus {
+    AWAITING_FOR_SEQUENCE,
+    OK,
+    NEEDS_MANUAL_INSERTION,
+}

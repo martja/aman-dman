@@ -1,4 +1,4 @@
-package newTimelineWindow
+package windows
 
 import org.example.TimelineConfig
 import org.example.dto.CreateOrUpdateTimelineDto

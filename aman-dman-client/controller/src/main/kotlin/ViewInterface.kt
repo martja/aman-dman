@@ -8,6 +8,7 @@ interface ViewInterface {
     fun updateTimelineGroups(timelineGroups: List<TimelineGroup>)
     fun openMetWindow()
     fun openLandingRatesWindow()
+    fun openNonSequencedWindow()
     fun updateWeatherData(weather: VerticalWeatherProfile?)
     fun openDescentProfileWindow()
     fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig? = null)

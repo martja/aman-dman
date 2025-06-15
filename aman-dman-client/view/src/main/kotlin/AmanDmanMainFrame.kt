@@ -1,9 +1,10 @@
-import landingRatesWindow.LandingRatesGraph
-import metWindow.VerticalWindView
-import newTimelineWindow.NewTimelineForm
+import windows.LandingRatesGraph
+import windows.VerticalWindView
+import windows.NewTimelineForm
 import org.example.*
 import org.example.dto.TabData
 import tabpage.Footer
+import windows.NonSeqView
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.*
@@ -15,6 +16,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
     private var controllerInterface: ControllerInterface? = null
 
+    private val nonSeqView = NonSeqView()
     private val verticalWindView = VerticalWindView()
     private val descentProfileVisualizationView = DescentProfileVisualization()
     private val landingRatesGraph = LandingRatesGraph()
@@ -23,6 +25,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
     private var windDialog: JDialog? = null
     private var descentProfileDialog: JDialog? = null
     private var landingRatesDialog: JDialog? = null
+    private var nonSequencedDialog: JDialog? = null
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -104,6 +107,9 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         if (airportIcao == "ENGM") {
             val allArrivalOccurrences = tabData.timelinesData.flatMap { it.left + it.right }
             landingRatesGraph.updateData(allArrivalOccurrences)
+            nonSeqView.updateNonSeqData(
+                tabData.timelinesData.flatMap { it.left + it.right }
+            )
         }
 
     }
@@ -171,6 +177,21 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
                 preferredSize = Dimension(800, 600)
+                isVisible = true
+                pack()
+            }
+        }
+    }
+
+    override fun openNonSequencedWindow() {
+        if (nonSequencedDialog != null) {
+            nonSequencedDialog?.isVisible = true
+        } else {
+            nonSequencedDialog = JDialog(this, "Non-Sequenced Flights").apply {
+                add(nonSeqView)
+                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+                setLocationRelativeTo(this@AmanDmanMainFrame)
+                preferredSize = Dimension(300, 300)
                 isVisible = true
                 pack()
             }

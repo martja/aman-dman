@@ -8,6 +8,8 @@ import javax.swing.*
 class TopBar(
     private val controller: ControllerInterface
 ) : JPanel() {
+    private val nonSequencedButton = JButton("NonSeq")
+    private val landingRatesButton = JButton("Landing Rates")
 
     init {
         layout = BorderLayout()
@@ -19,17 +21,29 @@ class TopBar(
             leftPanel.add(ClickableLabel(labelText))
         }
 
-        val landingRatesButton = JButton("Landing Rates")
         landingRatesButton.addActionListener {
             controller.onOpenLandingRatesWindow()
         }
 
+        nonSequencedButton.addActionListener {
+            controller.onOpenNonSequencedWindow()
+        }
+
         // Right-aligned controls
         val rightPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 10, 5))
+        rightPanel.add(nonSequencedButton)
         rightPanel.add(landingRatesButton)
 
         add(leftPanel, BorderLayout.WEST)
         add(rightPanel, BorderLayout.EAST)
+    }
+
+    fun updateNonSeqNumbers(numberOfNonSeq: Int) {
+        this.nonSequencedButton.apply {
+            background = if (numberOfNonSeq > 0) Color.YELLOW else Color.GRAY
+            text = "NonSeq ($numberOfNonSeq)"
+            foreground = if (numberOfNonSeq > 0) Color.BLACK else Color.WHITE
+        }
     }
 
     private class ClickableLabel(text: String) : JLabel(text) {

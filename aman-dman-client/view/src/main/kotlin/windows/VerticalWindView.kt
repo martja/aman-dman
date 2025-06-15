@@ -1,4 +1,4 @@
-package metWindow
+package windows
 
 import org.example.VerticalWeatherProfile
 import org.example.util.NumberUtils.format
@@ -6,7 +6,6 @@ import util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Graphics
-import java.awt.Point
 import javax.swing.JPanel
 import kotlin.math.roundToInt
 

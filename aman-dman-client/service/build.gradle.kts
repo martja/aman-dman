@@ -11,6 +11,8 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+    testImplementation("io.mockk:mockk:1.14.2")
+
     implementation(project(":common"))
     implementation(project(":integration"))
 

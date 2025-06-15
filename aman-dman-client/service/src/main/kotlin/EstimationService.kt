@@ -2,7 +2,6 @@ package org.example
 
 import kotlinx.datetime.Clock
 import org.example.DescentTrajectoryService.calculateDescentTrajectory
-import org.example.config.AircraftPerformanceData
 import org.example.entities.navigation.AircraftPosition
 import org.example.entities.navigation.RoutePoint
 import org.example.entities.navigation.star.Star
@@ -30,6 +29,8 @@ object EstimationService {
                 flightPlanTas,
             )
 
+        val estimatedTime = Clock.System.now() + descentTrajectory.first().remainingTime
+
         return RunwayArrivalOccurrence(
             callsign = callsign,
             icaoType = icaoType,
@@ -39,12 +40,15 @@ object EstimationService {
             assignedStar = assignedStar,
             trackingController = trackingController,
             runway = assignedRunway!!,
-            time = Clock.System.now() + descentTrajectory.first().remainingTime,
+            estimatedTime = estimatedTime,
+            scheduledTime = estimatedTime,
             pressureAltitude = pressureAltitude,
             airportIcao = arrivalAirportIcao,
             descentTrajectory = descentTrajectory,
             timelineId = 0,
             basedOnNavdata = star != null,
+            withinActiveAdvisoryHorizon = false,
+            sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE
         )
     }
 }

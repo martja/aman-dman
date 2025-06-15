@@ -31,7 +31,7 @@ class SequenceStack(
         val delays = timelineOccurrences.filterIsInstance<RunwayDelayOccurrence>()
 
         delays.forEach {
-            val y = timelineView.calculateYPositionForInstant(it.time)
+            val y = timelineView.calculateYPositionForInstant(it.scheduledTime)
             it.delay.toComponents { hours, minutes, seconds, nanoseconds ->
                 "$hours:$minutes:$seconds"
             }

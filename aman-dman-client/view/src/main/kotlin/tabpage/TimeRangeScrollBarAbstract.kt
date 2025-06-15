@@ -1,7 +1,6 @@
 package tabpage
 
 import entity.TimeRange
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.example.DepartureOccurrence
 import org.example.RunwayDelayOccurrence
@@ -69,9 +68,9 @@ abstract class TimeRangeScrollBarAbstract(
         drawNowIndicator(g2)
         timelineOccurrences.toSet().forEach { item ->
             when (item) {
-                is RunwayDelayOccurrence -> drawHighlight(g2, item.time, item.delay, Color.RED)
-                is DepartureOccurrence -> drawOccurrence(g2, item.time, Color.decode("#83989B"))
-                else -> drawOccurrence(g2, item.time, Color.WHITE)
+                is RunwayDelayOccurrence -> drawHighlight(g2, item.scheduledTime, item.delay, Color.RED)
+                is DepartureOccurrence -> drawOccurrence(g2, item.scheduledTime, Color.decode("#83989B"))
+                else -> drawOccurrence(g2, item.scheduledTime, Color.WHITE)
             }
         }
 

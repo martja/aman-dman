@@ -1,6 +1,8 @@
 import org.example.dto.TabData
 import entity.TimeRange
 import kotlinx.datetime.Clock
+import org.example.RunwayArrivalOccurrence
+import org.example.SequenceStatus
 import org.example.TimelineGroup
 import tabpage.TimeRangeScrollBarVertical
 import tabpage.TimelineScrollPane
@@ -35,10 +37,10 @@ class TabView(
 
     val timeWindowScrollbar = TimeRangeScrollBarVertical(selectedTimeRange, availableTimeRange)
     val timelineScrollPane = TimelineScrollPane(selectedTimeRange, controller)
+    val topBar = TopBar(controller)
 
     init {
-        add(TopBar(controller), BorderLayout.NORTH)
-
+        add(topBar, BorderLayout.NORTH)
         add(timeWindowScrollbar, BorderLayout.WEST)
         add(timelineScrollPane, BorderLayout.CENTER)
 
@@ -55,6 +57,13 @@ class TabView(
     fun updateAmanData(tabData: TabData) {
         timeWindowScrollbar.updateTimelineOccurrences(tabData.timelinesData)
         timelineScrollPane.updateTimelineOccurrences(tabData.timelinesData)
+
+        val numberOfNonSeq = tabData.timelinesData
+            .flatMap { it.left + it.right }
+            .filterIsInstance<RunwayArrivalOccurrence>()
+            .count { it.sequenceStatus == SequenceStatus.NEEDS_MANUAL_INSERTION }
+
+        topBar.updateNonSeqNumbers(numberOfNonSeq)
     }
 
     fun updateTimelines(timelineGroup: TimelineGroup) {

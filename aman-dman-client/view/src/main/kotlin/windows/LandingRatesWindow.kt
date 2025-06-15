@@ -1,9 +1,8 @@
-package landingRatesWindow
+package windows
 
 import entity.TimeRange
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toJavaInstant
 import org.example.TimelineOccurrence
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartPanel
@@ -174,7 +173,7 @@ class LandingRatesGraph : JPanel() {
         if (allArrivalOccurrences.isEmpty()) return
 
         val grouped = allArrivalOccurrences.groupBy {
-            val timeUtc = it.time.toEpochMilliseconds() / 1000
+            val timeUtc = it.scheduledTime.toEpochMilliseconds() / 1000
             Instant.fromEpochSeconds(timeUtc / (currentBucketMillis / 1000) * (currentBucketMillis / 1000))
         }.mapValues { (_, occurrences) -> occurrences.size }
 

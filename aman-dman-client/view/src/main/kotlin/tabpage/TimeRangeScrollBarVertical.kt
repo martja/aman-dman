@@ -51,7 +51,7 @@ class TimeRangeScrollBarVertical(
         g2.drawRect(0, barStart, width - 1, barEnd - barStart - 1)
 
         timelineOccurrences.forEach { occurrence ->
-            drawOccurrence(g2, occurrence.time, Color.WHITE)
+            drawOccurrence(g2, occurrence.scheduledTime, Color.WHITE)
         }
 
         val handleLeft = scrollHandleMargin

@@ -2,6 +2,7 @@ package tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
 import org.example.RunwayArrivalOccurrence
+import org.example.SequenceStatus
 import java.awt.Color
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -14,6 +15,12 @@ class ArrivalLabel(
     override fun updateText() {
         var output = "<html><pre>"
         val fixInboundOccurrence = timelineOccurrence as RunwayArrivalOccurrence
+
+        this.defaultForegroundColor = if (fixInboundOccurrence.sequenceStatus == SequenceStatus.OK) {
+            Color.WHITE
+        } else {
+            Color.GRAY
+        }
 
         val remainingDistance = fixInboundOccurrence.descentTrajectory.firstOrNull()?.remainingDistance ?: 0f
 
@@ -47,7 +54,7 @@ class ArrivalLabel(
      * Positive values are shown in yellow with a '+' sign, negative values in green, and zero is shown as blank.
      */
     private fun ttlTtgText(fixInboundOccurrence: RunwayArrivalOccurrence, leftPadding: Int): String {
-        val secondsToLoseOrGain = fixInboundOccurrence.timeToLooseOrGain?.inWholeSeconds ?: 0
+        val secondsToLoseOrGain = (fixInboundOccurrence.scheduledTime - fixInboundOccurrence.estimatedTime).inWholeSeconds
         var minutesToLoseOrGainFormatted = toNormalizedMinutes(secondsToLoseOrGain).toString()
 
         when {
@@ -73,7 +80,7 @@ class ArrivalLabel(
     }
 
     override fun getTimelinePlacement(): Instant {
-        return (timelineOccurrence).time
+        return (timelineOccurrence).scheduledTime
     }
 
     private fun toNormalizedMinutes(seconds: Long): Int {

@@ -84,8 +84,8 @@ class TimeScale(
 
     private fun drawDelays(g: Graphics, delays: List<RunwayDelayOccurrence>) {
         delays.forEach {
-            val topY = timelineView.calculateYPositionForInstant(it.time + it.delay)
-            val height = timelineView.calculateYPositionForInstant(it.time) - topY
+            val topY = timelineView.calculateYPositionForInstant(it.scheduledTime + it.delay)
+            val height = timelineView.calculateYPositionForInstant(it.scheduledTime) - topY
             g.color = Color.RED
             g.fillRect(0, topY, 2, height)
         }

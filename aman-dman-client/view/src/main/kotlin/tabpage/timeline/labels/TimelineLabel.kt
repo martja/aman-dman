@@ -9,10 +9,12 @@ import javax.swing.border.EmptyBorder
 abstract class TimelineLabel(
     var timelineOccurrence: TimelineOccurrence,
     val defaultBackgroundColor: Color? = null,
-    val defaultForegroundColor: Color = Color.WHITE,
+    var defaultForegroundColor: Color = Color.WHITE,
     val hoverBackgroundColor: Color? = Color.GRAY,
     val hoverForegroundColor: Color = Color.BLACK
 ) : JLabel() {
+    private var isHovered: Boolean = false
+
     init {
         background = defaultBackgroundColor
         foreground = defaultForegroundColor
@@ -21,19 +23,28 @@ abstract class TimelineLabel(
 
         addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mouseEntered(e: java.awt.event.MouseEvent?) {
-                background = hoverBackgroundColor // Change color on hover
-                foreground = hoverForegroundColor
-                isOpaque = hoverBackgroundColor != null
-                repaint()
+                isHovered = true
+                updateColors()
             }
 
             override fun mouseExited(e: java.awt.event.MouseEvent?) {
-                background = defaultBackgroundColor // Restore default color
-                foreground = defaultForegroundColor
-                isOpaque = defaultBackgroundColor != null
-                repaint()
+                isHovered = false
+                updateColors()
             }
         })
+    }
+
+    fun updateColors() {
+        if (isHovered) {
+            background = hoverBackgroundColor
+            foreground = hoverForegroundColor
+            isOpaque = hoverBackgroundColor != null
+        } else {
+            background = defaultBackgroundColor
+            foreground = defaultForegroundColor
+            isOpaque = defaultBackgroundColor != null
+        }
+        repaint()
     }
 
     abstract fun updateText()

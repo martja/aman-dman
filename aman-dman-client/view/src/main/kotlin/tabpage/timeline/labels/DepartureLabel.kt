@@ -35,7 +35,7 @@ class DepartureLabel(
     }
 
     override fun getTimelinePlacement(): Instant {
-        return (timelineOccurrence as DepartureOccurrence).time
+        return (timelineOccurrence as DepartureOccurrence).scheduledTime
     }
 
 }
