@@ -7,10 +7,14 @@ import java.awt.Color
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class ArrivalLabel(
     val arrivalOccurrence: RunwayArrivalOccurrence
 ) : TimelineLabel(arrivalOccurrence) {
+
+    private val TTL_TTG_THRESHOLD = 10.seconds
 
     override fun updateText() {
         var output = "<html><pre>"
@@ -54,15 +58,15 @@ class ArrivalLabel(
      * Positive values are shown in yellow with a '+' sign, negative values in green, and zero is shown as blank.
      */
     private fun ttlTtgText(fixInboundOccurrence: RunwayArrivalOccurrence, leftPadding: Int): String {
-        val secondsToLoseOrGain = (fixInboundOccurrence.scheduledTime - fixInboundOccurrence.estimatedTime).inWholeSeconds
-        var minutesToLoseOrGainFormatted = toNormalizedMinutes(secondsToLoseOrGain).toString()
+        val timeToLoseOrGain = (fixInboundOccurrence.scheduledTime - fixInboundOccurrence.estimatedTime)
+        var minutesToLoseOrGainFormatted = toNormalizedMinutes(timeToLoseOrGain).toString()
 
         when {
-            secondsToLoseOrGain > 0 -> {
+            timeToLoseOrGain > TTL_TTG_THRESHOLD -> {
                 minutesToLoseOrGainFormatted = "+$minutesToLoseOrGainFormatted"
                 minutesToLoseOrGainFormatted = "<span style='color: yellow;'>${minutesToLoseOrGainFormatted.padStart(leftPadding, ' ')}</span>"
             }
-            secondsToLoseOrGain < 0 -> {
+            timeToLoseOrGain < -TTL_TTG_THRESHOLD -> {
                 minutesToLoseOrGainFormatted = "<span style='color: #00ff00;'>${minutesToLoseOrGainFormatted.padStart(leftPadding, ' ')}</span>"
             }
             else -> {
@@ -83,12 +87,12 @@ class ArrivalLabel(
         return (timelineOccurrence).scheduledTime
     }
 
-    private fun toNormalizedMinutes(seconds: Long): Int {
-        val minues = seconds.toDouble() / 60.0
+    private fun toNormalizedMinutes(seconds: Duration): Int {
+        val minutes = seconds.inWholeSeconds.toDouble() / 60.0
 
         return when {
-            minues > 0 -> ceil(minues).toInt()
-            minues < 0 -> floor(minues).toInt()
+            minutes > 0 -> ceil(minutes).toInt()
+            minutes < 0 -> floor(minutes).toInt()
             else -> 0
         }
     }

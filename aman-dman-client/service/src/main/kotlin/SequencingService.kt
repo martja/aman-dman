@@ -2,6 +2,7 @@ package org.example
 
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class SequencingService {
@@ -54,20 +55,16 @@ class SequencingService {
                     lastSequenced = current
                     continue
                 }
-
-                !hasBeenSequenced && wasInAah == null && isNowInAah -> {
-                    inAah[callsign] = true
-                    result += current.copy(sequenceStatus = SequenceStatus.NEEDS_MANUAL_INSERTION)
-                    continue
-                }
-
                 !hasBeenSequenced && !isNowInAah -> {
                     inAah[callsign] = false
                     result += current.copy(sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE)
                     continue
                 }
-                else ->
-                    result += current.copy()
+                else -> {
+                    inAah[callsign] = isNowInAah
+                    result += current.copy(sequenceStatus = SequenceStatus.NEEDS_MANUAL_INSERTION)
+                    continue
+                }
 
             }
         }
@@ -85,8 +82,11 @@ class SequencingService {
         return maxOf(this.estimatedTime, earliestTime)
     }
 
+    /**
+     * Checks if the aircraft is within the Active Advisory Horizon (AAH).
+     */
     private fun RunwayArrivalOccurrence.isInAAH(): Boolean {
-        return this.descentTrajectory.firstOrNull()?.remainingDistance!! < 100
+        return this.descentTrajectory.firstOrNull()!!.remainingTime < 30.minutes
     }
 
     private val nmSpacingMap = mapOf(
