@@ -1,5 +1,5 @@
-import org.example.Wind
-import org.example.util.SpeedConversion
+import no.vaccsca.amandman.common.Wind
+import no.vaccsca.amandman.service.util.SpeedConversion
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

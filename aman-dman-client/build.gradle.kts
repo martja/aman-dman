@@ -39,5 +39,5 @@ allprojects {
 }
 
 application {
-    mainClass = "org.example.MainKt"
+    mainClass = "MainKt"
 }

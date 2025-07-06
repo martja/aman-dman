@@ -15,7 +15,7 @@ dependencies {
 
     implementation(project(":common"))
     implementation(project(":integration"))
-
+    implementation(project(":model"))
 }
 
 tasks.test {

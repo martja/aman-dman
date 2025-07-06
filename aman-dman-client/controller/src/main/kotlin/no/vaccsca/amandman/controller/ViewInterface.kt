@@ -1,0 +1,25 @@
+package no.vaccsca.amandman.controller
+
+import no.vaccsca.amandman.common.TimelineConfig
+import no.vaccsca.amandman.common.TimelineGroup
+import no.vaccsca.amandman.common.TrajectoryPoint
+import no.vaccsca.amandman.common.VerticalWeatherProfile
+import no.vaccsca.amandman.common.dto.TabData
+
+interface ViewInterface {
+    var controllerInterface: ControllerInterface
+
+    fun updateTimelineGroups(timelineGroups: List<TimelineGroup>)
+    fun openMetWindow()
+    fun openLandingRatesWindow()
+    fun openNonSequencedWindow()
+    fun updateWeatherData(weather: VerticalWeatherProfile?)
+    fun openDescentProfileWindow()
+    fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig? = null)
+    fun closeTimelineForm()
+    fun updateDescentTrajectory(callsign: String, trajectory: List<TrajectoryPoint>)
+    fun showTabContextMenu(tabIndex: Int, airportIcao: String)
+    fun updateTab(airportIcao: String, tabData: TabData)
+    fun removeTab(airportIcao: String)
+    fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>)
+}
