@@ -2,15 +2,16 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.RunwayArrivalOccurrence
+import no.vaccsca.amandman.model.AmanDmanSequence
 import kotlin.test.Test
 
 class TimelineSequencerTest {
-    val timelineSequencer = AmanDmanModel()
+    val timelineSequence = AmanDmanSequence()
 
     @Test
     fun testSequenceArrivals() {
 
-        val result = timelineSequencer.updateSequence(
+        val result = timelineSequence.updateSequence(
             listOf(
                 mockRunwayArrivalOccurrence("ABC001", Instant.parse("2023-10-01T10:00:00Z"), 10f),
                 mockRunwayArrivalOccurrence("ABC002", Instant.parse("2023-10-01T10:05:00Z"), 20f),

@@ -1,10 +1,10 @@
 import kotlinx.datetime.Clock
-import DescentTrajectoryService.calculateDescentTrajectory
 import no.vaccsca.amandman.common.dto.navigation.AircraftPosition
 import no.vaccsca.amandman.common.dto.navigation.RoutePoint
 import no.vaccsca.amandman.common.dto.navigation.star.Star
 import no.vaccsca.amandman.common.dto.navigation.star.StarFix
 import no.vaccsca.amandman.common.*
+import no.vaccsca.amandman.service.DescentTrajectoryService.calculateDescentTrajectory
 import no.vaccsca.amandman.service.util.NavigationUtils.dmsToDecimal
 import no.vaccsca.amandman.service.util.NavigationUtils.interpolatePositionAlongPath
 import no.vaccsca.amandman.service.util.SpeedConversion

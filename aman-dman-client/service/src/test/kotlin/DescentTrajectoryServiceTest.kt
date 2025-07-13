@@ -1,10 +1,10 @@
-import EstimationService.toRunwayArrivalOccurrence
 import no.vaccsca.amandman.common.LatLng
 import no.vaccsca.amandman.common.distanceTo
 import no.vaccsca.amandman.common.dto.navigation.star.Star
 import no.vaccsca.amandman.common.dto.navigation.star.StarFix
 import integration.entities.ArrivalJson
 import integration.entities.FixPointJson
+import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalOccurrence
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
