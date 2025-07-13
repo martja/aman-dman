@@ -1,7 +1,7 @@
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.RunwayArrivalOccurrence
+import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.AmanDmanSequence
 import kotlin.test.Test
 
@@ -13,10 +13,10 @@ class TimelineSequencerTest {
 
         val result = timelineSequence.updateSequence(
             listOf(
-                mockRunwayArrivalOccurrence("ABC001", Instant.parse("2023-10-01T10:00:00Z"), 10f),
-                mockRunwayArrivalOccurrence("ABC002", Instant.parse("2023-10-01T10:05:00Z"), 20f),
-                mockRunwayArrivalOccurrence("ABC003", Instant.parse("2023-10-01T10:02:00Z"), 30f),
-                mockRunwayArrivalOccurrence("ABC004", Instant.parse("2023-10-01T10:03:00Z"), 40f),
+                mockRunwayArrivalEvent("ABC001", Instant.parse("2023-10-01T10:00:00Z"), 10f),
+                mockRunwayArrivalEvent("ABC002", Instant.parse("2023-10-01T10:05:00Z"), 20f),
+                mockRunwayArrivalEvent("ABC003", Instant.parse("2023-10-01T10:02:00Z"), 30f),
+                mockRunwayArrivalEvent("ABC004", Instant.parse("2023-10-01T10:03:00Z"), 40f),
             )
         )
 
@@ -24,12 +24,12 @@ class TimelineSequencerTest {
 
     }
 
-    fun mockRunwayArrivalOccurrence(
+    fun mockRunwayArrivalEvent(
         mockCallsign: String,
         mockEstimatedTime: Instant,
         mockRemainingDistance: Float
     ) =
-        mockk<RunwayArrivalOccurrence> {
+        mockk<RunwayArrivalEvent> {
             every { callsign } returns mockCallsign
             every { estimatedTime } returns mockEstimatedTime
             every { descentTrajectory } returns mockk {

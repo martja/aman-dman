@@ -1,9 +1,9 @@
 package no.vaccsca.amandman.view.tabpage
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.DepartureOccurrence
-import no.vaccsca.amandman.common.RunwayDelayOccurrence
-import no.vaccsca.amandman.common.TimelineOccurrence
+import no.vaccsca.amandman.common.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.common.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.common.dto.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
@@ -30,7 +30,7 @@ abstract class TimeRangeScrollBarAbstract(
     protected var resizingStart = false
     protected var resizingEnd = false
     protected var lastMouseAxisPos = 0
-    protected var timelineOccurrences: List<TimelineOccurrence> = emptyList()
+    protected var timelineEvents: List<TimelineEvent> = emptyList()
 
     protected val scrollHandleMargin = 5
     protected val scrollHandleThickness = thickness - scrollHandleMargin * 2
@@ -52,7 +52,7 @@ abstract class TimeRangeScrollBarAbstract(
     abstract fun axisPosition(e: MouseEvent): Int
     abstract fun getScrollbarLength(): Int
     abstract fun drawScrollBar(g2: Graphics2D)
-    abstract fun drawOccurrence(g: Graphics, instant: Instant, color: Color)
+    abstract fun drawEvent(g: Graphics, instant: Instant, color: Color)
     abstract fun drawHighlight(g: Graphics, instant: Instant, duration: Duration, color: Color)
 
     override fun paintComponent(g: Graphics) {
@@ -66,19 +66,19 @@ abstract class TimeRangeScrollBarAbstract(
         g2.drawRect(0, 0, width - 1, height - 1)
 
         drawNowIndicator(g2)
-        timelineOccurrences.toSet().forEach { item ->
+        timelineEvents.toSet().forEach { item ->
             when (item) {
-                is RunwayDelayOccurrence -> drawHighlight(g2, item.scheduledTime, item.delay, Color.RED)
-                is DepartureOccurrence -> drawOccurrence(g2, item.scheduledTime, Color.decode("#83989B"))
-                else -> drawOccurrence(g2, item.scheduledTime, Color.WHITE)
+                is RunwayDelayEvent -> drawHighlight(g2, item.scheduledTime, item.delay, Color.RED)
+                is DepartureEvent -> drawEvent(g2, item.scheduledTime, Color.decode("#83989B"))
+                else -> drawEvent(g2, item.scheduledTime, Color.WHITE)
             }
         }
 
         drawScrollBar(g2)
     }
 
-    fun updateTimelineOccurrences(list: List<TimelineData>) {
-        this.timelineOccurrences = list.flatMap { it.left + it.right }
+    fun updateTimelineEvents(list: List<TimelineData>) {
+        this.timelineEvents = list.flatMap { it.left + it.right }
         repaint()
     }
 

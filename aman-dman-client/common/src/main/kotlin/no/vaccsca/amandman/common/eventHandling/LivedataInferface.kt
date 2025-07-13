@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.common.eventHandling
 
-import no.vaccsca.amandman.common.TimelineOccurrence
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 
 interface LivedataInferface {
-    fun onLiveData(amanData: List<TimelineOccurrence>)
+    fun onLiveData(amanData: List<TimelineEvent>)
 }

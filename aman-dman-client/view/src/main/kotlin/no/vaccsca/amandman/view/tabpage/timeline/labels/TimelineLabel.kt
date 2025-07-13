@@ -1,13 +1,13 @@
 package no.vaccsca.amandman.view.tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.TimelineOccurrence
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import java.awt.Color
 import javax.swing.JLabel
 import javax.swing.border.EmptyBorder
 
 abstract class TimelineLabel(
-    var timelineOccurrence: TimelineOccurrence,
+    var timelineEvent: TimelineEvent,
     val defaultBackgroundColor: Color? = null,
     var defaultForegroundColor: Color = Color.WHITE,
     val hoverBackgroundColor: Color? = Color.GRAY,

@@ -63,7 +63,7 @@ class TimelineScrollPane(
     }
 
 
-    fun updateTimelineOccurrences(timelineData: List<TimelineData>) {
+    fun updateTimelineEvents(timelineData: List<TimelineData>) {
         val items = viewport.view as JPanel
         timelineData.forEach {
            items.components.filterIsInstance<TimelineView>().forEach { timelineView ->

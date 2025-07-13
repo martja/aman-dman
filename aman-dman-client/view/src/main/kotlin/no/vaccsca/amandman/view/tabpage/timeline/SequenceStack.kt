@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.view.tabpage.timeline
 
-import no.vaccsca.amandman.common.RunwayDelayOccurrence
-import no.vaccsca.amandman.common.TimelineOccurrence
+import no.vaccsca.amandman.common.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import java.awt.Color
 import java.awt.Graphics
 import javax.swing.JPanel
@@ -14,21 +14,21 @@ class SequenceStack(
     private val lineLength = 30
     private val lineToLabel = 10
 
-    private var timelineOccurrences: List<TimelineOccurrence> = emptyList()
+    private var timelineEvents: List<TimelineEvent> = emptyList()
 
     init {
         background = Color.decode("#323232")
     }
 
-    fun updateTimelineOccurrences(occurrences: List<TimelineOccurrence>) {
-        this.timelineOccurrences = occurrences
+    fun updateTimelineEvents(occurrences: List<TimelineEvent>) {
+        this.timelineEvents = occurrences
         repaint()
     }
 
     override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
-        val delays = timelineOccurrences.filterIsInstance<RunwayDelayOccurrence>()
+        val delays = timelineEvents.filterIsInstance<RunwayDelayEvent>()
 
         delays.forEach {
             val y = timelineView.calculateYPositionForInstant(it.scheduledTime)

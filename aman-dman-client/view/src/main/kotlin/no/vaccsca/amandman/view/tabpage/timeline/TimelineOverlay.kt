@@ -4,6 +4,12 @@ import no.vaccsca.amandman.common.dto.TimelineData
 import kotlinx.datetime.Clock
 import no.vaccsca.amandman.controller.ControllerInterface
 import no.vaccsca.amandman.common.*
+import no.vaccsca.amandman.common.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.common.timelineEvent.FixInboundEvent
+import no.vaccsca.amandman.common.Flight
+import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.common.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.tabpage.timeline.labels.ArrivalLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.DepartureLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.TimelineLabel
@@ -15,7 +21,6 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
 import kotlin.math.min
-import kotlin.time.Duration.Companion.minutes
 
 class TimelineOverlay(
     val timelineConfig: TimelineConfig,
@@ -28,8 +33,8 @@ class TimelineOverlay(
 
     private val labels: HashMap<String, TimelineLabel> = hashMapOf()
 
-    private var leftOccurrences: List<TimelineOccurrence>? = null
-    private var rightOccurrences: List<TimelineOccurrence>? = null
+    private var leftEvents: List<TimelineEvent>? = null
+    private var rightEvents: List<TimelineEvent>? = null
 
     private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -45,10 +50,10 @@ class TimelineOverlay(
     }
 
     fun updateTimelineData(timelineData: TimelineData) {
-        this.leftOccurrences = timelineData.left
-        this.rightOccurrences = timelineData.right
-        val allOccurrences = (leftOccurrences ?: emptyList()) + (rightOccurrences ?: emptyList())
-        syncLabelsWithOccurrences(labels, allOccurrences)
+        this.leftEvents = timelineData.left
+        this.rightEvents = timelineData.right
+        val allEvents = (leftEvents ?: emptyList()) + (rightEvents ?: emptyList())
+        syncLabelsWithEvents(labels, allEvents)
         repaint()
     }
 
@@ -63,8 +68,8 @@ class TimelineOverlay(
         var previousTopLeft: Int? = null
         var previousTopRight: Int? = null
 
-        val leftLabels = labels.values.filter { leftOccurrences?.contains(it.timelineOccurrence) ?: false }
-        val rightLabels = labels.values.filter { rightOccurrences?.contains(it.timelineOccurrence) ?: false }
+        val leftLabels = labels.values.filter { leftEvents?.contains(it.timelineEvent) ?: false }
+        val rightLabels = labels.values.filter { rightEvents?.contains(it.timelineEvent) ?: false }
 
         leftLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
@@ -126,21 +131,21 @@ class TimelineOverlay(
         }
     }
 
-    private fun syncLabelsWithOccurrences(currentLabels: HashMap<String, TimelineLabel>, occurrences: List<TimelineOccurrence>?) {
+    private fun syncLabelsWithEvents(currentLabels: HashMap<String, TimelineLabel>, occurrences: List<TimelineEvent>?) {
         removeOld(
             fromLabels = currentLabels,
             currentCallsigns = occurrences?.mapNotNull { it.getFlight()?.callsign } ?: emptyList()
         )
-        occurrences?.forEach { timelineOccurrence ->
-            val flight = timelineOccurrence.getFlight()
+        occurrences?.forEach { timelineEvent ->
+            val flight = timelineEvent.getFlight()
             if (flight != null) {
                 val label = currentLabels[flight.callsign]
                 if (label != null) {
-                    label.timelineOccurrence = timelineOccurrence
+                    label.timelineEvent = timelineEvent
                     label.updateText()
                     label.updateColors()
                 } else {
-                    val newLabel = timelineOccurrence.createLabel()
+                    val newLabel = timelineEvent.createLabel()
                     newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
                     newLabel.addMouseListener(object : java.awt.event.MouseAdapter() {
                         override fun mouseClicked(e: java.awt.event.MouseEvent) {
@@ -166,26 +171,26 @@ class TimelineOverlay(
     }
 
     private fun handleLabelClick(label: TimelineLabel) {
-        val flight = label.timelineOccurrence.getFlight()
+        val flight = label.timelineEvent.getFlight()
         if (flight != null) {
             controllerInterface.onAircraftSelected(flight.callsign)
         }
     }
 
-    private fun TimelineOccurrence.getFlight(): Flight? {
+    private fun TimelineEvent.getFlight(): Flight? {
         return when (this) {
-            is FixInboundOccurrence -> this
-            is DepartureOccurrence -> this
-            is RunwayArrivalOccurrence -> this
-            is RunwayDelayOccurrence -> null
+            is FixInboundEvent -> this
+            is DepartureEvent -> this
+            is RunwayArrivalEvent -> this
+            is RunwayDelayEvent -> null
         }
     }
 
-    private fun TimelineOccurrence.createLabel(): TimelineLabel {
+    private fun TimelineEvent.createLabel(): TimelineLabel {
         return when (this) {
-            //is FixInboundOccurrence -> ArrivalLabel(this)
-            is DepartureOccurrence -> DepartureLabel(this)
-            is RunwayArrivalOccurrence -> ArrivalLabel(this, controllerInterface)
+            //is FixInboundEvent -> ArrivalLabel(this)
+            is DepartureEvent -> DepartureLabel(this)
+            is RunwayArrivalEvent -> ArrivalLabel(this, controllerInterface)
             else -> throw IllegalArgumentException("Unsupported occurrence type")
         }
     }

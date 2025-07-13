@@ -2,7 +2,7 @@ package no.vaccsca.amandman.view.windows
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.TimelineOccurrence
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.tabpage.TimeRangeScrollBarHorizontal
 import no.vaccsca.amandman.view.util.SharedValue
@@ -169,10 +169,10 @@ class LandingRatesGraph : JPanel() {
         plot?.dataset = barDataset
     }
 
-    fun updateData(allArrivalOccurrences: List<TimelineOccurrence>) {
-        if (allArrivalOccurrences.isEmpty()) return
+    fun updateData(allArrivalEvents: List<TimelineEvent>) {
+        if (allArrivalEvents.isEmpty()) return
 
-        val grouped = allArrivalOccurrences.groupBy {
+        val grouped = allArrivalEvents.groupBy {
             val timeUtc = it.scheduledTime.toEpochMilliseconds() / 1000
             Instant.fromEpochSeconds(timeUtc / (currentBucketMillis / 1000) * (currentBucketMillis / 1000))
         }.mapValues { (_, occurrences) -> occurrences.size }

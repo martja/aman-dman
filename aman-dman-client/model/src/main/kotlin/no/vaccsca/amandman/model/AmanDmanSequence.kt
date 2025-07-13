@@ -1,9 +1,9 @@
 package no.vaccsca.amandman.model
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.RunwayArrivalOccurrence
+import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.common.SequenceStatus
-import no.vaccsca.amandman.common.TimelineOccurrence
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -11,7 +11,7 @@ import kotlin.time.Duration.Companion.seconds
 class AmanDmanSequence {
 
     private val currentSequence = mutableMapOf<String, Instant>() // callsign -> scheduled time
-    private var latestArrivals: List<RunwayArrivalOccurrence> = emptyList()
+    private var latestArrivals: List<RunwayArrivalEvent> = emptyList()
 
     val inAah = mutableMapOf<String, Boolean>()
 
@@ -42,7 +42,7 @@ class AmanDmanSequence {
         inAah.remove(callsign)
     }
 
-    fun updateSequence(arrivals: List<RunwayArrivalOccurrence>): List<TimelineOccurrence> {
+    fun updateSequence(arrivals: List<RunwayArrivalEvent>): List<TimelineEvent> {
         latestArrivals = arrivals
 
         val sorted = arrivals.sortedWith(compareBy(
@@ -50,8 +50,8 @@ class AmanDmanSequence {
             { it.estimatedTime }
         ))
 
-        val result = mutableListOf<TimelineOccurrence>()
-        var lastSequenced: RunwayArrivalOccurrence? = null
+        val result = mutableListOf<TimelineEvent>()
+        var lastSequenced: RunwayArrivalEvent? = null
         var referenceTime = sorted.firstOrNull()?.estimatedTime ?: return emptyList()
 
         for (current in sorted) {
@@ -60,13 +60,13 @@ class AmanDmanSequence {
             val hasBeenSequenced = currentSequence.containsKey(callsign)
 
             if (hasBeenSequenced) {
-                val updatedOccurrence = current.copy(
+                val updatedEvent = current.copy(
                     sequenceStatus = SequenceStatus.OK,
                     scheduledTime = currentSequence[callsign]!!
                 )
-                result += updatedOccurrence
-                referenceTime = updatedOccurrence.scheduledTime
-                lastSequenced = updatedOccurrence
+                result += updatedEvent
+                referenceTime = updatedEvent.scheduledTime
+                lastSequenced = updatedEvent
                 continue
             }
 
@@ -78,12 +78,12 @@ class AmanDmanSequence {
                     current.calculateFinalTime(referenceTime, lastSequenced)
                 }
                 currentSequence[callsign] = finalTime
-                val updatedOccurrence = current.copy(
+                val updatedEvent = current.copy(
                     sequenceStatus = SequenceStatus.OK,
                     scheduledTime = finalTime
                 )
-                result += updatedOccurrence
-                lastSequenced = updatedOccurrence
+                result += updatedEvent
+                lastSequenced = updatedEvent
                 referenceTime = finalTime
                 continue
             }
@@ -104,7 +104,7 @@ class AmanDmanSequence {
     private fun rebuildSequence() {
         val sorted = currentSequence.entries
             .mapNotNull { (callsign, scheduledTime) ->
-                latestOccurrenceForCallsign(callsign)?.let { occurrence ->
+                latestEventForCallsign(callsign)?.let { occurrence ->
                     Triple(callsign, scheduledTime, occurrence)
                 }
             }
@@ -119,20 +119,20 @@ class AmanDmanSequence {
                 currentSequence[callsign] = maxOf(currentTime, occurrence.estimatedTime)
             } else {
                 val (leaderCs, _, _) = sorted[i - 1]
-                val leaderLatest = latestOccurrenceForCallsign(leaderCs) ?: continue
+                val leaderLatest = latestEventForCallsign(leaderCs) ?: continue
                 val requiredSpacingTime = occurrence.calculateFinalTime(currentSequence[leaderCs]!!, leaderLatest)
                 currentSequence[callsign] = maxOf(currentTime, requiredSpacingTime)
             }
         }
     }
 
-    private fun latestOccurrenceForCallsign(callsign: String): RunwayArrivalOccurrence? {
+    private fun latestEventForCallsign(callsign: String): RunwayArrivalEvent? {
         return latestArrivals.find { it.callsign == callsign }
     }
 
-    private fun RunwayArrivalOccurrence.calculateFinalTime(
+    private fun RunwayArrivalEvent.calculateFinalTime(
         referenceTime: Instant,
-        leader: RunwayArrivalOccurrence
+        leader: RunwayArrivalEvent
     ): Instant {
         val spacingNm = nmSpacingMap[Pair(leader.wakeCategory, this.wakeCategory)] ?: 3.0
         val requiredSpacing = nmToDuration(spacingNm)
@@ -143,7 +143,7 @@ class AmanDmanSequence {
     /**
      * Checks if the aircraft is within the Active Advisory Horizon (AAH).
      */
-    private fun RunwayArrivalOccurrence.isInAAH(): Boolean {
+    private fun RunwayArrivalEvent.isInAAH(): Boolean {
         return this.descentTrajectory.firstOrNull()!!.remainingTime < 30.minutes
     }
 

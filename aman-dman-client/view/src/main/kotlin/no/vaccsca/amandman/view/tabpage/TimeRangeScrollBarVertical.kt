@@ -50,8 +50,8 @@ class TimeRangeScrollBarVertical(
         g2.color = Color.WHITE
         g2.drawRect(0, barStart, width - 1, barEnd - barStart - 1)
 
-        timelineOccurrences.forEach { occurrence ->
-            drawOccurrence(g2, occurrence.scheduledTime, Color.WHITE)
+        timelineEvents.forEach { occurrence ->
+            drawEvent(g2, occurrence.scheduledTime, Color.WHITE)
         }
 
         val handleLeft = scrollHandleMargin
@@ -70,7 +70,7 @@ class TimeRangeScrollBarVertical(
         g2.fillRoundRect(handleLeft, barStart - resizeHandleThickness, scrollHandleThickness, resizeHandleThickness, cornerRadius, cornerRadius)
     }
 
-    override fun drawOccurrence(g: Graphics, instant: Instant, color: Color) {
+    override fun drawEvent(g: Graphics, instant: Instant, color: Color) {
         val etaOffset = instant.epochSeconds - availableRange.value.start.epochSeconds
         g.color = color
 

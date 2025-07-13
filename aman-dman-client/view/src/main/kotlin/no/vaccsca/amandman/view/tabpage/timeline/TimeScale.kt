@@ -3,8 +3,8 @@ package no.vaccsca.amandman.view.tabpage.timeline
 import no.vaccsca.amandman.controller.ControllerInterface
 import no.vaccsca.amandman.common.dto.TimelineData
 import kotlinx.datetime.*
-import no.vaccsca.amandman.common.RunwayDelayOccurrence
-import no.vaccsca.amandman.common.TimelineOccurrence
+import no.vaccsca.amandman.common.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.common.util.NumberUtils.format
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
@@ -25,8 +25,8 @@ class TimeScale(
     private val lineColor = Color.decode("#C8C8C8")
     private val pastColor = Color.decode("#4B4B4B")
 
-    private var leftOccurrences: List<TimelineOccurrence>? = null
-    private var rightOccurrences: List<TimelineOccurrence>? = null
+    private var leftEvents: List<TimelineEvent>? = null
+    private var rightEvents: List<TimelineEvent>? = null
 
     init {
         background = Color.decode("#646464")
@@ -45,8 +45,8 @@ class TimeScale(
     }
 
     fun updateTimelineData(timelineData: TimelineData) {
-        leftOccurrences = timelineData.left
-        rightOccurrences = timelineData.right
+        leftEvents = timelineData.left
+        rightEvents = timelineData.right
     }
 
     override fun paintComponent(g: Graphics) {
@@ -90,15 +90,15 @@ class TimeScale(
             }
         }
 
-        leftOccurrences?.let {
-            drawDelays(g, it.filterIsInstance<RunwayDelayOccurrence>())
+        leftEvents?.let {
+            drawDelays(g, it.filterIsInstance<RunwayDelayEvent>())
         }
-        rightOccurrences?.let {
-            drawDelays(g, it.filterIsInstance<RunwayDelayOccurrence>())
+        rightEvents?.let {
+            drawDelays(g, it.filterIsInstance<RunwayDelayEvent>())
         }
     }
 
-    private fun drawDelays(g: Graphics, delays: List<RunwayDelayOccurrence>) {
+    private fun drawDelays(g: Graphics, delays: List<RunwayDelayEvent>) {
         delays.forEach {
             val topY = timelineView.calculateYPositionForInstant(it.scheduledTime + it.delay)
             val height = timelineView.calculateYPositionForInstant(it.scheduledTime) - topY

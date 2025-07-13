@@ -2,7 +2,7 @@ package no.vaccsca.amandman.view.tabpage.timeline.labels
 
 import no.vaccsca.amandman.controller.ControllerInterface
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.RunwayArrivalOccurrence
+import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.common.SequenceStatus
 import java.awt.Color
 import java.awt.event.MouseAdapter
@@ -16,9 +16,9 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class ArrivalLabel(
-    val arrivalOccurrence: RunwayArrivalOccurrence,
+    val arrivalEvent: RunwayArrivalEvent,
     val controllerInterface: ControllerInterface
-) : TimelineLabel(arrivalOccurrence) {
+) : TimelineLabel(arrivalEvent) {
 
     private val TTL_TTG_THRESHOLD = 10.seconds
 
@@ -45,7 +45,7 @@ class ArrivalLabel(
 
         val rescheduleItem = JMenuItem("Re-schedule")
         rescheduleItem.addActionListener {
-            controllerInterface.onRecalculateSequenceClicked(arrivalOccurrence.callsign)
+            controllerInterface.onRecalculateSequenceClicked(arrivalEvent.callsign)
         }
 
         popup.add(rescheduleItem)
@@ -55,22 +55,22 @@ class ArrivalLabel(
 
     override fun updateText() {
         var output = "<html><pre>"
-        val fixInboundOccurrence = timelineOccurrence as RunwayArrivalOccurrence
+        val fixInboundEvent = timelineEvent as RunwayArrivalEvent
 
-        this.defaultForegroundColor = if (fixInboundOccurrence.sequenceStatus == SequenceStatus.OK) {
+        this.defaultForegroundColor = if (fixInboundEvent.sequenceStatus == SequenceStatus.OK) {
             Color.WHITE
         } else {
             Color.GRAY
         }
 
-        val remainingDistance = fixInboundOccurrence.descentTrajectory.firstOrNull()?.remainingDistance ?: 0f
+        val remainingDistance = fixInboundEvent.descentTrajectory.firstOrNull()?.remainingDistance ?: 0f
 
-        output += fixInboundOccurrence.runway.padEnd(4)
-        output += (fixInboundOccurrence.assignedStar?.substring(0, 3) ?: "").padEnd(4)
-        output += fixInboundOccurrence.callsign.padEnd(9)
-        output += fixInboundOccurrence.icaoType.padEnd(5)
-        output += wakeCategoryText(fixInboundOccurrence.wakeCategory)
-        output += ttlTtgText(fixInboundOccurrence, 4)
+        output += fixInboundEvent.runway.padEnd(4)
+        output += (fixInboundEvent.assignedStar?.substring(0, 3) ?: "").padEnd(4)
+        output += fixInboundEvent.callsign.padEnd(9)
+        output += fixInboundEvent.icaoType.padEnd(5)
+        output += wakeCategoryText(fixInboundEvent.wakeCategory)
+        output += ttlTtgText(fixInboundEvent, 4)
         output += remainingDistance.roundToInt().toString().padStart(5)
         output += "</pre></html>"
 
@@ -93,8 +93,8 @@ class ArrivalLabel(
      * Formats the time to lose or gain in minutes, with special formatting for positive and negative values.
      * Positive values are shown in yellow with a '+' sign, negative values in green, and zero is shown as blank.
      */
-    private fun ttlTtgText(fixInboundOccurrence: RunwayArrivalOccurrence, leftPadding: Int): String {
-        val timeToLoseOrGain = (fixInboundOccurrence.scheduledTime - fixInboundOccurrence.estimatedTime)
+    private fun ttlTtgText(fixInboundEvent: RunwayArrivalEvent, leftPadding: Int): String {
+        val timeToLoseOrGain = (fixInboundEvent.scheduledTime - fixInboundEvent.estimatedTime)
         var minutesToLoseOrGainFormatted = toNormalizedMinutes(timeToLoseOrGain).toString()
 
         when {
@@ -113,14 +113,14 @@ class ArrivalLabel(
     }
 
     override fun getBorderColor(): Color {
-        if (arrivalOccurrence.basedOnNavdata) {
+        if (arrivalEvent.basedOnNavdata) {
             return super.getBorderColor()
         }
         return Color.ORANGE
     }
 
     override fun getTimelinePlacement(): Instant {
-        return (timelineOccurrence).scheduledTime
+        return (timelineEvent).scheduledTime
     }
 
     private fun toNormalizedMinutes(seconds: Duration): Int {

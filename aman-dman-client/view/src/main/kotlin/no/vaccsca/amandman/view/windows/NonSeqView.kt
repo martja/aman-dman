@@ -1,8 +1,8 @@
 package no.vaccsca.amandman.view.windows
 
-import no.vaccsca.amandman.common.RunwayArrivalOccurrence
+import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.common.SequenceStatus
-import no.vaccsca.amandman.common.TimelineOccurrence
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import java.awt.BorderLayout
 import javax.swing.*
 import javax.swing.border.TitledBorder
@@ -33,9 +33,9 @@ class NonSeqView : JPanel() {
         add(groupPanel, BorderLayout.CENTER)
     }
 
-    fun updateNonSeqData(data: List<TimelineOccurrence>) {
+    fun updateNonSeqData(data: List<TimelineEvent>) {
         val nonSequenced = data
-            .filterIsInstance<RunwayArrivalOccurrence>()
+            .filterIsInstance<RunwayArrivalEvent>()
             .filter { it.sequenceStatus == SequenceStatus.FOR_MANUAL_REINSERTION }
 
         tableModel.setRowCount(0) // Efficiently clear existing rows

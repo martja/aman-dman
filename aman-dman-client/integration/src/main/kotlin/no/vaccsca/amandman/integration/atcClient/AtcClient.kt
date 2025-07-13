@@ -1,15 +1,15 @@
 package no.vaccsca.amandman.integration.atcClient
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.DepartureOccurrence
-import no.vaccsca.amandman.common.FixInboundOccurrence
+import no.vaccsca.amandman.common.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.common.timelineEvent.FixInboundEvent
 import integration.entities.*
 
 abstract class AtcClient {
     abstract fun sendMessage(message: MessageToServer)
 
-    private val fixInboundCallbacks = mutableMapOf<Int, (List<FixInboundOccurrence>) -> Unit>()
-    private val departureCallbacks = mutableMapOf<Int, (List<DepartureOccurrence>) -> Unit>()
+    private val fixInboundCallbacks = mutableMapOf<Int, (List<FixInboundEvent>) -> Unit>()
+    private val departureCallbacks = mutableMapOf<Int, (List<DepartureEvent>) -> Unit>()
     private val arrivalCallbacks = mutableMapOf<Int, (List<ArrivalJson>) -> Unit>()
 
     private var nextRequestId = 0
@@ -21,7 +21,7 @@ abstract class AtcClient {
         targetFixes: List<String>,
         viaFixes: List<String>,
         destinationAirports: List<String>,
-        onDataReceived: (List<FixInboundOccurrence>) -> Unit
+        onDataReceived: (List<FixInboundEvent>) -> Unit
     ) {
         val timelineId = nextRequestId
         fixInboundCallbacks[timelineId] = onDataReceived
@@ -53,7 +53,7 @@ abstract class AtcClient {
 
     fun collectDeparturesFrom(
         airportIcao: String,
-        onDataReceived: (List<DepartureOccurrence>) -> Unit
+        onDataReceived: (List<DepartureEvent>) -> Unit
     ) {
         val timelineId = nextRequestId
         departureCallbacks[timelineId] = onDataReceived
@@ -71,7 +71,7 @@ abstract class AtcClient {
                 arrivalCallbacks[incomingMessageJson.requestId]?.invoke(incomingMessageJson.inbounds)
             }
             is DeparturesUpdate -> {
-                val departures = incomingMessageJson.outbounds.map { it.toDepartureOccurrence(incomingMessageJson.requestId) }
+                val departures = incomingMessageJson.outbounds.map { it.toDepartureEvent(incomingMessageJson.requestId) }
                 departureCallbacks[incomingMessageJson.requestId]?.invoke(departures)
             }
         }
@@ -85,8 +85,8 @@ abstract class AtcClient {
         )
     }
 
-    private fun DepartureJson.toDepartureOccurrence(timelineId: Int) =
-        DepartureOccurrence(
+    private fun DepartureJson.toDepartureEvent(timelineId: Int) =
+        DepartureEvent(
             timelineId = timelineId,
             callsign = this.callsign,
             sid = this.sid,

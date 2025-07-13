@@ -2,7 +2,7 @@ package no.vaccsca.amandman.view
 
 import no.vaccsca.amandman.common.dto.TabData
 import kotlinx.datetime.Clock
-import no.vaccsca.amandman.common.RunwayArrivalOccurrence
+import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.common.SequenceStatus
 import no.vaccsca.amandman.common.TimelineGroup
 import no.vaccsca.amandman.controller.ControllerInterface
@@ -58,12 +58,12 @@ class TabView(
     }
 
     fun updateAmanData(tabData: TabData) {
-        timeWindowScrollbar.updateTimelineOccurrences(tabData.timelinesData)
-        timelineScrollPane.updateTimelineOccurrences(tabData.timelinesData)
+        timeWindowScrollbar.updateTimelineEvents(tabData.timelinesData)
+        timelineScrollPane.updateTimelineEvents(tabData.timelinesData)
 
         val numberOfNonSeq = tabData.timelinesData
             .flatMap { it.left + it.right }
-            .filterIsInstance<RunwayArrivalOccurrence>()
+            .filterIsInstance<RunwayArrivalEvent>()
             .count { it.sequenceStatus == SequenceStatus.FOR_MANUAL_REINSERTION }
 
         topBar.updateNonSeqNumbers(numberOfNonSeq)

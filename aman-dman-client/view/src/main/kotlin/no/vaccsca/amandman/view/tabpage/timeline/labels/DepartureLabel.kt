@@ -1,13 +1,13 @@
 package no.vaccsca.amandman.view.tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.DepartureOccurrence
+import no.vaccsca.amandman.common.timelineEvent.DepartureEvent
 import java.awt.Color
 
 class DepartureLabel(
-    departureOccurrence: DepartureOccurrence
+    departureEvent: DepartureEvent
 ) : TimelineLabel(
-    departureOccurrence,
+    departureEvent,
     defaultBackgroundColor = Color.decode("#83989B"),
     defaultForegroundColor = Color.BLACK,
     hoverBackgroundColor = Color.GRAY,
@@ -21,13 +21,13 @@ class DepartureLabel(
 
     override fun updateText() {
         var output = "<html><pre>"
-        val departureOccurrence = timelineOccurrence as DepartureOccurrence
+        val departureEvent = timelineEvent as DepartureEvent
 
-        output += departureOccurrence.callsign.padEnd(8)
-        output += departureOccurrence.runway.padEnd(5)
-        output += departureOccurrence.sid.padEnd(9)
-        output += departureOccurrence.icaoType.padEnd(5)
-        output += departureOccurrence.wakeCategory.toString().padEnd(2)
+        output += departureEvent.callsign.padEnd(8)
+        output += departureEvent.runway.padEnd(5)
+        output += departureEvent.sid.padEnd(9)
+        output += departureEvent.icaoType.padEnd(5)
+        output += departureEvent.wakeCategory.toString().padEnd(2)
 
         output += "</pre></html>"
 
@@ -35,7 +35,7 @@ class DepartureLabel(
     }
 
     override fun getTimelinePlacement(): Instant {
-        return (timelineOccurrence as DepartureOccurrence).scheduledTime
+        return (timelineEvent as DepartureEvent).scheduledTime
     }
 
 }

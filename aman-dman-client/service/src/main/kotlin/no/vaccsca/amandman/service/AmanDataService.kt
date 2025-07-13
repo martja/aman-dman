@@ -9,7 +9,7 @@ import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.VerticalWeatherProfile
 import no.vaccsca.amandman.model.AmanDmanSequence
 import no.vaccsca.amandman.model.NavdataRepository
-import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalOccurrence
+import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalEvent
 
 class AmanDataService(
     private val amanDmanSequence: AmanDmanSequence,
@@ -22,15 +22,15 @@ class AmanDataService(
 
     fun subscribeForInbounds(icao: String) {
         atcClient.collectArrivalsFor(icao) { arrivals ->
-            val runwayArrivalOccurrences = createRunwayArrivalOccurrences(arrivals)
-            val sequencedArrivals = amanDmanSequence.updateSequence(runwayArrivalOccurrences)
+            val runwayArrivalEvents = createRunwayArrivalEvents(arrivals)
+            val sequencedArrivals = amanDmanSequence.updateSequence(runwayArrivalEvents)
             livedataInterface.onLiveData(sequencedArrivals)
         }
     }
 
-    private fun createRunwayArrivalOccurrences(arrivalJsons: List<ArrivalJson>) =
+    private fun createRunwayArrivalEvents(arrivalJsons: List<ArrivalJson>) =
         arrivalJsons.mapNotNull { arrival ->
-            arrival.toRunwayArrivalOccurrence(
+            arrival.toRunwayArrivalEvent(
                 star = navdataRepository.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway },
                 weatherData = weatherData,
                 performance = AircraftPerformanceData.get(arrival.icaoType)

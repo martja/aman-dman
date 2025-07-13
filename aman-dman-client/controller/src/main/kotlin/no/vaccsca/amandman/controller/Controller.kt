@@ -8,6 +8,8 @@ import no.vaccsca.amandman.common.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.common.dto.TabData
 import no.vaccsca.amandman.common.dto.TimelineData
 import no.vaccsca.amandman.common.eventHandling.LivedataInferface
+import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.WeatherDataRepository
 import no.vaccsca.amandman.service.AmanDataService
 import kotlin.time.Duration.Companion.seconds
@@ -24,7 +26,7 @@ class Controller(
 
     private var timelineConfigs = mutableMapOf<String, TimelineConfig>()
 
-    private val cachedAmanData = mutableMapOf<String, CachedOccurrence>()
+    private val cachedAmanData = mutableMapOf<String, CachedEvent>()
     private val lock = Object()
 
     init {
@@ -85,12 +87,12 @@ class Controller(
         selectedCallsign = callsign
     }
 
-    override fun onLiveData(amanData: List<TimelineOccurrence>) {
+    override fun onLiveData(amanData: List<TimelineEvent>) {
         synchronized(lock) {
-            amanData.filterIsInstance<RunwayArrivalOccurrence>().forEach {
-                cachedAmanData[it.callsign] = CachedOccurrence(
+            amanData.filterIsInstance<RunwayArrivalEvent>().forEach {
+                cachedAmanData[it.callsign] = CachedEvent(
                     lastTimestamp = Clock.System.now(),
-                    timelineOccurrence = it
+                    timelineEvent = it
                 )
             }
 
@@ -103,9 +105,9 @@ class Controller(
     }
 
     private fun updateViewFromCachedData() {
-        val snapshot: List<TimelineOccurrence>
+        val snapshot: List<TimelineEvent>
         synchronized(lock) {
-            snapshot = cachedAmanData.values.toList().map { it.timelineOccurrence }
+            snapshot = cachedAmanData.values.toList().map { it.timelineEvent }
         }
 
         timelineGroups.forEach { group ->
@@ -116,15 +118,15 @@ class Controller(
                 timelinesData = group.timelines.map { timeline ->
                     TimelineData(
                         timelineId = timeline.title,
-                        left = relevantDataForTab.filter { it is RunwayArrivalOccurrence && timeline.runwaysLeft.contains(it.runway) },
-                        right = relevantDataForTab.filter { it is RunwayArrivalOccurrence && timeline.runwaysRight.contains(it.runway) }
+                        left = relevantDataForTab.filter { it is RunwayArrivalEvent && timeline.runwaysLeft.contains(it.runway) },
+                        right = relevantDataForTab.filter { it is RunwayArrivalEvent && timeline.runwaysRight.contains(it.runway) }
                     )
                 }
             ))
         }
 
         selectedCallsign?.let { callsign ->
-            val selectedDescentProfile = snapshot.filterIsInstance<RunwayArrivalOccurrence>()
+            val selectedDescentProfile = snapshot.filterIsInstance<RunwayArrivalEvent>()
                 .find { it.callsign == callsign }
 
             selectedDescentProfile?.let {
@@ -241,8 +243,8 @@ class Controller(
         view.openTimelineConfigForm(groupId)
     }
 
-    private data class CachedOccurrence(
+    private data class CachedEvent(
         val lastTimestamp: Instant,
-        val timelineOccurrence: TimelineOccurrence
+        val timelineEvent: TimelineEvent
     )
 }

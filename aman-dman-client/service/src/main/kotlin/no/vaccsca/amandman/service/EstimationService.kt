@@ -7,10 +7,12 @@ import no.vaccsca.amandman.common.dto.navigation.RoutePoint
 import no.vaccsca.amandman.common.dto.navigation.star.Star
 import integration.entities.ArrivalJson
 import no.vaccsca.amandman.common.*
+import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.common.SequenceStatus
 import no.vaccsca.amandman.service.DescentTrajectoryService.calculateDescentTrajectory
 
 object EstimationService {
-    fun ArrivalJson.toRunwayArrivalOccurrence(star: Star?, weatherData: VerticalWeatherProfile?, performance: AircraftPerformance): RunwayArrivalOccurrence? {
+    fun ArrivalJson.toRunwayArrivalEvent(star: Star?, weatherData: VerticalWeatherProfile?, performance: AircraftPerformance): RunwayArrivalEvent? {
         if (assignedRunway == null) {
             return null
         }
@@ -33,7 +35,7 @@ object EstimationService {
 
         val estimatedTime = Clock.System.now() + descentTrajectory.first().remainingTime
 
-        return RunwayArrivalOccurrence(
+        return RunwayArrivalEvent(
             callsign = callsign,
             icaoType = icaoType,
             flightLevel = flightLevel,
