@@ -1,10 +1,10 @@
 package no.vaccsca.amandman.service
 
-import config.AircraftPerformanceData
+import no.vaccsca.amandman.integration.amanConfig.AircraftPerformanceData
 import no.vaccsca.amandman.integration.atcClient.AtcClient
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.eventHandling.LivedataInferface
-import integration.entities.ArrivalJson
+import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.VerticalWeatherProfile
 import no.vaccsca.amandman.model.AmanDmanSequence

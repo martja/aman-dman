@@ -5,7 +5,7 @@ import no.vaccsca.amandman.common.AircraftPerformance
 import no.vaccsca.amandman.common.dto.navigation.AircraftPosition
 import no.vaccsca.amandman.common.dto.navigation.RoutePoint
 import no.vaccsca.amandman.common.dto.navigation.star.Star
-import integration.entities.ArrivalJson
+import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
 import no.vaccsca.amandman.common.*
 import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.common.SequenceStatus

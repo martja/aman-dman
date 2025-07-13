@@ -1,6 +1,6 @@
 package no.vaccsca.amandman.controller
 
-import config.SettingsManager
+import no.vaccsca.amandman.integration.amanConfig.SettingsManager
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.*

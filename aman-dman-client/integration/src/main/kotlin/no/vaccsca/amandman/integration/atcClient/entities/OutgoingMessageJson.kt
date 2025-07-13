@@ -1,4 +1,4 @@
-package integration.entities
+package no.vaccsca.amandman.integration.atcClient.entities
 
 sealed class MessageToServer(
     val type: String

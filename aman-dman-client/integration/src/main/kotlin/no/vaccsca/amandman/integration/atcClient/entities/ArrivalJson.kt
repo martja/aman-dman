@@ -1,4 +1,4 @@
-package integration.entities
+package no.vaccsca.amandman.integration.atcClient.entities
 
 data class ArrivalJson(
     val callsign: String,

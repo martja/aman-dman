@@ -2,8 +2,8 @@ package no.vaccsca.amandman.integration.atcClient
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import kotlinx.coroutines.*
-import integration.entities.IncomingMessageJson
-import integration.entities.MessageToServer
+import no.vaccsca.amandman.integration.atcClient.entities.IncomingMessageJson
+import no.vaccsca.amandman.integration.atcClient.entities.MessageToServer
 import java.io.*
 import java.net.Socket
 

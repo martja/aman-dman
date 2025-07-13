@@ -1,4 +1,4 @@
-package config
+package no.vaccsca.amandman.integration.amanConfig
 
 data class AmanDmanSettingsJson(
     //val openAutomatically: Boolean,

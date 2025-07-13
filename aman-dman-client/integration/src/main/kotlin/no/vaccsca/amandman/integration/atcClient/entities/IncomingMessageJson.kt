@@ -1,4 +1,4 @@
-package integration.entities
+package no.vaccsca.amandman.integration.atcClient.entities
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo

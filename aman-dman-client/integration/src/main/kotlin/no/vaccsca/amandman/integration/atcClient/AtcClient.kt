@@ -3,7 +3,15 @@ package no.vaccsca.amandman.integration.atcClient
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.common.timelineEvent.FixInboundEvent
-import integration.entities.*
+import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
+import no.vaccsca.amandman.integration.atcClient.entities.ArrivalsUpdate
+import no.vaccsca.amandman.integration.atcClient.entities.DepartureJson
+import no.vaccsca.amandman.integration.atcClient.entities.DeparturesUpdate
+import no.vaccsca.amandman.integration.atcClient.entities.IncomingMessageJson
+import no.vaccsca.amandman.integration.atcClient.entities.MessageToServer
+import no.vaccsca.amandman.integration.atcClient.entities.RegisterDeparturesMessage
+import no.vaccsca.amandman.integration.atcClient.entities.RegisterFixInboundsMessage
+import no.vaccsca.amandman.integration.atcClient.entities.UnregisterTimelineMessage
 
 abstract class AtcClient {
     abstract fun sendMessage(message: MessageToServer)

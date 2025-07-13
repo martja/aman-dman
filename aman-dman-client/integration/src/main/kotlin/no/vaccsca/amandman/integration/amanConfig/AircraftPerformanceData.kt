@@ -1,4 +1,4 @@
-package config
+package no.vaccsca.amandman.integration.amanConfig
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
