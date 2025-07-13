@@ -2,7 +2,7 @@ package no.vaccsca.amandman.view.windows
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.tabpage.TimeRangeScrollBarHorizontal
 import no.vaccsca.amandman.view.util.SharedValue

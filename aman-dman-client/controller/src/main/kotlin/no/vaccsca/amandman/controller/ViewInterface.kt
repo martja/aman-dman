@@ -2,9 +2,9 @@ package no.vaccsca.amandman.controller
 
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.TimelineGroup
-import no.vaccsca.amandman.common.TrajectoryPoint
-import no.vaccsca.amandman.common.VerticalWeatherProfile
-import no.vaccsca.amandman.common.dto.TabData
+import no.vaccsca.amandman.model.TrajectoryPoint
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.model.dto.TabData
 
 interface ViewInterface {
     var controllerInterface: ControllerInterface

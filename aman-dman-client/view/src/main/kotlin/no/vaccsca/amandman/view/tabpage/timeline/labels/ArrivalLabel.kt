@@ -2,8 +2,8 @@ package no.vaccsca.amandman.view.tabpage.timeline.labels
 
 import no.vaccsca.amandman.controller.ControllerInterface
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.common.SequenceStatus
+import no.vaccsca.amandman.model.SequenceStatus
+import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent

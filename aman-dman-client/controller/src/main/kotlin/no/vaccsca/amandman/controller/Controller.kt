@@ -4,13 +4,14 @@ import no.vaccsca.amandman.integration.amanConfig.SettingsManager
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.*
-import no.vaccsca.amandman.common.dto.CreateOrUpdateTimelineDto
-import no.vaccsca.amandman.common.dto.TabData
-import no.vaccsca.amandman.common.dto.TimelineData
-import no.vaccsca.amandman.common.eventHandling.LiveDataHandler
-import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.model.WeatherDataRepository
+import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
+import no.vaccsca.amandman.model.dto.TabData
+import no.vaccsca.amandman.model.dto.TimelineData
+import no.vaccsca.amandman.service.LiveDataHandler
+import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.integration.weather.WeatherDataRepository
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.service.AmanDataService
 import kotlin.time.Duration.Companion.seconds
 

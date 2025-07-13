@@ -1,6 +1,6 @@
 package no.vaccsca.amandman.service.util
 
-import no.vaccsca.amandman.common.LatLng
+import no.vaccsca.amandman.model.navigation.LatLng
 import kotlin.math.*
 
 object NavigationUtils {

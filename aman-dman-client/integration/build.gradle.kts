@@ -4,6 +4,7 @@ version = "1.0-SNAPSHOT"
 dependencies {
     testImplementation(kotlin("test"))
     implementation(project(":common"))
+    implementation(project(":model"))
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")

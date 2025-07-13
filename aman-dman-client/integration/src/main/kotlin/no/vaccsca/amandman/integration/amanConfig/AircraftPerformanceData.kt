@@ -2,7 +2,7 @@ package no.vaccsca.amandman.integration.amanConfig
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import no.vaccsca.amandman.common.AircraftPerformance
+import no.vaccsca.amandman.model.AircraftPerformance
 import java.io.File
 import java.io.FileNotFoundException
 

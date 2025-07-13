@@ -1,10 +1,6 @@
 package no.vaccsca.amandman.integration.weather
 
 import kotlinx.datetime.*
-import no.vaccsca.amandman.common.LatLng
-import no.vaccsca.amandman.common.VerticalWeatherProfile
-import no.vaccsca.amandman.common.WeatherLayer
-import no.vaccsca.amandman.common.Wind
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Files
@@ -15,6 +11,10 @@ import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import no.vaccsca.amandman.common.util.NumberUtils.format
+import no.vaccsca.amandman.model.navigation.LatLng
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.model.weather.WeatherLayer
+import no.vaccsca.amandman.model.weather.Wind
 import ucar.nc2.NetcdfFile
 import ucar.nc2.NetcdfFiles
 
@@ -91,7 +91,13 @@ class WindApi {
                     val currentGridPoint = gridPoints.find { it.latitude == gridLat && it.longitude == gridLon }?.windProfile
                         ?: VerticalWeatherProfile(forecastTime, LatLng(lat = gridLat, lon = gridLon), mutableListOf())
 
-                    currentGridPoint.weatherLayers.add(WeatherLayer(flightLevel, temp, Wind(windDirection, windSpeedKnots)))
+                    currentGridPoint.weatherLayers.add(
+                        WeatherLayer(
+                            flightLevel,
+                            temp,
+                            Wind(windDirection, windSpeedKnots)
+                        )
+                    )
 
                     if (gridPoints.none { it.latitude == gridLat && it.longitude == gridLon }) {
                         gridPoints.add(WindProfileGridPoint(gridLat, gridLon, currentGridPoint))

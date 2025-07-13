@@ -1,15 +1,15 @@
 package no.vaccsca.amandman.view.tabpage.timeline
 
-import no.vaccsca.amandman.common.dto.TimelineData
 import kotlinx.datetime.Clock
 import no.vaccsca.amandman.controller.ControllerInterface
 import no.vaccsca.amandman.common.*
-import no.vaccsca.amandman.common.timelineEvent.DepartureEvent
-import no.vaccsca.amandman.common.timelineEvent.FixInboundEvent
-import no.vaccsca.amandman.common.Flight
-import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.common.timelineEvent.RunwayDelayEvent
-import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.Flight
+import no.vaccsca.amandman.model.dto.TimelineData
+import no.vaccsca.amandman.model.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.model.timelineEvent.FixInboundEvent
+import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.tabpage.timeline.labels.ArrivalLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.DepartureLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.TimelineLabel

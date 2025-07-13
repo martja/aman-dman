@@ -1,7 +1,7 @@
-package no.vaccsca.amandman.model
+package no.vaccsca.amandman.integration
 
-import no.vaccsca.amandman.common.dto.navigation.star.Star
-import no.vaccsca.amandman.common.dto.navigation.star.StarFix
+import no.vaccsca.amandman.model.navigation.star.Star
+import no.vaccsca.amandman.model.navigation.star.StarFix
 import java.io.File
 import java.io.FileNotFoundException
 

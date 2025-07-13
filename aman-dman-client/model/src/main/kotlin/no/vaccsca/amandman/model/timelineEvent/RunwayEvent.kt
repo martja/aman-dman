@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.common.timelineEvent
+package no.vaccsca.amandman.model.timelineEvent
 
 import kotlinx.datetime.Instant
 

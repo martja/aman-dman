@@ -1,4 +1,4 @@
-import no.vaccsca.amandman.common.AircraftPerformance
+import no.vaccsca.amandman.model.AircraftPerformance
 
 val b738performance = AircraftPerformance(
     ICAO = "B738",

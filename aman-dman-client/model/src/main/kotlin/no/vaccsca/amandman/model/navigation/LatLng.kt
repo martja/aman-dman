@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.common
+package no.vaccsca.amandman.model.navigation
 
 import kotlin.math.roundToInt
 
@@ -23,17 +23,17 @@ fun LatLng.distanceTo(latLng: LatLng): Double {
 }
 
 fun LatLng.bearingTo(latLng: LatLng): Int {
-    val lat1 = java.lang.Math.toRadians(this.lat)
-    val lon1 = java.lang.Math.toRadians(this.lon)
-    val lat2 = java.lang.Math.toRadians(latLng.lat)
-    val lon2 = java.lang.Math.toRadians(latLng.lon)
+    val lat1 = Math.toRadians(this.lat)
+    val lon1 = Math.toRadians(this.lon)
+    val lat2 = Math.toRadians(latLng.lat)
+    val lon2 = Math.toRadians(latLng.lon)
 
     val dlon = lon2 - lon1
 
-    val y = java.lang.Math.sin(dlon) * java.lang.Math.cos(lat2)
-    val x = java.lang.Math.cos(lat1) * java.lang.Math.sin(lat2) - java.lang.Math.sin(lat1) * java.lang.Math.cos(lat2) * java.lang.Math.cos(dlon)
+    val y = Math.sin(dlon) * Math.cos(lat2)
+    val x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dlon)
 
-    val bearing = java.lang.Math.toDegrees(java.lang.Math.atan2(y, x))
+    val bearing = Math.toDegrees(Math.atan2(y, x))
 
     return ((bearing + 360) % 360).roundToInt()
 }

@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.view.windows
 
-import no.vaccsca.amandman.common.VerticalWeatherProfile
 import no.vaccsca.amandman.common.util.NumberUtils.format
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.view.util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color

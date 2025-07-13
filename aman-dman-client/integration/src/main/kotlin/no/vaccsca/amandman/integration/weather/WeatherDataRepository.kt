@@ -1,7 +1,7 @@
-package no.vaccsca.amandman.model
+package no.vaccsca.amandman.integration.weather
 
-import no.vaccsca.amandman.common.VerticalWeatherProfile
-import no.vaccsca.amandman.integration.weather.WindApi
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+
 
 class WeatherDataRepository(
     private val windApi: WindApi = WindApi()

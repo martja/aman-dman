@@ -12,7 +12,6 @@ repositories {
 dependencies {
     implementation("org.jfree:jfreechart:1.5.3")
     implementation(project(":common"))
-    implementation(project(":integration"))
 }
 
 tasks.test {

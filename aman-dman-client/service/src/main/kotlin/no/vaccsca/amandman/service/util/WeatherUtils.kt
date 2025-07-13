@@ -1,8 +1,8 @@
 package no.vaccsca.amandman.service.util
 
-import no.vaccsca.amandman.common.VerticalWeatherProfile
-import no.vaccsca.amandman.common.WeatherLayer
-import no.vaccsca.amandman.common.Wind
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.model.weather.WeatherLayer
+import no.vaccsca.amandman.model.weather.Wind
 import kotlin.math.roundToInt
 
 object WeatherUtils {

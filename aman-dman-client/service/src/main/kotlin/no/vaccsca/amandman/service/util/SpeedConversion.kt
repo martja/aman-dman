@@ -1,6 +1,6 @@
 package no.vaccsca.amandman.service.util
 
-import no.vaccsca.amandman.common.Wind
+import no.vaccsca.amandman.model.weather.Wind
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.roundToInt

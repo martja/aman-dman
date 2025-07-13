@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.view.tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 import java.awt.Color
 import javax.swing.JLabel
 import javax.swing.border.EmptyBorder

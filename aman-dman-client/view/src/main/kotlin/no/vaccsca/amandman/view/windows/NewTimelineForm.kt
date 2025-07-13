@@ -1,8 +1,8 @@
 package no.vaccsca.amandman.view.windows
 
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.common.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.view.util.Form.enforceUppercase
 import java.awt.*
 import javax.swing.*
@@ -59,12 +59,16 @@ class NewTimelineForm(val controllerInterface: ControllerInterface, groupId: Str
                     title = "${icaoField.text} Timeline",
                     airportIcao = icaoField.text.trim().uppercase(),
                     left = CreateOrUpdateTimelineDto.TimeLineSide(
-                        targetFixes = leftFixesInput.text.split(",").map { it.trim().uppercase() }.filter { it.isNotEmpty() },
-                        targetRunways = leftRunwaysInput.text.split(",").map { it.trim().uppercase() }.filter { it.isNotEmpty() }
+                        targetFixes = leftFixesInput.text.split(",").map { it.trim().uppercase() }
+                            .filter { it.isNotEmpty() },
+                        targetRunways = leftRunwaysInput.text.split(",").map { it.trim().uppercase() }
+                            .filter { it.isNotEmpty() }
                     ),
                     right = CreateOrUpdateTimelineDto.TimeLineSide(
-                        targetFixes = rightFixesInput.text.split(",").map { it.trim().uppercase() }.filter { it.isNotEmpty() },
-                        targetRunways = rightRunwaysInput.text.split(",").map { it.trim().uppercase() }.filter { it.isNotEmpty() }
+                        targetFixes = rightFixesInput.text.split(",").map { it.trim().uppercase() }
+                            .filter { it.isNotEmpty() },
+                        targetRunways = rightRunwaysInput.text.split(",").map { it.trim().uppercase() }
+                            .filter { it.isNotEmpty() }
                     )
                 )
             )

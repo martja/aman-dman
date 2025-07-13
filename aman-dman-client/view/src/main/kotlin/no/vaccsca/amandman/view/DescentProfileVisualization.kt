@@ -1,6 +1,6 @@
 package no.vaccsca.amandman.view
 
-import no.vaccsca.amandman.common.TrajectoryPoint
+import no.vaccsca.amandman.model.TrajectoryPoint
 import no.vaccsca.amandman.view.util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color

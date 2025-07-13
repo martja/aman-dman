@@ -1,11 +1,17 @@
 package no.vaccsca.amandman.service
 
-import no.vaccsca.amandman.common.AircraftPerformance
-import no.vaccsca.amandman.common.dto.navigation.AircraftPosition
-import no.vaccsca.amandman.common.dto.navigation.RoutePoint
-import no.vaccsca.amandman.common.dto.navigation.star.Star
-import no.vaccsca.amandman.common.dto.navigation.star.StarFix
-import no.vaccsca.amandman.common.*
+import no.vaccsca.amandman.model.AircraftPerformance
+import no.vaccsca.amandman.model.navigation.AircraftPosition
+import no.vaccsca.amandman.model.navigation.RoutePoint
+import no.vaccsca.amandman.model.navigation.star.Star
+import no.vaccsca.amandman.model.navigation.star.StarFix
+import no.vaccsca.amandman.model.navigation.LatLng
+import no.vaccsca.amandman.model.navigation.bearingTo
+import no.vaccsca.amandman.model.navigation.distanceTo
+import no.vaccsca.amandman.model.DescentStep
+import no.vaccsca.amandman.model.TrajectoryPoint
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.model.weather.Wind
 import no.vaccsca.amandman.service.util.NavigationUtils.interpolatePositionAlongPath
 import no.vaccsca.amandman.service.util.SpeedConversion
 import no.vaccsca.amandman.service.util.WeatherUtils.getStandardTemperatureAt

@@ -1,14 +1,15 @@
 package no.vaccsca.amandman.service
 
 import kotlinx.datetime.Clock
-import no.vaccsca.amandman.common.AircraftPerformance
-import no.vaccsca.amandman.common.dto.navigation.AircraftPosition
-import no.vaccsca.amandman.common.dto.navigation.RoutePoint
-import no.vaccsca.amandman.common.dto.navigation.star.Star
+import no.vaccsca.amandman.model.AircraftPerformance
+import no.vaccsca.amandman.model.navigation.AircraftPosition
+import no.vaccsca.amandman.model.navigation.RoutePoint
+import no.vaccsca.amandman.model.navigation.star.Star
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
-import no.vaccsca.amandman.common.*
-import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.common.SequenceStatus
+import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.SequenceStatus
+import no.vaccsca.amandman.model.navigation.LatLng
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.service.DescentTrajectoryService.calculateDescentTrajectory
 
 object EstimationService {

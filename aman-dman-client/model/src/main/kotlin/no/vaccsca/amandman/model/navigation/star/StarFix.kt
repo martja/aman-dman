@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.common.dto.navigation.star
+package no.vaccsca.amandman.model.navigation.star
 
 data class StarFix(
     val id: String,

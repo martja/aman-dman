@@ -1,7 +1,7 @@
-import no.vaccsca.amandman.common.LatLng
-import no.vaccsca.amandman.common.distanceTo
-import no.vaccsca.amandman.common.dto.navigation.star.Star
-import no.vaccsca.amandman.common.dto.navigation.star.StarFix
+import no.vaccsca.amandman.model.navigation.LatLng
+import no.vaccsca.amandman.model.navigation.distanceTo
+import no.vaccsca.amandman.model.navigation.star.Star
+import no.vaccsca.amandman.model.navigation.star.StarFix
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
 import no.vaccsca.amandman.integration.atcClient.entities.FixPointJson
 import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalEvent

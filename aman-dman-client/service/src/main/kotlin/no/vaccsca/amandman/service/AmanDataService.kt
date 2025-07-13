@@ -3,12 +3,12 @@ package no.vaccsca.amandman.service
 import no.vaccsca.amandman.integration.amanConfig.AircraftPerformanceData
 import no.vaccsca.amandman.integration.atcClient.AtcClient
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.eventHandling.LiveDataHandler
+import no.vaccsca.amandman.service.LiveDataHandler
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.common.VerticalWeatherProfile
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.AmanDmanSequence
-import no.vaccsca.amandman.model.NavdataRepository
+import no.vaccsca.amandman.integration.NavdataRepository
 import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalEvent
 
 class AmanDataService(

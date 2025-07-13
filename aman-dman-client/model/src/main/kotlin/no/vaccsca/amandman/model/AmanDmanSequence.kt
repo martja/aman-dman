@@ -1,9 +1,8 @@
 package no.vaccsca.amandman.model
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.common.SequenceStatus
-import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds

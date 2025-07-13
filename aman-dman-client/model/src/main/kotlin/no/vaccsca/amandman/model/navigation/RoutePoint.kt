@@ -1,6 +1,4 @@
-package no.vaccsca.amandman.common.dto.navigation
-
-import no.vaccsca.amandman.common.LatLng
+package no.vaccsca.amandman.model.navigation
 
 data class RoutePoint(
     val id: String,

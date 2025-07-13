@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.common
+package no.vaccsca.amandman.model.weather
 
 data class WeatherLayer(
     val flightLevelFt: Int,

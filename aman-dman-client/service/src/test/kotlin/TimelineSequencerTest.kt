@@ -1,7 +1,7 @@
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.AmanDmanSequence
 import kotlin.test.Test
 

@@ -4,8 +4,8 @@ import com.jtattoo.plaf.hifi.HiFiLookAndFeel
 import no.vaccsca.amandman.controller.Controller
 import no.vaccsca.amandman.integration.atcClient.AtcClientEuroScope
 import no.vaccsca.amandman.model.AmanDmanSequence
-import no.vaccsca.amandman.model.NavdataRepository
-import no.vaccsca.amandman.model.WeatherDataRepository
+import no.vaccsca.amandman.integration.NavdataRepository
+import no.vaccsca.amandman.integration.weather.WeatherDataRepository
 import no.vaccsca.amandman.service.AmanDataService
 import no.vaccsca.amandman.view.AmanDmanMainFrame
 import java.util.*

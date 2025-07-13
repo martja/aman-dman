@@ -1,6 +1,7 @@
-package no.vaccsca.amandman.common.dto
+package no.vaccsca.amandman.model.dto
 
-import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
+
 
 data class TimelineData(
     val timelineId: String,

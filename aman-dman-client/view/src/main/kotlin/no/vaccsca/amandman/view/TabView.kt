@@ -1,11 +1,11 @@
 package no.vaccsca.amandman.view
 
-import no.vaccsca.amandman.common.dto.TabData
 import kotlinx.datetime.Clock
-import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.common.SequenceStatus
 import no.vaccsca.amandman.common.TimelineGroup
 import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.model.SequenceStatus
+import no.vaccsca.amandman.model.dto.TabData
+import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.tabpage.TimeRangeScrollBarVertical
 import no.vaccsca.amandman.view.tabpage.TimelineScrollPane

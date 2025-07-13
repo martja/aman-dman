@@ -1,7 +1,7 @@
-package no.vaccsca.amandman.common.timelineEvent
+package no.vaccsca.amandman.model.timelineEvent
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.Flight
+import no.vaccsca.amandman.model.Flight
 
 data class DepartureEvent(
     override val timelineId: Int,

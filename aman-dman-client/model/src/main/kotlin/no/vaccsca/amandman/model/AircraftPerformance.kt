@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.common
+package no.vaccsca.amandman.model
 
 data class AircraftPerformance(
     val ICAO: String,

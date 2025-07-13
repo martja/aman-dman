@@ -2,7 +2,7 @@ package no.vaccsca.amandman.controller
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.common.dto.CreateOrUpdateTimelineDto
+import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
 
 interface ControllerInterface {
     fun onReloadSettingsRequested()

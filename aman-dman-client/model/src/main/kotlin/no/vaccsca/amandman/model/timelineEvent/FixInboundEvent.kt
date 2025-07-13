@@ -1,11 +1,10 @@
-package no.vaccsca.amandman.common.timelineEvent
+package no.vaccsca.amandman.model.timelineEvent
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.Flight
-import no.vaccsca.amandman.common.SequenceStatus
-import no.vaccsca.amandman.common.TrajectoryPoint
+import no.vaccsca.amandman.model.Flight
+import no.vaccsca.amandman.model.TrajectoryPoint
 
-data class RunwayArrivalEvent(
+data class FixInboundEvent(
     override val timelineId: Int,
     override val scheduledTime: Instant,
     override val estimatedTime: Instant,
@@ -14,13 +13,12 @@ data class RunwayArrivalEvent(
     override val icaoType: String,
     override val wakeCategory: Char,
     override val airportIcao: String,
-    val assignedStar: String?,
+    val assignedStar: String,
+    val finalFix: String,
     val flightLevel: Int,
     val pressureAltitude: Int,
     val groundSpeed: Int,
-    val trackingController: String?,
-    val descentTrajectory: List<TrajectoryPoint>,
-    val basedOnNavdata: Boolean,
-    val withinActiveAdvisoryHorizon: Boolean,
-    val sequenceStatus: SequenceStatus
+    val trackingController: String,
+    val finalFixEta: Instant,
+    val descentProfile: List<TrajectoryPoint>,
 ) : RunwayEvent(timelineId, scheduledTime, runway, airportIcao, estimatedTime), Flight

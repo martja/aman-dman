@@ -1,11 +1,11 @@
 package no.vaccsca.amandman.view.tabpage.timeline
 
 import no.vaccsca.amandman.controller.ControllerInterface
-import no.vaccsca.amandman.common.dto.TimelineData
 import kotlinx.datetime.*
-import no.vaccsca.amandman.common.timelineEvent.RunwayDelayEvent
-import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.common.util.NumberUtils.format
+import no.vaccsca.amandman.model.dto.TimelineData
+import no.vaccsca.amandman.model.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.*

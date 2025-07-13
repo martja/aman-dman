@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.common
+package no.vaccsca.amandman.model
 
 interface Flight {
     val callsign: String

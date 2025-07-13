@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.common.dto
+package no.vaccsca.amandman.model.dto
 
 data class CreateOrUpdateTimelineDto(
     val groupId: String,

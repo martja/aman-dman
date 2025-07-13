@@ -1,9 +1,9 @@
 package no.vaccsca.amandman.view.tabpage.timeline
 
-import no.vaccsca.amandman.common.dto.TimelineData
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.model.dto.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.Dimension

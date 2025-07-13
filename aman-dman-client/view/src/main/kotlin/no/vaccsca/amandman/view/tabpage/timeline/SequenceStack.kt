@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.view.tabpage.timeline
 
-import no.vaccsca.amandman.common.timelineEvent.RunwayDelayEvent
-import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 import java.awt.Color
 import java.awt.Graphics
 import javax.swing.JPanel

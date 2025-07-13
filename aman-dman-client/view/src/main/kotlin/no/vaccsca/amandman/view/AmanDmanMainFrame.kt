@@ -2,11 +2,11 @@ package no.vaccsca.amandman.view
 
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.TimelineGroup
-import no.vaccsca.amandman.common.TrajectoryPoint
-import no.vaccsca.amandman.common.VerticalWeatherProfile
-import no.vaccsca.amandman.common.dto.TabData
 import no.vaccsca.amandman.controller.ControllerInterface
 import no.vaccsca.amandman.controller.ViewInterface
+import no.vaccsca.amandman.model.TrajectoryPoint
+import no.vaccsca.amandman.model.dto.TabData
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.view.tabpage.Footer
 import no.vaccsca.amandman.view.windows.LandingRatesGraph
 import no.vaccsca.amandman.view.windows.NewTimelineForm
