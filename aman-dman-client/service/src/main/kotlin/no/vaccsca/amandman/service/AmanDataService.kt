@@ -3,7 +3,7 @@ package no.vaccsca.amandman.service
 import no.vaccsca.amandman.integration.amanConfig.AircraftPerformanceData
 import no.vaccsca.amandman.integration.atcClient.AtcClient
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.eventHandling.LivedataInferface
+import no.vaccsca.amandman.common.eventHandling.LiveDataHandler
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.VerticalWeatherProfile
@@ -16,7 +16,7 @@ class AmanDataService(
     private val navdataRepository: NavdataRepository,
     private val atcClient: AtcClient
 ) {
-    lateinit var livedataInterface: LivedataInferface
+    lateinit var livedataInterface: LiveDataHandler
 
     private var weatherData: VerticalWeatherProfile? = null
 

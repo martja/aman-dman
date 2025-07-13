@@ -7,7 +7,7 @@ import no.vaccsca.amandman.common.*
 import no.vaccsca.amandman.common.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.common.dto.TabData
 import no.vaccsca.amandman.common.dto.TimelineData
-import no.vaccsca.amandman.common.eventHandling.LivedataInferface
+import no.vaccsca.amandman.common.eventHandling.LiveDataHandler
 import no.vaccsca.amandman.common.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.common.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.WeatherDataRepository
@@ -18,7 +18,7 @@ class Controller(
     private val service: AmanDataService,
     private val view: ViewInterface,
     private val weatherDataRepository: WeatherDataRepository
-) : ControllerInterface, LivedataInferface {
+) : ControllerInterface, LiveDataHandler {
 
     private var weatherProfile: VerticalWeatherProfile? = null
     private val timelineGroups = mutableListOf<TimelineGroup>()
