@@ -43,7 +43,11 @@ class AmanDataService(
     }
 
     fun suggestScheduledTime(callsign: String, scheduledTime: Instant) {
-        amanDmanSequence.suggestScheduledTime(callsign, scheduledTime)
+        if (isTimeSlotAvailable(callsign, scheduledTime)) {
+            amanDmanSequence.suggestScheduledTime(callsign, scheduledTime)
+        } else {
+            println("Time slot is not available for $callsign at $scheduledTime")
+        }
     }
 
     fun reSchedule(callSign: String?) {

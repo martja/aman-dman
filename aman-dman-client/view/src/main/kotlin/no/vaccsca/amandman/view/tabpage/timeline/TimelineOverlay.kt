@@ -19,6 +19,7 @@ import java.awt.Font
 import java.awt.Graphics
 import java.awt.Polygon
 import java.awt.event.MouseEvent
+import java.text.SimpleDateFormat
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
@@ -41,6 +42,8 @@ class TimelineOverlay(
 
     private var proposedTime: Instant? = null
     private var proposedTimeIsAvailable: Boolean = false
+
+    private val timeFormat = SimpleDateFormat("HH:mm")
 
     private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -124,15 +127,20 @@ class TimelineOverlay(
         paintHourglass(g, scaleBounds.x)
         paintHourglass(g, scaleBounds.x + scaleBounds.width)
 
-        // Paint a circle at the proposed time if it exists
-        proposedTime?.let {
-            val dotY = timelineView.calculateYPositionForInstant(it)
-            g.color = if (proposedTimeIsAvailable) Color.WHITE else Color.RED
+        // Paint UTC HH:MM at the proposed time if available
+        if (proposedTime != null && proposedTimeIsAvailable) {
+            val proposedY = timelineView.calculateYPositionForInstant(proposedTime!!)
+            g.color = Color.WHITE
             g.fillOval(
-                scaleBounds.x,
-                dotY - pointDiameter / 2,
+                scaleBounds.x - pointDiameter / 2,
+                proposedY - pointDiameter / 2,
                 pointDiameter,
                 pointDiameter,
+            )
+            g.drawString(
+                timeFormat.format(proposedTime!!.toEpochMilliseconds()),
+                scaleBounds.x + 10,
+                proposedY + 5
             )
         }
     }
@@ -174,6 +182,11 @@ class TimelineOverlay(
                     newLabel.addMouseListener(object : java.awt.event.MouseAdapter() {
                         override fun mouseClicked(e: java.awt.event.MouseEvent) {
                             handleLabelClick(newLabel)
+                        }
+                        override fun mouseReleased(e: java.awt.event.MouseEvent) {
+                            val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
+                            val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
+                            controllerInterface.move(flight.callsign, newInstant)
                         }
                     })
                     newLabel.addMouseMotionListener(object : java.awt.event.MouseMotionAdapter() {
