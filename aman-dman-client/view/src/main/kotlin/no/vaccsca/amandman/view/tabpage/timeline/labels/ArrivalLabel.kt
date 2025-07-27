@@ -113,10 +113,10 @@ class ArrivalLabel(
     }
 
     override fun getBorderColor(): Color {
-        if (arrivalEvent.basedOnNavdata) {
-            return super.getBorderColor()
+        if (!arrivalEvent.assignedStarOk) {
+            return Color.ORANGE
         }
-        return Color.ORANGE
+        return super.getBorderColor()
     }
 
     override fun getTimelinePlacement(): Instant {

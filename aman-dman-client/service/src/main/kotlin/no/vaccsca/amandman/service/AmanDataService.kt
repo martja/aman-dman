@@ -9,6 +9,7 @@ import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.AmanDmanSequence
 import no.vaccsca.amandman.integration.NavdataRepository
+import no.vaccsca.amandman.integration.weather.WeatherDataRepository
 import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalEvent
 
 class AmanDataService(
@@ -51,6 +52,13 @@ class AmanDataService(
         } else {
             amanDmanSequence.removeFromSequence(callSign)
         }
+    }
+
+    fun isTimeSlotAvailable(
+        callsign: String,
+        scheduledTime: Instant
+    ): Boolean {
+        return amanDmanSequence.isTimeSlotAvailable(callsign, scheduledTime)
     }
 
     /**

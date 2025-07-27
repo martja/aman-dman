@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.view.tabpage.timeline
 
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import no.vaccsca.amandman.controller.ControllerInterface
 import no.vaccsca.amandman.common.*
 import no.vaccsca.amandman.model.Flight
@@ -17,9 +18,11 @@ import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics
 import java.awt.Polygon
+import java.awt.event.MouseEvent
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
+import javax.swing.SwingUtilities
 import kotlin.math.min
 
 class TimelineOverlay(
@@ -35,6 +38,9 @@ class TimelineOverlay(
 
     private var leftEvents: List<TimelineEvent>? = null
     private var rightEvents: List<TimelineEvent>? = null
+
+    private var proposedTime: Instant? = null
+    private var proposedTimeIsAvailable: Boolean = false
 
     private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -62,6 +68,12 @@ class TimelineOverlay(
         rearrangeLabels()
         val scale = timelineView.getScaleBounds()
         timelineNameLabel.setBounds(scale.x - 10, scale.y + scale.height - 20, 100, 20)
+    }
+
+    fun updateDraggedLabel(callsign: String, proposedTime: Instant, available: Boolean) {
+        this.proposedTime = proposedTime
+        this.proposedTimeIsAvailable = available
+        repaint()
     }
 
     private fun rearrangeLabels() {
@@ -111,6 +123,18 @@ class TimelineOverlay(
         val scaleBounds = timelineView.getScaleBounds()
         paintHourglass(g, scaleBounds.x)
         paintHourglass(g, scaleBounds.x + scaleBounds.width)
+
+        // Paint a circle at the proposed time if it exists
+        proposedTime?.let {
+            val dotY = timelineView.calculateYPositionForInstant(it)
+            g.color = if (proposedTimeIsAvailable) Color.WHITE else Color.RED
+            g.fillOval(
+                scaleBounds.x,
+                dotY - pointDiameter / 2,
+                pointDiameter,
+                pointDiameter,
+            )
+        }
     }
 
     private fun drawLineFromLabelsToTimeScale(g: Graphics) {
@@ -150,6 +174,13 @@ class TimelineOverlay(
                     newLabel.addMouseListener(object : java.awt.event.MouseAdapter() {
                         override fun mouseClicked(e: java.awt.event.MouseEvent) {
                             handleLabelClick(newLabel)
+                        }
+                    })
+                    newLabel.addMouseMotionListener(object : java.awt.event.MouseMotionAdapter() {
+                        override fun mouseDragged(e: MouseEvent) {
+                            val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
+                            val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
+                            controllerInterface.onLabelDragged(flight.callsign, newInstant)
                         }
                     })
                     currentLabels[flight.callsign] = newLabel

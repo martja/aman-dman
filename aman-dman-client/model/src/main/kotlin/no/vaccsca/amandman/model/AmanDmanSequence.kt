@@ -9,9 +9,21 @@ import kotlin.time.Duration.Companion.seconds
 
 class AmanDmanSequence {
 
+    /**
+     * A map that holds the current sequence of aircraft, where the key is the callsign
+     * and the value is the scheduled time for that aircraft.
+     */
     private val currentSequence = mutableMapOf<String, Instant>() // callsign -> scheduled time
+
+    /**
+     * A reference to the latest arrivals that have been processed.
+     */
     private var latestArrivals: List<RunwayArrivalEvent> = emptyList()
 
+    /**
+     * A map that tracks whether an aircraft is currently within the Active Advisory Horizon (AAH).
+     * Once an aircraft is in the AAH, it will be sequenced automatically and given a final scheduled time.
+     */
     val inAah = mutableMapOf<String, Boolean>()
 
     /**
@@ -41,6 +53,56 @@ class AmanDmanSequence {
         inAah.remove(callsign)
     }
 
+    /**
+     * Check if an aircraft with the given wake turbulence category can be placed
+     * in the sequence at the specified scheduled time. It can be placed if the separation
+     * to the preceding aircraft is sufficient based on the wake turbulence category.
+     * Succeeding aircraft are not considered in this check.
+     *
+     * TODO: also consider departures and runway closures.
+     *
+     * @param callsign The callsign of the aircraft being checked.
+     * @param requestedTime The time slot being requested for the aircraft.
+     */
+    fun isTimeSlotAvailable(
+        callsign: String,
+        requestedTime: Instant
+    ): Boolean {
+        val arrivalToCheck = findArrivalEvent(callsign)
+
+        if (arrivalToCheck == null) {
+            // Something is wrong, the arrival event should exist
+            println("Error: Arrival event for callsign $callsign not found in the latest arrivals.")
+            return false
+        }
+
+        val closestLeader = currentSequence.entries
+            .filter { it.value <= requestedTime }
+            .maxByOrNull { it.value }
+
+        if (closestLeader == null) {
+            // No preceding aircraft, so the time slot is available
+            return true
+        }
+
+        val (leaderCallsign, leaderSta) = closestLeader
+
+        val leaderArrivalEvent = findArrivalEvent(leaderCallsign)
+
+        if (leaderArrivalEvent == null) {
+            // The leader event is not found, so we assume the time slot is available
+            return true
+        }
+
+        val safeLandingTime = calculateSafeLandingTime(
+            leaderSta = leaderSta,
+            leaderWtc = leaderArrivalEvent.wakeCategory,
+            follower = arrivalToCheck
+        )
+
+        return requestedTime >= safeLandingTime
+    }
+
     fun updateSequence(arrivals: List<RunwayArrivalEvent>): List<TimelineEvent> {
         latestArrivals = arrivals
 
@@ -53,13 +115,13 @@ class AmanDmanSequence {
         var lastSequenced: RunwayArrivalEvent? = null
         var referenceTime = sorted.firstOrNull()?.estimatedTime ?: return emptyList()
 
-        for (current in sorted) {
-            val callsign = current.callsign
-            val isNowInAah = current.isInAAH()
+        for (nextArrival in sorted) {
+            val callsign = nextArrival.callsign
+            val isNowInAah = nextArrival.isInAAH()
             val hasBeenSequenced = currentSequence.containsKey(callsign)
 
             if (hasBeenSequenced) {
-                val updatedEvent = current.copy(
+                val updatedEvent = nextArrival.copy(
                     sequenceStatus = SequenceStatus.OK,
                     scheduledTime = currentSequence[callsign]!!
                 )
@@ -72,12 +134,13 @@ class AmanDmanSequence {
             if (isNowInAah) {
                 inAah[callsign] = true
                 val finalTime = if (lastSequenced == null) {
-                    maxOf(current.estimatedTime, referenceTime)
+                    maxOf(nextArrival.estimatedTime, referenceTime)
                 } else {
-                    current.calculateFinalTime(referenceTime, lastSequenced)
+                    val earliestSafeLandingTime = calculateSafeLandingTime(referenceTime, lastSequenced.wakeCategory, nextArrival)
+                    maxOf(nextArrival.estimatedTime, earliestSafeLandingTime)
                 }
                 currentSequence[callsign] = finalTime
-                val updatedEvent = current.copy(
+                val updatedEvent = nextArrival.copy(
                     sequenceStatus = SequenceStatus.OK,
                     scheduledTime = finalTime
                 )
@@ -88,7 +151,7 @@ class AmanDmanSequence {
             }
 
             inAah[callsign] = false
-            result += current.copy(sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE)
+            result += nextArrival.copy(sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE)
         }
 
         rebuildSequence()
@@ -103,8 +166,8 @@ class AmanDmanSequence {
     private fun rebuildSequence() {
         val sorted = currentSequence.entries
             .mapNotNull { (callsign, scheduledTime) ->
-                latestEventForCallsign(callsign)?.let { occurrence ->
-                    Triple(callsign, scheduledTime, occurrence)
+                findArrivalEvent(callsign)?.let { arrivalEvent ->
+                    Triple(callsign, scheduledTime, arrivalEvent)
                 }
             }
             .sortedBy { it.second }
@@ -117,26 +180,34 @@ class AmanDmanSequence {
             if (i == 0) {
                 currentSequence[callsign] = maxOf(currentTime, occurrence.estimatedTime)
             } else {
-                val (leaderCs, _, _) = sorted[i - 1]
-                val leaderLatest = latestEventForCallsign(leaderCs) ?: continue
-                val requiredSpacingTime = occurrence.calculateFinalTime(currentSequence[leaderCs]!!, leaderLatest)
-                currentSequence[callsign] = maxOf(currentTime, requiredSpacingTime)
+                val (leaderCallSign, _, _) = sorted[i - 1]
+                val leader = findArrivalEvent(leaderCallSign) ?: continue
+                val requiredSpacingTime = calculateSafeLandingTime(currentSequence[leaderCallSign]!!, leader.wakeCategory, occurrence)
+                currentSequence[callsign] = maxOf(currentTime, occurrence.estimatedTime, requiredSpacingTime)
             }
         }
     }
 
-    private fun latestEventForCallsign(callsign: String): RunwayArrivalEvent? {
+    private fun findArrivalEvent(callsign: String): RunwayArrivalEvent? {
         return latestArrivals.find { it.callsign == callsign }
     }
 
-    private fun RunwayArrivalEvent.calculateFinalTime(
-        referenceTime: Instant,
-        leader: RunwayArrivalEvent
+    /**
+     * Calculates the final scheduled time for an aircraft based on the leader's wake turbulence category.
+     *
+     * @param leaderSta The scheduled time of the preceding aircraft in the sequence.
+     * @param leaderWtc The wake turbulence category of the preceding aircraft.
+     * @param follower The aircraft for which the final time is being calculated.
+     */
+    private fun calculateSafeLandingTime(
+        leaderSta: Instant,
+        leaderWtc: Char,
+        follower: RunwayArrivalEvent,
     ): Instant {
-        val spacingNm = nmSpacingMap[Pair(leader.wakeCategory, this.wakeCategory)] ?: 3.0
-        val requiredSpacing = nmToDuration(spacingNm)
-        val earliestTime = referenceTime + requiredSpacing
-        return maxOf(this.estimatedTime, earliestTime)
+        val spacingNm = nmSpacingMap[Pair(leaderWtc, follower.wakeCategory)] ?: 3.0
+        val requiredSpacing = nmToDuration(spacingNm, follower.landingIas)
+        val earliestTime = leaderSta + requiredSpacing
+        return earliestTime
     }
 
     /**
@@ -156,7 +227,7 @@ class AmanDmanSequence {
         Pair('J', 'L') to 8.0,
     )
 
-    private fun nmToDuration(distanceNm: Double, groundSpeedKt: Double = 140.0): Duration {
+    private fun nmToDuration(distanceNm: Double, groundSpeedKt: Int): Duration {
         val hours = distanceNm / groundSpeedKt
         return (hours * 3600).seconds
     }

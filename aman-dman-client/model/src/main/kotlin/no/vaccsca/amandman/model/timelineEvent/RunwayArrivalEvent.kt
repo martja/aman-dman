@@ -15,12 +15,13 @@ data class RunwayArrivalEvent(
     override val wakeCategory: Char,
     override val airportIcao: String,
     val assignedStar: String?,
+    val assignedStarOk: Boolean,
     val flightLevel: Int,
     val pressureAltitude: Int,
     val groundSpeed: Int,
     val trackingController: String?,
     val descentTrajectory: List<TrajectoryPoint>,
-    val basedOnNavdata: Boolean,
     val withinActiveAdvisoryHorizon: Boolean,
-    val sequenceStatus: SequenceStatus
+    val sequenceStatus: SequenceStatus,
+    val landingIas: Int,
 ) : RunwayEvent(timelineId, scheduledTime, runway, airportIcao, estimatedTime), Flight

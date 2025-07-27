@@ -3,6 +3,7 @@ package no.vaccsca.amandman.controller
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
+import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 
 interface ControllerInterface {
     fun onReloadSettingsRequested()
@@ -22,4 +23,5 @@ interface ControllerInterface {
     fun move(callsign: String, newScheduledTime: Instant)
     fun onRecalculateSequenceClicked(callSign: String? = null)
     fun onRemoveTimelineClicked(timelineConfig: TimelineConfig)
+    fun onLabelDragged(callsign: String, newInstant: Instant)
 }

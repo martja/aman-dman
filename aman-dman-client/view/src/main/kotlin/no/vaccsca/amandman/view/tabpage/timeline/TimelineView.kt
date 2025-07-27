@@ -12,6 +12,7 @@ import java.awt.GridBagLayout
 import java.awt.Rectangle
 import javax.swing.JLayeredPane
 import javax.swing.JPanel
+import kotlin.time.Duration.Companion.seconds
 
 class TimelineView(
     val timelineConfig: TimelineConfig,
@@ -19,16 +20,16 @@ class TimelineView(
     private val controllerInterface: ControllerInterface,
 ) : JLayeredPane() {
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
-    private val palettePanel = TimelineOverlay(timelineConfig, this, controllerInterface)
+    private val labelContainer = TimelineOverlay(timelineConfig, this, controllerInterface)
     private val isDual = timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
     private val timeScale = TimeScale(this, selectedTimeRange, !isDual, controllerInterface)
 
     init {
         layout = null // JLayeredPane requires explicit bounds for components
         add(basePanel)
-        add(palettePanel)
+        add(labelContainer)
         setLayer(basePanel, DEFAULT_LAYER)
-        setLayer(palettePanel, PALETTE_LAYER)
+        setLayer(labelContainer, PALETTE_LAYER)
 
         val scaleWidth = 60
         val listWidth = 280
@@ -70,12 +71,12 @@ class TimelineView(
         }
 
         selectedTimeRange.addListener {
-            palettePanel.repaint()
+            labelContainer.repaint()
         }
     }
 
     fun updateTimelineData(timelineData: TimelineData) {
-        palettePanel.updateTimelineData(timelineData)
+        labelContainer.updateTimelineData(timelineData)
         timeScale.updateTimelineData(timelineData)
     }
 
@@ -85,6 +86,13 @@ class TimelineView(
         return (height - pixelsPerSecond * (instant.epochSeconds - selectedTimeRange.value.start.epochSeconds)).toInt()
     }
 
+    fun calculateInstantForYPosition(y: Int): Instant {
+        val timespanSeconds = selectedTimeRange.value.end.epochSeconds - selectedTimeRange.value.start.epochSeconds
+        val pixelsPerSecond = height.toFloat() / timespanSeconds.toFloat()
+        val secondsFromStart = (height - y) / pixelsPerSecond
+        return selectedTimeRange.value.start + secondsFromStart.toLong().seconds
+    }
+
     fun getScaleBounds(): Rectangle {
         return timeScale.bounds
     }
@@ -92,6 +100,10 @@ class TimelineView(
     override fun doLayout() {
         super.doLayout()
         basePanel.setBounds(0, 0, width, height) // Resize base panel dynamically
-        palettePanel.setBounds(0, 0, width, height)
+        labelContainer.setBounds(0, 0, width, height)
+    }
+
+    fun updateDraggedLabel(callsign: String, proposedTime: Instant, available: Boolean) {
+        labelContainer.updateDraggedLabel(callsign, proposedTime, available)
     }
 }

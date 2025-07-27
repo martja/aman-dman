@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.view
 
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineGroup
 import no.vaccsca.amandman.controller.ControllerInterface
 import no.vaccsca.amandman.model.SequenceStatus
@@ -67,6 +68,17 @@ class TabView(
             .count { it.sequenceStatus == SequenceStatus.FOR_MANUAL_REINSERTION }
 
         topBar.updateNonSeqNumbers(numberOfNonSeq)
+    }
+
+    fun updateDraggedLabel(
+        callsign: String,
+        proposedTime: Instant,
+        isAvailable: Boolean,
+    ) {
+        val items = timelineScrollPane.viewport.view as JPanel
+        items.components.filterIsInstance<TimelineView>().forEach { timelineView ->
+            timelineView.updateDraggedLabel(callsign, proposedTime, isAvailable)
+        }
     }
 
     fun updateTimelines(timelineGroup: TimelineGroup) {

@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.view
 
+import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.TimelineGroup
 import no.vaccsca.amandman.controller.ControllerInterface
@@ -127,6 +128,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         if (tabIndex >= 0) {
             tabPane.removeTabAt(tabIndex)
         }
+    }
+
+    override fun updateDraggedLabel(callsign: String, newInstant: Instant, isAvailable: Boolean) {
+        tabPane.components.filterIsInstance<TabView>()
+            .forEach { it.updateDraggedLabel(callsign, newInstant, isAvailable) }
     }
 
     override fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig?) {

@@ -197,6 +197,12 @@ class Controller(
         // TODO: unsubscribe from inbounds if no timelines left
     }
 
+    override fun onLabelDragged(callsign: String, newInstant: Instant) {
+        // Check if the new scheduled time is available
+        val isAvailable = service.isTimeSlotAvailable(callsign, newInstant)
+        view.updateDraggedLabel(callsign, newInstant, isAvailable)
+    }
+
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
         registerTimeline(
             config.groupId,

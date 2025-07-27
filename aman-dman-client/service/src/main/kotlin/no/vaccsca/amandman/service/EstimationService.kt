@@ -51,9 +51,10 @@ object EstimationService {
             airportIcao = arrivalAirportIcao,
             descentTrajectory = descentTrajectory,
             timelineId = 0,
-            basedOnNavdata = star != null,
+            assignedStarOk = star != null,
             withinActiveAdvisoryHorizon = false,
-            sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE
+            sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE,
+            landingIas = performance.landingVat
         )
     }
 }

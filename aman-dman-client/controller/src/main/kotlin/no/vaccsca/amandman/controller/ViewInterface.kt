@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.controller
 
+import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.TimelineGroup
 import no.vaccsca.amandman.model.TrajectoryPoint
@@ -22,4 +23,5 @@ interface ViewInterface {
     fun updateTab(airportIcao: String, tabData: TabData)
     fun removeTab(airportIcao: String)
     fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>)
+    fun updateDraggedLabel(callsign: String, newInstant: Instant, isAvailable: Boolean)
 }
