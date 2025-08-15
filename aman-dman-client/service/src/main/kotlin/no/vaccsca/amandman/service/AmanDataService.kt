@@ -3,17 +3,15 @@ package no.vaccsca.amandman.service
 import no.vaccsca.amandman.integration.amanConfig.AircraftPerformanceData
 import no.vaccsca.amandman.integration.atcClient.AtcClient
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.service.LiveDataHandler
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
-import no.vaccsca.amandman.model.AmanDmanSequence
 import no.vaccsca.amandman.integration.NavdataRepository
-import no.vaccsca.amandman.integration.weather.WeatherDataRepository
+import no.vaccsca.amandman.model.SequenceStatus
+import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalEvent
 
 class AmanDataService(
-    private val amanDmanSequence: AmanDmanSequence,
     private val navdataRepository: NavdataRepository,
     private val atcClient: AtcClient
 ) {
@@ -21,11 +19,34 @@ class AmanDataService(
 
     private var weatherData: VerticalWeatherProfile? = null
 
+    private var latestArrivals = listOf<RunwayArrivalEvent>()
+
+    private var sequence: Sequence = Sequence(
+        //aah = emptyMap(),
+        sequecencePlaces = emptyList(),
+    )
+
     fun subscribeForInbounds(icao: String) {
         atcClient.collectArrivalsFor(icao) { arrivals ->
             val runwayArrivalEvents = createRunwayArrivalEvents(arrivals)
-            val sequencedArrivals = amanDmanSequence.updateSequence(runwayArrivalEvents)
-            livedataInterface.onLiveData(sequencedArrivals)
+            val sequenceItems = runwayArrivalEvents.map {
+                AircraftSequenceCandidate(
+                    callsign = it.callsign,
+                    preferredTime = it.estimatedTime,
+                    landingIas = it.landingIas,
+                    wakeCategory = it.wakeCategory
+                )
+            }
+            sequence = AmanDmanSequenceService.updateSequence(sequence, sequenceItems)
+            latestArrivals = runwayArrivalEvents.map { arrivalEvent ->
+                val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
+                arrivalEvent.copy(
+                    scheduledTime = sequenceSchedule ?: arrivalEvent.scheduledTime,
+                    sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
+                )
+            }
+
+            livedataInterface.onLiveData(latestArrivals)
         }
     }
 
@@ -44,7 +65,7 @@ class AmanDataService(
 
     fun suggestScheduledTime(callsign: String, scheduledTime: Instant) {
         if (isTimeSlotAvailable(callsign, scheduledTime)) {
-            amanDmanSequence.suggestScheduledTime(callsign, scheduledTime)
+            sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, callsign, scheduledTime)
         } else {
             println("Time slot is not available for $callsign at $scheduledTime")
         }
@@ -52,9 +73,9 @@ class AmanDataService(
 
     fun reSchedule(callSign: String?) {
         if (callSign == null) {
-            amanDmanSequence.reSchedule()
+            sequence = AmanDmanSequenceService.reSchedule(sequence)
         } else {
-            amanDmanSequence.removeFromSequence(callSign)
+            sequence = AmanDmanSequenceService.removeFromSequence(sequence, callSign)
         }
     }
 
@@ -62,14 +83,14 @@ class AmanDataService(
         callsign: String,
         scheduledTime: Instant
     ): Boolean {
-        return amanDmanSequence.isTimeSlotAvailable(callsign, scheduledTime)
+        return AmanDmanSequenceService.isTimeSlotAvailable(sequence, callsign, scheduledTime)
     }
 
     /**
      * Automatically schedules aircraft inside the AAH (Active Advisory Horizon)
      */
     fun autoScheduleTimeline(timelineConfig: TimelineConfig) {
-        amanDmanSequence.autoSchedueInsideAAH()
+        AmanDmanSequenceService.autoSchedueInsideAAH()
     }
 
 }

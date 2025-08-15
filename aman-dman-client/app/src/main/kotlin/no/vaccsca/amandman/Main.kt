@@ -3,7 +3,6 @@ package no.vaccsca.amandman
 import com.jtattoo.plaf.hifi.HiFiLookAndFeel
 import no.vaccsca.amandman.controller.Controller
 import no.vaccsca.amandman.integration.atcClient.AtcClientEuroScope
-import no.vaccsca.amandman.model.AmanDmanSequence
 import no.vaccsca.amandman.integration.NavdataRepository
 import no.vaccsca.amandman.integration.weather.WeatherDataRepository
 import no.vaccsca.amandman.service.AmanDataService
@@ -39,7 +38,6 @@ fun main() {
     fun initializeApplication() {
         // --- Model ---
         val navdataRepository = NavdataRepository()
-        val sequence = AmanDmanSequence()
         val weatherDataRepository = WeatherDataRepository()
 
         // --- View ---
@@ -52,7 +50,7 @@ fun main() {
         )
 
         // --- Service ---
-        val service = AmanDataService(sequence, navdataRepository, atcClient)
+        val service = AmanDataService(navdataRepository, atcClient)
 
         // --- Controller ---
         val controller = Controller(service, view, weatherDataRepository)
