@@ -24,7 +24,7 @@ class AmanDataService(
     private var sequence: Sequence = Sequence(emptyList())
         set(value) = run {
             field = value
-            refreshUIWithUpdatedSequence()
+            onSequenceUpdated()
         }
 
     fun subscribeForInbounds(icao: String) {
@@ -48,17 +48,21 @@ class AmanDataService(
                     sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
                 )
             }
-
-            livedataInterface.onLiveData(latestArrivals)
         }
     }
 
     private fun createRunwayArrivalEvents(arrivalJsons: List<ArrivalJson>) =
         arrivalJsons.mapNotNull { arrival ->
+            val aircraftPerformance = try {
+                AircraftPerformanceData.get(arrival.icaoType)
+            } catch (e: Exception) {
+                println("Error fetching performance data for ${arrival.icaoType}: ${e.message}")
+                return@mapNotNull null
+            }
             arrival.toRunwayArrivalEvent(
                 star = navdataRepository.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway },
                 weatherData = weatherData,
-                performance = AircraftPerformanceData.get(arrival.icaoType)
+                performance = aircraftPerformance
             )
         }
 
@@ -100,16 +104,48 @@ class AmanDataService(
      * Refreshes the UI with the current sequence data by updating the latest arrivals
      * with the current sequence information and notifying the UI through the live data interface
      */
-    private fun refreshUIWithUpdatedSequence() {
-        val updatedArrivals = latestArrivals.map { arrivalEvent ->
-            val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
-            arrivalEvent.copy(
-                scheduledTime = sequenceSchedule ?: arrivalEvent.scheduledTime,
-                sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
-            )
+    private fun onSequenceUpdated() {
+        val updatedArrivals = latestArrivals
+            .map { arrivalEvent -> arrivalEvent.updateScheduledTime() }
+            .sortedByDescending { it.scheduledTime }
+
+        val sequencedArrivals = if (updatedArrivals.size <= 1) {
+            // Handle single or empty list - no zipWithNext needed
+            updatedArrivals.map { it.withDistanceToPreceding(null) }
+        } else {
+            // Process pairs and add the last element
+            val pairedArrivals = updatedArrivals.zipWithNext { a, b -> a.withDistanceToPreceding(b) }
+            val lastArrival = updatedArrivals.last().withDistanceToPreceding(null)
+            (pairedArrivals + lastArrival).reversed()
         }
-        latestArrivals = updatedArrivals
-        livedataInterface.onLiveData(updatedArrivals)
-        livedataInterface.onSequenceChanged()
+
+        latestArrivals = sequencedArrivals
+        livedataInterface.onLiveData(sequencedArrivals)
+    }
+
+    /**
+     * Updates the scheduled time of the RunwayArrivalEvent based on the sequence information.
+     * If the sequence has a scheduled time for the callsign, it updates the event's scheduled time
+     * and sets the sequence status accordingly.
+     */
+    private fun RunwayArrivalEvent.updateScheduledTime(): RunwayArrivalEvent {
+        val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == this.callsign }?.scheduledTime
+        return this.copy(
+            scheduledTime = sequenceSchedule ?: this.scheduledTime,
+            sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
+        )
+    }
+
+    /**
+     * Calculates the distance to the preceding aircraft based on the
+     * descent trajectory which included the remaining track miles
+     */
+    private fun RunwayArrivalEvent.withDistanceToPreceding(next: RunwayArrivalEvent?): RunwayArrivalEvent {
+        val distanceToPreceding = if (next != null) {
+            this.descentTrajectory.first().remainingDistance - next.descentTrajectory.first().remainingDistance
+        } else {
+            this.descentTrajectory.first().remainingDistance
+        }
+        return this.copy(distanceToPreceding = distanceToPreceding)
     }
 }

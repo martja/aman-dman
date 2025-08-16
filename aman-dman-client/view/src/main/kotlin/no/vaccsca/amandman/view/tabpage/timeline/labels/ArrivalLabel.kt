@@ -71,7 +71,7 @@ class ArrivalLabel(
         output += fixInboundEvent.icaoType.padEnd(5)
         output += wakeCategoryText(fixInboundEvent.wakeCategory)
         output += ttlTtgText(fixInboundEvent, 4)
-        output += remainingDistance.roundToInt().toString().padStart(5)
+        output += fixInboundEvent.distanceToPreceding?.roundToInt().toString().padStart(5)
         output += "</pre></html>"
 
         text = output

@@ -191,6 +191,7 @@ class TimelineOverlay(
                                 return
                             }
                             isDraggingLabel = false
+                            proposedTime = null // Reset proposed time after dragging
                             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                             val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
                             controllerInterface.move(flight.callsign, newInstant)

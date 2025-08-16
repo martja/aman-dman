@@ -24,4 +24,5 @@ data class RunwayArrivalEvent(
     val withinActiveAdvisoryHorizon: Boolean,
     val sequenceStatus: SequenceStatus,
     val landingIas: Int,
+    val distanceToPreceding: Float? = null,
 ) : RunwayEvent(timelineId, scheduledTime, runway, airportIcao, estimatedTime), Flight

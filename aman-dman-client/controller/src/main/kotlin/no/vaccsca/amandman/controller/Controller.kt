@@ -103,9 +103,6 @@ class Controller(
                 entry.value.lastTimestamp < cutoffTime
             }
         }
-    }
-
-    override fun onSequenceChanged() {
         updateViewFromCachedData()
     }
 

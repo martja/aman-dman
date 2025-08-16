@@ -4,5 +4,4 @@ import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 
 interface LiveDataHandler {
     fun onLiveData(amanData: List<TimelineEvent>)
-    fun onSequenceChanged()
 }

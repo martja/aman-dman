@@ -126,8 +126,7 @@ object AmanDmanSequenceService {
         val arrivalToCheck = findSequenceItem(currentSequence.sequecencePlaces.map { it.item }, callsign)
 
         if (arrivalToCheck == null) {
-            // Something is wrong, the arrival event should exist
-            println("Error: Arrival event for callsign $callsign not found in the latest arrivals.")
+            // The aircraft is not in the sequence yet
             return false
         }
 
