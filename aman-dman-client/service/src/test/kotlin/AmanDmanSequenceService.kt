@@ -219,6 +219,53 @@ class AmanDmanSequenceService {
         assertEquals("CANDIDATE123", updatedSequencePlaces[1].item.id)
         assertEquals("FOLLOW123", updatedSequencePlaces[2].item.id)
     }
+
+    @Test
+    fun `Should fail when inserting aircraft causes insufficient spacing with follower`() {
+        val now = Clock.System.now()
+
+        // Create a sequence with minimal but sufficient spacing
+        val leading = makeSequenceCandidate(
+            callsign = "LEAD123",
+            preferredTime = now + 10.minutes,
+            wakeCategory = 'M'  // Medium aircraft
+        )
+        val trailing = makeSequenceCandidate(
+            callsign = "TRAIL123",
+            preferredTime = now + 12.minutes,  // Only 2 minutes after leading (minimal spacing)
+            wakeCategory = 'L'  // Light aircraft
+        )
+
+        val sequence = Sequence(
+            sequecencePlaces = listOf(
+                SequencePlace(scheduledTime = leading.preferredTime, item = leading),
+                SequencePlace(scheduledTime = trailing.preferredTime, item = trailing)
+            )
+        )
+
+        // Insert a Heavy aircraft that wants to go between them
+        val newAircraft = makeSequenceCandidate(
+            callsign = "NEW123",
+            preferredTime = now + 11.minutes,  // Wants to go exactly between them
+            wakeCategory = 'H'  // Heavy aircraft - requires MORE spacing behind it
+        )
+
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(newAircraft))
+
+        val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
+
+        // The critical check: Heavy -> Light requires 6nm spacing
+        val heavyToLight = sortedPlaces.find { it.item.id == "NEW123" }!!
+        val lightAircraft = sortedPlaces.find { it.item.id == "TRAIL123" }!!
+
+        val actualSpacing = lightAircraft.scheduledTime - heavyToLight.scheduledTime
+        val requiredSpacing = (6.0 / 150 * 3600).seconds  // Heavy->Light = 6nm at 150kt
+
+        assert(actualSpacing >= requiredSpacing) {
+            "Heavy->Light spacing violation: actual=${actualSpacing}, required=${requiredSpacing}"
+        }
+    }
+
     // Helper functions //////////////////////////////
 
     private fun makeSequenceCandidate(

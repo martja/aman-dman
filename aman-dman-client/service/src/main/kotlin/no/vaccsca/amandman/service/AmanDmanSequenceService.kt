@@ -153,16 +153,19 @@ object AmanDmanSequenceService {
     fun updateSequence(currentSequence: Sequence, candidates: List<SequenceCandidate>): Sequence {
         val existingIds = currentSequence.sequecencePlaces.map { it.item.id }.toSet()
         val newCandidates = candidates.filter { it.id !in existingIds }.sortedBy { it.preferredTime }
-        val newSequencePlaces = currentSequence.sequecencePlaces.toMutableList()
+        val newSequencePlaces = currentSequence.sequecencePlaces.sortedBy { it.scheduledTime }.toMutableList()
 
         for (newCandidate in newCandidates) {
             if (!newCandidate.isInAAH()) continue
             var scheduledTime = newCandidate.preferredTime
+
             while (true) {
-                // Find the closest leader (already scheduled) before or at this time
+                // Find the closest leader before or at this time
                 val leader = newSequencePlaces
                     .filter { it.scheduledTime <= scheduledTime }
                     .maxByOrNull { it.scheduledTime }
+
+                // Check spacing with leader
                 if (leader != null) {
                     val requiredSpacingTime = calculateSafeLandingTime(
                         referenceTime = leader.scheduledTime,
@@ -174,11 +177,32 @@ object AmanDmanSequenceService {
                         continue
                     }
                 }
-                // Check that this time does not conflict with any preceding aircraft
-                // (no need to check following aircraft, as we do not move them)
+
+                // Check spacing with follower (aircraft that would come after this insertion)
+                val follower = newSequencePlaces
+                    .filter { it.scheduledTime > scheduledTime }
+                    .minByOrNull { it.scheduledTime }
+
+                if (follower != null) {
+                    val requiredFollowerTime = calculateSafeLandingTime(
+                        referenceTime = scheduledTime,
+                        leader = newCandidate as AircraftSequenceCandidate,
+                        follower = follower.item as AircraftSequenceCandidate
+                    )
+                    if (follower.scheduledTime < requiredFollowerTime) {
+                        // Need to find a later time that doesn't violate follower spacing
+                        scheduledTime = follower.scheduledTime - nmToDuration(
+                            nmSpacingMap[Pair(newCandidate.wakeCategory, follower.item.wakeCategory)] ?: 3.0,
+                            follower.item.landingIas
+                        )
+                        continue
+                    }
+                }
+
                 break
             }
-            // Insert at the correct position to keep the list sorted by scheduledTime
+
+            // Insert at the correct position
             val insertIdx = newSequencePlaces.indexOfFirst { it.scheduledTime > scheduledTime }
             val place = SequencePlace(
                 item = newCandidate as AircraftSequenceCandidate,

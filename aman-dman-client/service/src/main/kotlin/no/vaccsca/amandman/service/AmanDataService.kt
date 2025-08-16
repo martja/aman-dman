@@ -21,9 +21,11 @@ class AmanDataService(
 
     private var latestArrivals = listOf<RunwayArrivalEvent>()
 
-    private val sequenceLock = Any()
     private var sequence: Sequence = Sequence(emptyList())
-        set(value) = synchronized(sequenceLock) { field = value }.also { refreshUIWithUpdatedSequence() }
+        set(value) = run {
+            field = value
+            refreshUIWithUpdatedSequence()
+        }
 
     fun subscribeForInbounds(icao: String) {
         atcClient.collectArrivalsFor(icao) { arrivals ->
