@@ -20,8 +20,8 @@ interface ControllerInterface {
     fun onRemoveTab(airportIcao: String)
     fun onOpenLandingRatesWindow()
     fun onOpenNonSequencedWindow()
-    fun move(callsign: String, newScheduledTime: Instant)
-    fun onRecalculateSequenceClicked(callSign: String? = null)
+    fun move(sequenceId: String, callsign: String, newScheduledTime: Instant)
+    fun onRecalculateSequenceClicked(sequenceId: String, callSign: String? = null)
     fun onRemoveTimelineClicked(timelineConfig: TimelineConfig)
-    fun onLabelDragged(callsign: String, newInstant: Instant)
+    fun onLabelDragged(sequenceId: String, callsign: String, newInstant: Instant)
 }

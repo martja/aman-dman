@@ -178,15 +178,16 @@ class Controller(
         view.openNonSequencedWindow()
     }
 
-    override fun move(callsign: String, newScheduledTime: Instant) {
+    override fun move(sequenceId: String, callsign: String, newScheduledTime: Instant) {
         service.suggestScheduledTime(
+            sequenceId,
             callsign,
             newScheduledTime
         )
     }
 
-    override fun onRecalculateSequenceClicked(callSign: String?) {
-        service.reSchedule(callSign)
+    override fun onRecalculateSequenceClicked(sequenceId: String, callSign: String?) {
+        service.reSchedule(sequenceId, callSign)
     }
 
     override fun onRemoveTimelineClicked(timelineConfig: TimelineConfig) {
@@ -197,9 +198,9 @@ class Controller(
         // TODO: unsubscribe from inbounds if no timelines left
     }
 
-    override fun onLabelDragged(callsign: String, newInstant: Instant) {
+    override fun onLabelDragged(sequenceId: String, callsign: String, newInstant: Instant) {
         // Check if the new scheduled time is available
-        val isAvailable = service.isTimeSlotAvailable(callsign, newInstant)
+        val isAvailable = service.isTimeSlotAvailable(sequenceId, callsign, newInstant)
         view.updateDraggedLabel(callsign, newInstant, isAvailable)
     }
 

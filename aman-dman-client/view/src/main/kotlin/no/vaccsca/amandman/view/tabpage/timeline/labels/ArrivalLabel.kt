@@ -45,7 +45,7 @@ class ArrivalLabel(
 
         val rescheduleItem = JMenuItem("Re-schedule")
         rescheduleItem.addActionListener {
-            controllerInterface.onRecalculateSequenceClicked(arrivalEvent.callsign)
+            controllerInterface.onRecalculateSequenceClicked(arrivalEvent.airportIcao, arrivalEvent.callsign)
         }
 
         popup.add(rescheduleItem)

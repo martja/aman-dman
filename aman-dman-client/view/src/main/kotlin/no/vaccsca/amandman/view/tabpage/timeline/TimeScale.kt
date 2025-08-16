@@ -119,7 +119,7 @@ class TimeScale(
         val popup = JPopupMenu()
         popup.add("Re-calculate full sequence").apply {
             addActionListener {
-                controllerInterface.onRecalculateSequenceClicked()
+                controllerInterface.onRecalculateSequenceClicked(timelineView.timelineConfig.airportIcao)
             }
         }
 

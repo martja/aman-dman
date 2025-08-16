@@ -19,15 +19,14 @@ class AmanDataService(
 
     private var weatherData: VerticalWeatherProfile? = null
 
-    private var latestArrivals = listOf<RunwayArrivalEvent>()
-
-    private var sequence: Sequence = Sequence(emptyList())
-        set(value) = run {
-            field = value
-            onSequenceUpdated()
-        }
+    // ID of the sequence, typically the airport ICAO code
+    private val arrivalsCache: MutableMap<String, List<RunwayArrivalEvent>> = mutableMapOf()
+    private val sequences: MutableMap<String, Sequence> = mutableMapOf()
 
     fun subscribeForInbounds(icao: String) {
+        sequences.computeIfAbsent(icao) { Sequence(emptyList()) }
+        arrivalsCache.computeIfAbsent(icao) { emptyList() }
+
         atcClient.collectArrivalsFor(icao) { arrivals ->
             val runwayArrivalEvents = createRunwayArrivalEvents(arrivals)
             val sequenceItems = runwayArrivalEvents.map {
@@ -38,16 +37,18 @@ class AmanDataService(
                     wakeCategory = it.wakeCategory
                 )
             }
-            val aircraftToRemove = sequence.sequecencePlaces.map { it.item.id }.filter { it !in runwayArrivalEvents.map { it.callsign } }
-            val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequence, *aircraftToRemove.toTypedArray())
-            sequence = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems)
-            latestArrivals = runwayArrivalEvents.map { arrivalEvent ->
-                val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
+
+            val aircraftToRemove = sequences[icao]!!.sequecencePlaces.map { it.item.id }.filter { it !in runwayArrivalEvents.map { it.callsign } }
+            val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequences[icao]!!, *aircraftToRemove.toTypedArray())
+            sequences[icao] = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems)
+            arrivalsCache[icao] = runwayArrivalEvents.map { arrivalEvent ->
+                val sequenceSchedule = sequences[icao]!!.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
                 arrivalEvent.copy(
                     scheduledTime = sequenceSchedule ?: arrivalEvent.scheduledTime,
                     sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
                 )
             }
+            onSequenceUpdated(icao)
         }
     }
 
@@ -70,27 +71,30 @@ class AmanDataService(
         weatherData = data
     }
 
-    fun suggestScheduledTime(callsign: String, scheduledTime: Instant) {
-        if (isTimeSlotAvailable(callsign, scheduledTime)) {
-            sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, callsign, scheduledTime)
+    fun suggestScheduledTime(sequenceId: String, callsign: String, scheduledTime: Instant) {
+        if (isTimeSlotAvailable(sequenceId, callsign, scheduledTime)) {
+            sequences[sequenceId] = AmanDmanSequenceService.suggestScheduledTime(sequences[sequenceId]!!, callsign, scheduledTime)
+            onSequenceUpdated(sequenceId)
         } else {
             println("Time slot is not available for $callsign at $scheduledTime")
         }
     }
 
-    fun reSchedule(callSign: String?) {
+    fun reSchedule(sequenceId: String, callSign: String?) {
         if (callSign == null) {
-            sequence = AmanDmanSequenceService.reSchedule(sequence)
+            sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequences[sequenceId]!!)
         } else {
-            sequence = AmanDmanSequenceService.removeFromSequence(sequence, callSign)
+            sequences[sequenceId] = AmanDmanSequenceService.removeFromSequence(sequences[sequenceId]!!, callSign)
         }
+        onSequenceUpdated(sequenceId)
     }
 
     fun isTimeSlotAvailable(
+        sequenceId: String,
         callsign: String,
         scheduledTime: Instant
     ): Boolean {
-        return AmanDmanSequenceService.isTimeSlotAvailable(sequence, callsign, scheduledTime)
+        return AmanDmanSequenceService.isTimeSlotAvailable(sequences[sequenceId]!!, callsign, scheduledTime)
     }
 
     /**
@@ -104,9 +108,12 @@ class AmanDataService(
      * Refreshes the UI with the current sequence data by updating the latest arrivals
      * with the current sequence information and notifying the UI through the live data interface
      */
-    private fun onSequenceUpdated() {
+    private fun onSequenceUpdated(sequenceId: String) {
+        val sequence = sequences[sequenceId] ?: return
+        val latestArrivals = arrivalsCache[sequenceId] ?: return
+
         val updatedArrivals = latestArrivals
-            .map { arrivalEvent -> arrivalEvent.updateScheduledTime() }
+            .map { arrivalEvent -> arrivalEvent.updateScheduledTime(sequence) }
             .sortedByDescending { it.scheduledTime }
 
         val sequencedArrivals = if (updatedArrivals.size <= 1) {
@@ -119,7 +126,7 @@ class AmanDataService(
             (pairedArrivals + lastArrival).reversed()
         }
 
-        latestArrivals = sequencedArrivals
+        arrivalsCache[sequenceId] = sequencedArrivals
         livedataInterface.onLiveData(sequencedArrivals)
     }
 
@@ -128,7 +135,7 @@ class AmanDataService(
      * If the sequence has a scheduled time for the callsign, it updates the event's scheduled time
      * and sets the sequence status accordingly.
      */
-    private fun RunwayArrivalEvent.updateScheduledTime(): RunwayArrivalEvent {
+    private fun RunwayArrivalEvent.updateScheduledTime(sequence: Sequence): RunwayArrivalEvent {
         val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == this.callsign }?.scheduledTime
         return this.copy(
             scheduledTime = sequenceSchedule ?: this.scheduledTime,
