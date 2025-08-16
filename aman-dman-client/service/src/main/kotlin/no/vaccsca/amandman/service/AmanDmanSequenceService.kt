@@ -102,9 +102,9 @@ object AmanDmanSequenceService {
      * Removes an aircraft from the sequence and the Active Advisory Horizon (AAH),
      * allowing it to be re-sequenced.
      */
-    fun removeFromSequence(sequence: Sequence, callsign: String): Sequence =
+    fun removeFromSequence(sequence: Sequence, vararg callsigns: String): Sequence =
         sequence.copy(
-            sequecencePlaces = sequence.sequecencePlaces.filter { it.item.id != callsign }.toList()
+            sequecencePlaces = sequence.sequecencePlaces.filter { it.item.id !in arrayOf(*callsigns) }.toList()
         )
 
     /**
@@ -152,7 +152,7 @@ object AmanDmanSequenceService {
 
     fun updateSequence(currentSequence: Sequence, candidates: List<SequenceCandidate>): Sequence {
         val existingIds = currentSequence.sequecencePlaces.map { it.item.id }.toSet()
-        val newCandidates = candidates.filter { it.id !in existingIds }
+        val newCandidates = candidates.filter { it.id !in existingIds }.sortedBy { it.preferredTime }
         val newSequencePlaces = currentSequence.sequecencePlaces.toMutableList()
 
         for (newCandidate in newCandidates) {

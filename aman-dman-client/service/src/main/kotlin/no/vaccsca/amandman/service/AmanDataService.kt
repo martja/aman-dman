@@ -22,10 +22,8 @@ class AmanDataService(
     private var latestArrivals = listOf<RunwayArrivalEvent>()
 
     private val sequenceLock = Any()
-    private var sequence: Sequence = Sequence(
-        //aah = emptyMap(),
-        sequecencePlaces = emptyList(),
-    )
+    private var sequence: Sequence = Sequence(emptyList())
+        set(value) = synchronized(sequenceLock) { field = value }.also { refreshUIWithUpdatedSequence() }
 
     fun subscribeForInbounds(icao: String) {
         atcClient.collectArrivalsFor(icao) { arrivals ->
@@ -38,9 +36,9 @@ class AmanDataService(
                     wakeCategory = it.wakeCategory
                 )
             }
-            synchronized(sequenceLock) {
-                sequence = AmanDmanSequenceService.updateSequence(sequence, sequenceItems)
-            }
+            val aircraftToRemove = sequence.sequecencePlaces.map { it.item.id }.filter { it !in runwayArrivalEvents.map { it.callsign } }
+            val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequence, *aircraftToRemove.toTypedArray())
+            sequence = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems)
             latestArrivals = runwayArrivalEvents.map { arrivalEvent ->
                 val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
                 arrivalEvent.copy(
@@ -67,26 +65,18 @@ class AmanDataService(
     }
 
     fun suggestScheduledTime(callsign: String, scheduledTime: Instant) {
-        synchronized(sequenceLock) {
-            if (isTimeSlotAvailable(callsign, scheduledTime)) {
-                sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, callsign, scheduledTime)
-                // Trigger immediate UI update after sequence change
-                refreshUIWithUpdatedSequence()
-            } else {
-                println("Time slot is not available for $callsign at $scheduledTime")
-            }
+        if (isTimeSlotAvailable(callsign, scheduledTime)) {
+            sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, callsign, scheduledTime)
+        } else {
+            println("Time slot is not available for $callsign at $scheduledTime")
         }
     }
 
     fun reSchedule(callSign: String?) {
-        synchronized(sequenceLock) {
-            if (callSign == null) {
-                sequence = AmanDmanSequenceService.reSchedule(sequence)
-            } else {
-                sequence = AmanDmanSequenceService.removeFromSequence(sequence, callSign)
-            }
-            // Trigger immediate UI update after sequence change
-            refreshUIWithUpdatedSequence()
+        if (callSign == null) {
+            sequence = AmanDmanSequenceService.reSchedule(sequence)
+        } else {
+            sequence = AmanDmanSequenceService.removeFromSequence(sequence, callSign)
         }
     }
 
