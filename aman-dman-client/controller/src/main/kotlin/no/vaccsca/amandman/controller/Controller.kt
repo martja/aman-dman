@@ -105,6 +105,10 @@ class Controller(
         }
     }
 
+    override fun onSequenceChanged() {
+        updateViewFromCachedData()
+    }
+
     private fun updateViewFromCachedData() {
         val snapshot: List<TimelineEvent>
         synchronized(lock) {
@@ -182,7 +186,6 @@ class Controller(
             callsign,
             newScheduledTime
         )
-        view.updateTimelineGroups(timelineGroups)
     }
 
     override fun onRecalculateSequenceClicked(callSign: String?) {

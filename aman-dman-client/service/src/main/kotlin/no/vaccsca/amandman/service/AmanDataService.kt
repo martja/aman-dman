@@ -21,6 +21,7 @@ class AmanDataService(
 
     private var latestArrivals = listOf<RunwayArrivalEvent>()
 
+    private val sequenceLock = Any()
     private var sequence: Sequence = Sequence(
         //aah = emptyMap(),
         sequecencePlaces = emptyList(),
@@ -37,7 +38,9 @@ class AmanDataService(
                     wakeCategory = it.wakeCategory
                 )
             }
-            sequence = AmanDmanSequenceService.updateSequence(sequence, sequenceItems)
+            synchronized(sequenceLock) {
+                sequence = AmanDmanSequenceService.updateSequence(sequence, sequenceItems)
+            }
             latestArrivals = runwayArrivalEvents.map { arrivalEvent ->
                 val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
                 arrivalEvent.copy(
@@ -64,18 +67,26 @@ class AmanDataService(
     }
 
     fun suggestScheduledTime(callsign: String, scheduledTime: Instant) {
-        if (isTimeSlotAvailable(callsign, scheduledTime)) {
-            sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, callsign, scheduledTime)
-        } else {
-            println("Time slot is not available for $callsign at $scheduledTime")
+        synchronized(sequenceLock) {
+            if (isTimeSlotAvailable(callsign, scheduledTime)) {
+                sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, callsign, scheduledTime)
+                // Trigger immediate UI update after sequence change
+                refreshUIWithUpdatedSequence()
+            } else {
+                println("Time slot is not available for $callsign at $scheduledTime")
+            }
         }
     }
 
     fun reSchedule(callSign: String?) {
-        if (callSign == null) {
-            sequence = AmanDmanSequenceService.reSchedule(sequence)
-        } else {
-            sequence = AmanDmanSequenceService.removeFromSequence(sequence, callSign)
+        synchronized(sequenceLock) {
+            if (callSign == null) {
+                sequence = AmanDmanSequenceService.reSchedule(sequence)
+            } else {
+                sequence = AmanDmanSequenceService.removeFromSequence(sequence, callSign)
+            }
+            // Trigger immediate UI update after sequence change
+            refreshUIWithUpdatedSequence()
         }
     }
 
@@ -93,4 +104,20 @@ class AmanDataService(
         AmanDmanSequenceService.autoSchedueInsideAAH()
     }
 
+    /**
+     * Refreshes the UI with the current sequence data by updating the latest arrivals
+     * with the current sequence information and notifying the UI through the live data interface
+     */
+    private fun refreshUIWithUpdatedSequence() {
+        val updatedArrivals = latestArrivals.map { arrivalEvent ->
+            val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
+            arrivalEvent.copy(
+                scheduledTime = sequenceSchedule ?: arrivalEvent.scheduledTime,
+                sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
+            )
+        }
+        latestArrivals = updatedArrivals
+        livedataInterface.onLiveData(updatedArrivals)
+        livedataInterface.onSequenceChanged()
+    }
 }

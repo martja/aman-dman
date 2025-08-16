@@ -18,7 +18,9 @@ import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics
 import java.awt.Polygon
+import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.awt.event.MouseMotionAdapter
 import java.text.SimpleDateFormat
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -34,6 +36,7 @@ class TimelineOverlay(
     private val pointDiameter = 6
     private val scaleMargin = 30
     private val labelWidth = 240
+    private val labelHeight = 20
 
     private val labels: HashMap<String, TimelineLabel> = hashMapOf()
 
@@ -44,6 +47,8 @@ class TimelineOverlay(
     private var proposedTimeIsAvailable: Boolean = false
 
     private val timeFormat = SimpleDateFormat("HH:mm")
+
+    private var isDraggingLabel: Boolean = false
 
     private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -70,7 +75,7 @@ class TimelineOverlay(
         super.doLayout()
         rearrangeLabels()
         val scale = timelineView.getScaleBounds()
-        timelineNameLabel.setBounds(scale.x - 10, scale.y + scale.height - 20, 100, 20)
+        timelineNameLabel.setBounds(scale.x - 10, scale.y + scale.height - labelHeight, 100, labelHeight)
     }
 
     fun updateDraggedLabel(callsign: String, proposedTime: Instant, available: Boolean) {
@@ -88,7 +93,7 @@ class TimelineOverlay(
 
         leftLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
-            val centerY = dotY - label.height / 2
+            val centerY = dotY - labelHeight / 2
 
             val labelX = timelineView.getScaleBounds().x - labelWidth - scaleMargin
             val labelY =
@@ -97,13 +102,13 @@ class TimelineOverlay(
                 else
                     min(previousTopLeft!! - 3, centerY)
 
-            label.setBounds(labelX, labelY, labelWidth, 20)
-            previousTopLeft = label.y - label.height
+            label.setBounds(labelX, labelY, labelWidth, labelHeight)
+            previousTopLeft = label.y - labelHeight
         }
 
         rightLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
-            val centerY = dotY - label.height / 2
+            val centerY = dotY - labelHeight / 2
 
             val labelX = timelineView.getScaleBounds().x + timelineView.getScaleBounds().width + scaleMargin
             val labelY =
@@ -112,8 +117,8 @@ class TimelineOverlay(
                 else
                     min(previousTopRight!! - 3, centerY)
 
-            label.setBounds(labelX, labelY, labelWidth, 20)
-            previousTopRight = label.y - label.height
+            label.setBounds(labelX, labelY, labelWidth, labelHeight)
+            previousTopRight = label.y - labelHeight
         }
     }
 
@@ -153,7 +158,7 @@ class TimelineOverlay(
             val labelX = if (isOnRightSide) label.x else label.x + label.width
             val dotX = if (isOnRightSide) scaleBounds.x + scaleBounds.width  else scaleBounds.x
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
-            g.drawLine(labelX, label.y + label.height / 2, dotX, dotY)
+            g.drawLine(labelX, label.y + labelHeight / 2, dotX, dotY)
             g.fillOval(
                 dotX - pointDiameter / 2,
                 dotY - pointDiameter / 2,
@@ -179,18 +184,21 @@ class TimelineOverlay(
                 } else {
                     val newLabel = timelineEvent.createLabel()
                     newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
-                    newLabel.addMouseListener(object : java.awt.event.MouseAdapter() {
-                        override fun mouseClicked(e: java.awt.event.MouseEvent) {
-                            handleLabelClick(newLabel)
-                        }
-                        override fun mouseReleased(e: java.awt.event.MouseEvent) {
+                    newLabel.addMouseListener(object : MouseAdapter() {
+                        override fun mouseReleased(e: MouseEvent) {
+                            if (!isDraggingLabel) {
+                                handleLabelClick(newLabel)
+                                return
+                            }
+                            isDraggingLabel = false
                             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                             val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
                             controllerInterface.move(flight.callsign, newInstant)
                         }
                     })
-                    newLabel.addMouseMotionListener(object : java.awt.event.MouseMotionAdapter() {
+                    newLabel.addMouseMotionListener(object : MouseMotionAdapter() {
                         override fun mouseDragged(e: MouseEvent) {
+                            isDraggingLabel = true
                             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                             val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
                             controllerInterface.onLabelDragged(flight.callsign, newInstant)
