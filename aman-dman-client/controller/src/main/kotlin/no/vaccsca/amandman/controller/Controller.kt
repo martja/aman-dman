@@ -204,6 +204,10 @@ class Controller(
         view.updateDraggedLabel(callsign, newInstant, isAvailable)
     }
 
+    override fun setMinimumSpacingDistance(minimumSpacingDistanceNm: Double) {
+        service.setMinimumSpacing(minimumSpacingDistanceNm)
+    }
+
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
         registerTimeline(
             config.groupId,

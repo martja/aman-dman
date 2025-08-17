@@ -5,6 +5,7 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.controller.ControllerInterface
 import no.vaccsca.amandman.common.*
 import no.vaccsca.amandman.model.Flight
+import no.vaccsca.amandman.model.SequenceStatus
 import no.vaccsca.amandman.model.dto.TimelineData
 import no.vaccsca.amandman.model.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.timelineEvent.FixInboundEvent
@@ -158,6 +159,13 @@ class TimelineOverlay(
             val labelX = if (isOnRightSide) label.x else label.x + label.width
             val dotX = if (isOnRightSide) scaleBounds.x + scaleBounds.width  else scaleBounds.x
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
+
+            g.color = if ((label.timelineEvent as RunwayArrivalEvent).sequenceStatus == SequenceStatus.OK) {
+                Color.WHITE
+            } else {
+                Color.GRAY
+            }
+
             g.drawLine(labelX, label.y + labelHeight / 2, dotX, dotY)
             g.fillOval(
                 dotX - pointDiameter / 2,

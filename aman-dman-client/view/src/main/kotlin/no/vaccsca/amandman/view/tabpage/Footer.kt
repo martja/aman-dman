@@ -16,8 +16,18 @@ class Footer(
     private val profileButton = JButton("Profile")
     private val reloadButton = JButton("Reload settings")
     private val newTabButton = JButton("New tab")
+    private val spacingSelector = JSpinner(
+        SpinnerNumberModel(0.0, 0.0, 15.0, 1)
+    ).apply {
+        toolTipText = "Minimum spacing on final"
+        addChangeListener {
+            val value = value as Double
+            controllerInterface.setMinimumSpacingDistance(value)
+        }
+    }
 
     init {
+        add(spacingSelector)
         add(reloadButton)
         add(metButton)
         add(profileButton)

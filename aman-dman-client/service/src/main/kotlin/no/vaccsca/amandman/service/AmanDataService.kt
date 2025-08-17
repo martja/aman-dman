@@ -22,6 +22,7 @@ class AmanDataService(
     // ID of the sequence, typically the airport ICAO code
     private val arrivalsCache: MutableMap<String, List<RunwayArrivalEvent>> = mutableMapOf()
     private val sequences: MutableMap<String, Sequence> = mutableMapOf()
+    private var minimumSpacingNm = 3.0 // Minimum spacing in nautical miles
 
     fun subscribeForInbounds(icao: String) {
         sequences.computeIfAbsent(icao) { Sequence(emptyList()) }
@@ -40,7 +41,7 @@ class AmanDataService(
 
             val aircraftToRemove = sequences[icao]!!.sequecencePlaces.map { it.item.id }.filter { it !in runwayArrivalEvents.map { it.callsign } }
             val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequences[icao]!!, *aircraftToRemove.toTypedArray())
-            sequences[icao] = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems)
+            sequences[icao] = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm)
             arrivalsCache[icao] = runwayArrivalEvents.map { arrivalEvent ->
                 val sequenceSchedule = sequences[icao]!!.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
                 arrivalEvent.copy(
@@ -67,13 +68,21 @@ class AmanDataService(
             )
         }
 
+    fun setMinimumSpacing(newSpacing: Double) {
+        this.minimumSpacingNm = newSpacing
+        sequences.forEach { (sequenceId, sequence) ->
+            sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequence)
+            onSequenceUpdated(sequenceId)
+        }
+    }
+
     fun updateWeatherData(data: VerticalWeatherProfile?) {
         weatherData = data
     }
 
     fun suggestScheduledTime(sequenceId: String, callsign: String, scheduledTime: Instant) {
         if (isTimeSlotAvailable(sequenceId, callsign, scheduledTime)) {
-            sequences[sequenceId] = AmanDmanSequenceService.suggestScheduledTime(sequences[sequenceId]!!, callsign, scheduledTime)
+            sequences[sequenceId] = AmanDmanSequenceService.suggestScheduledTime(sequences[sequenceId]!!, callsign, scheduledTime, minimumSpacingNm)
             onSequenceUpdated(sequenceId)
         } else {
             println("Time slot is not available for $callsign at $scheduledTime")

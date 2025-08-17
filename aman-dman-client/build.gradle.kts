@@ -39,5 +39,5 @@ allprojects {
 }
 
 application {
-    mainClass = "MainKt"
+    mainClass = "no.vaccsca.amandman.MainKt"
 }

@@ -57,14 +57,6 @@ class ArrivalLabel(
         var output = "<html><pre>"
         val fixInboundEvent = timelineEvent as RunwayArrivalEvent
 
-        this.defaultForegroundColor = if (fixInboundEvent.sequenceStatus == SequenceStatus.OK) {
-            Color.WHITE
-        } else {
-            Color.GRAY
-        }
-
-        val remainingDistance = fixInboundEvent.descentTrajectory.firstOrNull()?.remainingDistance ?: 0f
-
         output += fixInboundEvent.runway.padEnd(4)
         output += (fixInboundEvent.assignedStar?.substring(0, 3) ?: "").padEnd(4)
         output += fixInboundEvent.callsign.padEnd(9)
