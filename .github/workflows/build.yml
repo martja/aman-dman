@@ -38,4 +38,4 @@ jobs:
         with:
           name: AMAN-ES-Bridge-${{ env.VERSION }}
           path: |
-            Release/*.dll
+            euroscope-bridge/Release/*.dll

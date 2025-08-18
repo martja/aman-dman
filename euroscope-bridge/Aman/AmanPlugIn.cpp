@@ -23,8 +23,14 @@
         str.pop_back();
 #define DISPLAY_WARNING(str) DisplayUserMessage("Aman", "Warning", str, true, true, true, true, false);
 
+// Plugin metadata
+#define MY_PLUGIN_NAME          "ILS Window Plugin"
+#define MY_PLUGIN_VERSION       PLUGIN_VERSION
+#define MY_PLUGIN_DEVELOPER     CONTRIBUTORS
+#define MY_PLUGIN_COPYRIGHT     "GPL v3"
+
 AmanPlugIn::AmanPlugIn() 
-    : CPlugIn(COMPATIBILITY_CODE, "AMAN/DMAN bridge", "0.0.1", "EvenAR", "Unstable")
+    : CPlugIn(COMPATIBILITY_CODE, MY_PLUGIN_NAME, MY_PLUGIN_VERSION, MY_PLUGIN_DEVELOPER, MY_PLUGIN_COPYRIGHT)
     , AmanServer()
     , jsonSerializer()
 {
