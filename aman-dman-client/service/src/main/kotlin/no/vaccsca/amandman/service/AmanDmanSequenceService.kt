@@ -41,7 +41,7 @@ data class AircraftSequenceCandidate(
 
 object AmanDmanSequenceService {
 
-    val AAH_THRESHOLD: Duration = 30.minutes
+    val AAH_THRESHOLD: Duration = 10.minutes
 
     /**
      * Clears the current sequence, forcing a full rescheduling of all aircraft.
