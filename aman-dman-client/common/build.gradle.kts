@@ -1,4 +1,4 @@
-group = "org.example"
+group = "no.vaccsca.amandman"
 version = "1.0-SNAPSHOT"
 
 repositories {

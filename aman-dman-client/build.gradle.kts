@@ -4,7 +4,7 @@ plugins {
     id("com.gradleup.shadow") version "8.3.6"
 }
 
-group = "org.example"
+group = "no.vaccsca.amandman"
 version = "1.0-SNAPSHOT"
 
 dependencies {
@@ -39,5 +39,5 @@ allprojects {
 }
 
 application {
-    mainClass = "org.example.MainKt"
+    mainClass = "no.vaccsca.amandman.MainKt"
 }

@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm")
 }
 
-group = "org.example"
+group = "no.vaccsca.amandman"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -11,9 +11,11 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+    testImplementation("io.mockk:mockk:1.14.2")
+
     implementation(project(":common"))
     implementation(project(":integration"))
-
+    implementation(project(":model"))
 }
 
 tasks.test {
