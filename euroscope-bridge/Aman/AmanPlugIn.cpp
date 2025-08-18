@@ -24,7 +24,7 @@
 #define DISPLAY_WARNING(str) DisplayUserMessage("Aman", "Warning", str, true, true, true, true, false);
 
 // Plugin metadata
-#define MY_PLUGIN_NAME          "ILS Window Plugin"
+#define MY_PLUGIN_NAME          "AMAN-ES-Bridge"
 #define MY_PLUGIN_VERSION       PLUGIN_VERSION
 #define MY_PLUGIN_DEVELOPER     CONTRIBUTORS
 #define MY_PLUGIN_COPYRIGHT     "GPL v3"
@@ -46,15 +46,19 @@ AmanPlugIn::~AmanPlugIn() {
 }
 
 void AmanPlugIn::OnTimer(int Counter) {
+    std::cout << "OnTimer called, Counter: " << Counter << std::endl;
+    
     for each(auto & timeline in inboundsSubscriptions) {
         auto inbounds = collectResponseToInboundsSubscription(timeline);
         auto inboundsJson = jsonSerializer.getJsonOfArrivals(timeline->requestId, inbounds);
+        std::cout << "Enqueueing inbounds message: " << inboundsJson.substr(0, 100) << "..." << std::endl;
         enqueueMessage(inboundsJson);
     }
 
     for each(auto & timeline in outboundsSubscriptions) {
         auto outbounds = collectResponseToOutboundsSubscription(timeline);
         auto outboundsJson = jsonSerializer.getJsonOfDepartures(timeline->requestId, outbounds);
+        std::cout << "Enqueueing outbounds message: " << outboundsJson.substr(0, 100) << "..." << std::endl;
         enqueueMessage(outboundsJson);
     }
 }

@@ -3,6 +3,7 @@
 #include <queue>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include <string>
 #include <functional>
@@ -22,9 +23,14 @@ protected:
 
 private:
     void serverLoop();
+    void handleClientConnection();
+    void senderThreadLoop();
 
     std::thread serverThread;
-    bool isRunning;
+    std::thread senderThread;
+    std::atomic<bool> isRunning;
+    std::atomic<bool> clientConnected;
+    SOCKET listenSocket;
     SOCKET clientSocket;
 
     std::queue<std::string> messageQueue;
