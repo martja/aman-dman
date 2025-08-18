@@ -9,7 +9,6 @@ Debug/
 enc_temp_folder/
 *.exp
 *.pdb
-*.lib
 *.ipdb
 *.iobj
 .sentry-native
