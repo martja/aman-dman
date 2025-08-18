@@ -1,0 +1,260 @@
+package no.vaccsca.amandman.view
+
+import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.TimelineConfig
+import no.vaccsca.amandman.common.TimelineGroup
+import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.controller.ViewInterface
+import no.vaccsca.amandman.model.TrajectoryPoint
+import no.vaccsca.amandman.model.dto.TabData
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.view.tabpage.Footer
+import no.vaccsca.amandman.view.windows.LandingRatesGraph
+import no.vaccsca.amandman.view.windows.NewTimelineForm
+import no.vaccsca.amandman.view.windows.NonSeqView
+import no.vaccsca.amandman.view.windows.VerticalWindView
+import java.awt.BorderLayout
+import java.awt.Dimension
+import javax.swing.*
+import kotlin.math.roundToInt
+
+class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
+
+    override lateinit var controllerInterface: ControllerInterface
+
+    private val tabPane = JTabbedPane()
+
+    private val nonSeqView = NonSeqView()
+    private val verticalWindView = VerticalWindView()
+    private val descentProfileVisualizationView = no.vaccsca.amandman.view.DescentProfileVisualization()
+    private val landingRatesGraph = LandingRatesGraph()
+
+    private var newTimelineForm: JDialog? = null
+    private var windDialog: JDialog? = null
+    private var descentProfileDialog: JDialog? = null
+    private var landingRatesDialog: JDialog? = null
+    private var nonSequencedDialog: JDialog? = null
+    private var footer: Footer? = null
+
+    init {
+        defaultCloseOperation = EXIT_ON_CLOSE
+        layout = BorderLayout()
+    }
+
+    fun openWindow() {
+
+        controllerInterface.onReloadSettingsRequested()
+        footer = Footer(controllerInterface)
+
+        setSize(1000, 800)
+        setLocationRelativeTo(null) // Center the window
+        add(tabPane, BorderLayout.CENTER)
+        add(footer, BorderLayout.SOUTH)
+
+        isVisible = true // Show the frame
+
+        tabPane.addMouseListener(object : java.awt.event.MouseAdapter() {
+            override fun mousePressed(e: java.awt.event.MouseEvent) {
+                maybeShowPopup(e)
+            }
+
+            override fun mouseReleased(e: java.awt.event.MouseEvent) {
+                maybeShowPopup(e)
+            }
+
+            private fun maybeShowPopup(e: java.awt.event.MouseEvent) {
+                if (e.isPopupTrigger) {
+                    val tabIndex = tabPane.indexAtLocation(e.x, e.y)
+                    if (tabIndex >= 0) {
+                        val airportIcao = (tabPane.getComponentAt(tabIndex) as no.vaccsca.amandman.view.TabView).airportIcao
+                        controllerInterface.onTabMenu(tabIndex, airportIcao)
+                    }
+                }
+            }
+        })
+        //isAlwaysOnTop = true
+    }
+
+    override fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>) {
+        val popup = JPopupMenu()
+        val tab = tabPane.getComponentAt(tabIndex) as no.vaccsca.amandman.view.TabView
+
+        val loadTimelineMenu = JMenu("Add timeline")
+        if (availableTimelines.isEmpty()) {
+            loadTimelineMenu.isEnabled = false
+        } else {
+            availableTimelines.sortedBy { it.title }.forEach { timeline ->
+                val item = JMenuItem(timeline.title)
+                item.addActionListener {
+                    controllerInterface!!.onAddTimelineButtonClicked(tab.airportIcao, timeline)
+                }
+                loadTimelineMenu.add(item)
+            }
+        }
+
+        val addTimelineItem = JMenuItem("Create timeline ...")
+        addTimelineItem.addActionListener {
+            controllerInterface!!.onCreateNewTimelineClicked(tab.airportIcao)
+        }
+
+        val removeItem = JMenuItem("Remove tab")
+        removeItem.addActionListener {
+            controllerInterface!!.onRemoveTab(tab.airportIcao)
+        }
+
+        popup.add(loadTimelineMenu)
+        popup.add(addTimelineItem)
+        popup.add(removeItem)
+        popup.show(tabPane, tab.x, tab.y)
+    }
+
+    override fun updateTab(airportIcao: String, tabData: TabData) {
+        tabPane.components.filterIsInstance<no.vaccsca.amandman.view.TabView>()
+            .filter { it.airportIcao == airportIcao }
+            .forEach { it.updateAmanData(tabData) }
+
+        if (airportIcao == "ENGM") {
+            val allArrivalEvents = tabData.timelinesData.flatMap { it.left + it.right }
+            landingRatesGraph.updateData(allArrivalEvents)
+            nonSeqView.updateNonSeqData(
+                tabData.timelinesData.flatMap { it.left + it.right }
+            )
+        }
+
+    }
+
+    override fun removeTab(airportIcao: String) {
+        val tabIndex = tabPane.components.indexOfFirst { (it as no.vaccsca.amandman.view.TabView).airportIcao == airportIcao }
+        if (tabIndex >= 0) {
+            tabPane.removeTabAt(tabIndex)
+        }
+    }
+
+    override fun updateDraggedLabel(callsign: String, newInstant: Instant, isAvailable: Boolean) {
+        tabPane.components.filterIsInstance<TabView>()
+            .forEach { it.updateDraggedLabel(callsign, newInstant, isAvailable) }
+    }
+
+    override fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig?) {
+        if (newTimelineForm != null) {
+            newTimelineForm?.isVisible = true
+        } else {
+            newTimelineForm = JDialog(this, "New timeline for $groupId").apply {
+                defaultCloseOperation = DISPOSE_ON_CLOSE
+                contentPane = NewTimelineForm(controllerInterface!!, groupId, existingConfig)
+                pack()
+                setLocationRelativeTo(null)
+                isVisible = true
+            }
+        }
+    }
+
+    override fun closeTimelineForm() {
+        newTimelineForm?.isVisible = false
+        newTimelineForm?.dispose()
+        newTimelineForm = null
+    }
+
+    override fun updateDescentTrajectory(callsign: String, trajectory: List<TrajectoryPoint>) {
+        val currentFlightLevel = (trajectory.first().altitude / 100.0).roundToInt() // Convert to FL
+        descentProfileDialog?.title = "$callsign - calculated descent profile from FL$currentFlightLevel"
+        descentProfileVisualizationView.setDescentSegments(trajectory)
+    }
+
+    override fun showTabContextMenu(tabIndex: Int, airportIcao: String) {
+        val tab = tabPane.getComponentAt(tabIndex) as no.vaccsca.amandman.view.TabView
+        controllerInterface?.onTabMenu(tabIndex, airportIcao)
+    }
+
+    override fun openMetWindow() {
+        if (windDialog != null) {
+            windDialog?.isVisible = true
+        } else {
+            windDialog = JDialog(this, "Vertical wind profile").apply {
+                add(verticalWindView)
+                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+                setLocationRelativeTo(this@AmanDmanMainFrame)
+                preferredSize = Dimension(300, 700)
+                isVisible = true
+                pack()
+            }
+        }
+    }
+
+    override fun openLandingRatesWindow() {
+        if (landingRatesDialog != null) {
+            landingRatesDialog?.isVisible = true
+        } else {
+            landingRatesDialog = JDialog(this, "Landing Rates").apply {
+                // Add your landing rates visualization component here
+                add(landingRatesGraph)
+                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+                setLocationRelativeTo(this@AmanDmanMainFrame)
+                preferredSize = Dimension(800, 600)
+                isVisible = true
+                pack()
+            }
+        }
+    }
+
+    override fun openNonSequencedWindow() {
+        if (nonSequencedDialog != null) {
+            nonSequencedDialog?.isVisible = true
+        } else {
+            nonSequencedDialog = JDialog(this, "Non-Sequenced Flights").apply {
+                add(nonSeqView)
+                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+                setLocationRelativeTo(this@AmanDmanMainFrame)
+                preferredSize = Dimension(300, 300)
+                isVisible = true
+                pack()
+            }
+        }
+    }
+
+    override fun updateWeatherData(weather: VerticalWeatherProfile?) {
+        verticalWindView.update(weather)
+    }
+
+    override fun openDescentProfileWindow() {
+        if (descentProfileDialog != null) {
+            descentProfileDialog?.isVisible = true
+        } else {
+            descentProfileDialog = JDialog(this).apply {
+                add(descentProfileVisualizationView)
+                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+                setLocationRelativeTo(this@AmanDmanMainFrame)
+                preferredSize = Dimension(800, 600)
+                isVisible = true
+                pack()
+            }
+        }
+    }
+
+    override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) {
+        // Close tabs that are not in the groups
+        for (i in tabPane.tabCount - 1 downTo 0) {
+            val tab = tabPane.getComponentAt(i) as no.vaccsca.amandman.view.TabView
+            if (timelineGroups.none { it.airportIcao == tab.airportIcao }) {
+                tabPane.removeTabAt(i)
+            }
+        }
+
+        // Add new tabs for groups that are not already present
+        for (group in timelineGroups) {
+            if (tabPane.components.none { (it as no.vaccsca.amandman.view.TabView).airportIcao == group.airportIcao }) {
+                val tabView = no.vaccsca.amandman.view.TabView(controllerInterface!!, group.airportIcao)
+                tabPane.addTab(group.name, tabView)
+            }
+        }
+
+        // Update existing tabs with new data
+        for (i in 0 until tabPane.tabCount) {
+            val tab = tabPane.getComponentAt(i) as no.vaccsca.amandman.view.TabView
+            val group = timelineGroups.find { it.airportIcao == tab.airportIcao }
+            if (group != null) {
+                tab.updateTimelines(group)
+            }
+        }
+    }
+}

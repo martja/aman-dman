@@ -1,4 +1,4 @@
-package org.example.integration
+package integration
 
 import org.jsoup.Jsoup
 import java.io.File

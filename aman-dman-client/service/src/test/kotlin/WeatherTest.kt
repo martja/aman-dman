@@ -1,4 +1,4 @@
-import org.example.util.WeatherUtils
+import no.vaccsca.amandman.service.util.WeatherUtils
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
