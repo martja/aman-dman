@@ -169,57 +169,20 @@ object AmanDmanSequenceService {
 
         for (newCandidate in newCandidates) {
             if (!newCandidate.isInAAH()) continue
-            var scheduledTime = newCandidate.preferredTime
 
-            while (true) {
-                val leader = newSequencePlaces
-                    .filter { it.scheduledTime <= scheduledTime }
-                    .maxByOrNull { it.scheduledTime }
-
-                if (leader != null) {
-                    val requiredSpacingTime = calculateSafeLandingTime(
-                        referenceTime = leader.scheduledTime,
-                        leader = leader.item as AircraftSequenceCandidate,
-                        follower = newCandidate as AircraftSequenceCandidate,
-                        minimumSeparationNm = minimumSeparationNm
-                    )
-                    if (scheduledTime < requiredSpacingTime) {
-                        scheduledTime = requiredSpacingTime
-                        continue
-                    }
-                }
-
-                val follower = newSequencePlaces
-                    .filter { it.scheduledTime > scheduledTime }
-                    .minByOrNull { it.scheduledTime }
-
-                if (follower != null) {
-                    val requiredFollowerTime = calculateSafeLandingTime(
-                        referenceTime = scheduledTime,
-                        leader = newCandidate as AircraftSequenceCandidate,
-                        follower = follower.item as AircraftSequenceCandidate,
-                        minimumSeparationNm = minimumSeparationNm
-                    )
-                    if (follower.scheduledTime < requiredFollowerTime) {
-                        val effectiveSpacing = maxOf(
-                            nmSpacingMap[Pair(newCandidate.wakeCategory, follower.item.wakeCategory)] ?: 3.0,
-                            minimumSeparationNm
-                        )
-                        scheduledTime = follower.scheduledTime - nmToDuration(
-                            effectiveSpacing,
-                            follower.item.landingIas
-                        )
-                        continue
-                    }
-                }
-                break
-            }
-
-            val insertIdx = newSequencePlaces.indexOfFirst { it.scheduledTime > scheduledTime }
-            val place = SequencePlace(
-                item = newCandidate as AircraftSequenceCandidate,
-                scheduledTime = scheduledTime
+            // Find the best insertion point without infinite loops
+            val bestTime = findBestInsertionTime(
+                newSequencePlaces,
+                newCandidate as AircraftSequenceCandidate,
+                minimumSeparationNm
             )
+
+            val insertIdx = newSequencePlaces.indexOfFirst { it.scheduledTime > bestTime }
+            val place = SequencePlace(
+                item = newCandidate,
+                scheduledTime = bestTime
+            )
+
             if (insertIdx == -1) {
                 newSequencePlaces.add(place)
             } else {
@@ -227,6 +190,94 @@ object AmanDmanSequenceService {
             }
         }
         return Sequence(sequecencePlaces = newSequencePlaces)
+    }
+
+    /**
+     * Finds the best insertion time for a new aircraft without creating deadlocks
+     */
+    private fun findBestInsertionTime(
+        existingPlaces: List<SequencePlace>,
+        newCandidate: AircraftSequenceCandidate,
+        minimumSeparationNm: Double
+    ): Instant {
+        var bestTime = newCandidate.preferredTime
+        val maxIterations = 10 // Prevent infinite loops
+        var iterations = 0
+
+        while (iterations < maxIterations) {
+            iterations++
+            var timeChanged = false
+
+            // Check leader constraint
+            val leader = existingPlaces
+                .filter { it.scheduledTime <= bestTime }
+                .maxByOrNull { it.scheduledTime }
+
+            if (leader != null) {
+                val requiredTime = calculateSafeLandingTime(
+                    referenceTime = leader.scheduledTime,
+                    leader = leader.item as AircraftSequenceCandidate,
+                    follower = newCandidate,
+                    minimumSeparationNm = minimumSeparationNm
+                )
+                if (bestTime < requiredTime) {
+                    bestTime = requiredTime
+                    timeChanged = true
+                }
+            }
+
+            // Check follower constraint - but only if we haven't just moved forward
+            if (!timeChanged) {
+                val follower = existingPlaces
+                    .filter { it.scheduledTime > bestTime }
+                    .minByOrNull { it.scheduledTime }
+
+                if (follower != null) {
+                    val requiredFollowerTime = calculateSafeLandingTime(
+                        referenceTime = bestTime,
+                        leader = newCandidate,
+                        follower = follower.item as AircraftSequenceCandidate,
+                        minimumSeparationNm = minimumSeparationNm
+                    )
+                    if (follower.scheduledTime < requiredFollowerTime) {
+                        // Move backward to create space for follower
+                        val effectiveSpacing = maxOf(
+                            nmSpacingMap[Pair(newCandidate.wakeCategory, follower.item.wakeCategory)] ?: 3.0,
+                            minimumSeparationNm
+                        )
+                        val newTime = follower.scheduledTime - nmToDuration(
+                            effectiveSpacing,
+                            follower.item.landingIas
+                        )
+                        if (newTime != bestTime) {
+                            bestTime = newTime
+                            timeChanged = true
+                        }
+                    }
+                }
+            }
+
+            // If no changes were made, we found a valid time
+            if (!timeChanged) {
+                break
+            }
+        }
+
+        // Fallback: if we couldn't find a good spot, place at preferred time or after last aircraft
+        if (iterations >= maxIterations) {
+            println("Warning: Could not find optimal insertion time for ${newCandidate.callsign}, using fallback")
+            val lastAircraft = existingPlaces.maxByOrNull { it.scheduledTime }
+            if (lastAircraft != null) {
+                bestTime = calculateSafeLandingTime(
+                    referenceTime = lastAircraft.scheduledTime,
+                    leader = lastAircraft.item as AircraftSequenceCandidate,
+                    follower = newCandidate,
+                    minimumSeparationNm = minimumSeparationNm
+                )
+            }
+        }
+
+        return bestTime
     }
 
     private fun findSequenceItem(arrivals: List<SequenceCandidate>, callsign: String): SequenceCandidate? {

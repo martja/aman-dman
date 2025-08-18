@@ -25,6 +25,7 @@ private:
     void serverLoop();
     void handleClientConnection();
     void senderThreadLoop();
+    bool sendMessageSafely(const std::string& message);
 
     std::thread serverThread;
     std::thread senderThread;
