@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  SOLUTION_FILE_PATH: euroscope-bridge
-  BUILD_CONFIGURATION: Release
-  PLATFORM: x86
-
 permissions:
   contents: write
   actions: read
@@ -24,18 +19,34 @@ jobs:
 
       - name: Decide version
         shell: bash
-        run: echo "VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV          
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
 
-      - name: Build
+      - name: Build C++ Project
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:PluginVersion="${{env.VERSION}}" /p:Contributors="TBD" ${{env.SOLUTION_FILE_PATH}} /p:Platform=${{env.PLATFORM}}
+        run: msbuild /m /p:Configuration=Release /p:PluginVersion="${{env.VERSION}}" /p:Contributors="TBD" euroscope-bridge /p:Platform=x86
+      - name: Build Gradle Project
+        run: |
+          cd aman-dman-client
+          .\gradlew.bat shadowJar
 
+      - name: Create artifacts directory structure
+        shell: bash
+        run: |
+          mkdir -p artifacts/config
+          cp euroscope-bridge/Release/*.dll artifacts/
+          cp aman-dman-client/build/libs/*.jar artifacts/
+          cp aman-dman-client/config/* artifacts/config/
+      
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: AMAN-ES-Bridge-${{ env.VERSION }}
-          path: |
-            euroscope-bridge/Release/*.dll
+          path: artifacts/

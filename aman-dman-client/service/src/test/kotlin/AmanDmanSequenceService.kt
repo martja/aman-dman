@@ -20,7 +20,7 @@ class AmanDmanSequenceService {
             wakeCategory = 'M'
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(mockArrival))
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(mockArrival), 3.0)
 
         assert(updatedSequence.sequecencePlaces.find { it.item.id == "TEST123" } != null) { "Arrival should be inserted into sequence" }
     }
@@ -38,7 +38,7 @@ class AmanDmanSequenceService {
             wakeCategory = 'M'
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(mockArrival))
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(mockArrival), 3.0)
 
         assertEquals(updatedSequence.sequecencePlaces, emptyList())
     }
@@ -65,7 +65,7 @@ class AmanDmanSequenceService {
             preferredTime = now + 10.minutes,
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(mockArrival))
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(mockArrival), 3.0)
 
         assertEquals(updatedSequence.sequecencePlaces.size, 1)
         assertEquals(updatedSequence.sequecencePlaces.first().scheduledTime, now + 5.minutes)
@@ -95,7 +95,7 @@ class AmanDmanSequenceService {
             )
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(leading, following))
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(leading, following), 3.0)
 
         assertEquals("FOLLOW123", updatedSequence.sequecencePlaces[1].item.id)
         assert(updatedSequence.sequecencePlaces[1].scheduledTime > leading.preferredTime)
@@ -117,7 +117,7 @@ class AmanDmanSequenceService {
         )
 
         val sequence = Sequence(emptyList())
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(leading, following))
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(leading, following), 3.0)
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         assertEquals(leading.preferredTime, updatedSequence.sequecencePlaces[0].scheduledTime)
@@ -146,7 +146,7 @@ class AmanDmanSequenceService {
         val sequence = Sequence(emptyList())
 
         // Act
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(firstLanding, secondLanding, thirdLanding))
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(firstLanding, secondLanding, thirdLanding), 3.0)
 
         // Assert
         assertEquals(3, updatedSequence.sequecencePlaces.size)
@@ -175,7 +175,7 @@ class AmanDmanSequenceService {
         )
         val sequence = Sequence(emptyList())
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(leading, following))
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(leading, following), 3.0)
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         assertEquals("LEAD123", updatedSequence.sequecencePlaces[0].item.id)
@@ -212,7 +212,7 @@ class AmanDmanSequenceService {
                 )
             )
         )
-        val updatedSequencePlaces = AmanDmanSequenceService.updateSequence(sequence, listOf(leading, following, candidate)).sequecencePlaces
+        val updatedSequencePlaces = AmanDmanSequenceService.updateSequence(sequence, listOf(leading, following, candidate), 3.0).sequecencePlaces
 
         assertEquals(3, updatedSequencePlaces.size)
         assertEquals("LEAD123", updatedSequencePlaces[0].item.id)
@@ -250,7 +250,7 @@ class AmanDmanSequenceService {
             wakeCategory = 'H'  // Heavy aircraft - requires MORE spacing behind it
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(newAircraft))
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(newAircraft), 3.0)
 
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
 
