@@ -28,15 +28,15 @@ class AmanDmanSequenceServiceTest {
         assertEquals("TEST123", updatedSequence.sequecencePlaces[0].item.id)
     }
 
-    // Test 2: Aircraft outside AAH should not be sequenced
+    // Test 2: Aircraft outside sequencing horizon should not be sequenced
     @Test
-    fun `Aircraft outside AAH should not be added to sequence`() {
+    fun `Aircraft outside sequencing horizon should not be added to sequence`() {
         val sequence = Sequence(emptyList())
         val now = Clock.System.now()
 
         val aircraft = makeAircraft(
             callsign = "TEST123",
-            preferredTime = now + 35.minutes // Outside AAH (30 min threshold)
+            preferredTime = now + 35.minutes // Outside sequencing horizon (30 min threshold)
         )
 
         val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(aircraft), 3.0)

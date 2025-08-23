@@ -8,10 +8,10 @@ import kotlin.time.Duration.Companion.seconds
 
 data class Sequence(
     /**
-     * A map that tracks whether an aircraft is currently within the Active Advisory Horizon (AAH).
-     * Once an aircraft is in the AAH, it will be sequenced automatically and given a final scheduled time.
+     * A map that tracks whether an aircraft is currently within the Sequencing Horizon.
+     * Once an aircraft is in the sequencing horizon, it will be sequenced automatically and given a final scheduled time.
      */
-    //val aah: Map<String, Boolean>,
+    //val sequencingHorizon: Map<String, Boolean>,
     /**
      * A map that holds the current sequence of aircraft, where the key is the callsign
      * and the value is the scheduled time for that aircraft.
@@ -42,8 +42,8 @@ data class AircraftSequenceCandidate(
 
 object AmanDmanSequenceService {
 
-    val AAH_THRESHOLD: Duration = 30.minutes
-    val FROZEN_HORIZON: Duration = 10.minutes // New: Frozen horizon where order is locked
+    val SEQUENCING_HORIZON: Duration = 30.minutes // When aircraft enter active sequencing management
+    val LOCKED_HORIZON: Duration = 10.minutes // When aircraft positions become locked/unchangeable
 
     /**
      * Clears the current sequence, forcing a full rescheduling of all aircraft.
@@ -118,7 +118,7 @@ object AmanDmanSequenceService {
     }
 
     /**
-     * Removes an aircraft from the sequence and the Active Advisory Horizon (AAH),
+     * Removes an aircraft from the sequence and the sequencing horizon,
      * allowing it to be re-sequenced.
      */
     fun removeFromSequence(sequence: Sequence, vararg callsigns: String): Sequence =
@@ -195,15 +195,15 @@ object AmanDmanSequenceService {
             allCandidates.add(updatedCandidate)
         }
 
-        // Add new candidates that are in AAH
+        // Add new candidates that are in sequencing horizon
         val existingIds = currentSequence.sequecencePlaces.map { it.item.id }.toSet()
-        val newCandidates = candidates.filter { it.id !in existingIds && it.isInAAH() }
+        val newCandidates = candidates.filter { it.id !in existingIds && it.isInSequencingHorizon() }
         allCandidates.addAll(newCandidates)
 
-        // Remove aircraft that are no longer in AAH or no longer candidates
+        // Remove aircraft that are no longer in sequencing horizon or no longer candidates
         val activeCandidateIds = candidates.map { it.id }.toSet()
         val filteredCandidates = allCandidates.filter { candidate ->
-            candidate.id in activeCandidateIds && candidate.isInAAH()
+            candidate.id in activeCandidateIds && candidate.isInSequencingHorizon()
         }
 
         // Separate manually assigned and automatically scheduled aircraft
@@ -293,7 +293,7 @@ object AmanDmanSequenceService {
     }
 
     /**
-     * Finds the best insertion time for a new aircraft, preventing overtaking of aircraft in frozen horizon
+     * Finds the best insertion time for a new aircraft, preventing overtaking of aircraft in locked horizon
      */
     private fun findBestInsertionTime(
         existingPlaces: List<SequencePlace>,
@@ -302,19 +302,19 @@ object AmanDmanSequenceService {
     ): Instant {
         var bestTime = newCandidate.preferredTime
 
-        // AMAN Compliance: Check for aircraft in frozen horizon that cannot be overtaken
-        val frozenAircraft = existingPlaces.filter { it.item.isInFrozenHorizon() }
-        val lastFrozenAircraft = frozenAircraft.maxByOrNull { it.scheduledTime }
+        // AMAN Compliance: Check for aircraft in locked horizon that cannot be overtaken
+        val lockedAircraft = existingPlaces.filter { it.item.isInLockedHorizon() }
+        val lastLockedAircraft = lockedAircraft.maxByOrNull { it.scheduledTime }
 
-        // If there are frozen aircraft, new aircraft cannot be inserted before the last frozen aircraft
-        if (lastFrozenAircraft != null && bestTime <= lastFrozenAircraft.scheduledTime) {
-            val minTimeAfterFrozen = calculateSafeLandingTime(
-                referenceTime = lastFrozenAircraft.scheduledTime,
-                leader = lastFrozenAircraft.item as AircraftSequenceCandidate,
+        // If there are locked aircraft, new aircraft cannot be inserted before the last locked aircraft
+        if (lastLockedAircraft != null && bestTime <= lastLockedAircraft.scheduledTime) {
+            val minTimeAfterLocked = calculateSafeLandingTime(
+                referenceTime = lastLockedAircraft.scheduledTime,
+                leader = lastLockedAircraft.item as AircraftSequenceCandidate,
                 follower = newCandidate,
                 minimumSeparationNm = minimumSeparationNm
             )
-            bestTime = maxOf(bestTime, minTimeAfterFrozen)
+            bestTime = maxOf(bestTime, minTimeAfterLocked)
         }
 
         // Check if there's a conflict with the leader (aircraft before preferred time)
@@ -348,8 +348,8 @@ object AmanDmanSequenceService {
                 minimumSeparationNm = minimumSeparationNm
             )
             // Only change time if there's a conflict (follower would be too close)
-            // But don't push aircraft in frozen horizon
-            if (follower.scheduledTime < requiredFollowerTime && !follower.item.isInFrozenHorizon()) {
+            // But don't push aircraft in locked horizon
+            if (follower.scheduledTime < requiredFollowerTime && !follower.item.isInLockedHorizon()) {
                 // Move to an earlier time to avoid pushing the follower
                 val effectiveSpacing = maxOf(
                     nmSpacingMap[Pair(newCandidate.wakeCategory, follower.item.wakeCategory)] ?: 3.0,
@@ -389,19 +389,19 @@ object AmanDmanSequenceService {
     }
 
     /**
-     * Checks if the aircraft is within the Active Advisory Horizon (AAH).
+     * Checks if the aircraft is within the Sequencing Horizon.
      */
-    private fun SequenceCandidate.isInAAH(): Boolean {
+    private fun SequenceCandidate.isInSequencingHorizon(): Boolean {
         val remainingTime = this.preferredTime - Clock.System.now()
-        return remainingTime < AAH_THRESHOLD
+        return remainingTime < SEQUENCING_HORIZON
     }
 
     /**
-     * Checks if the aircraft is within the Frozen Horizon where order cannot be changed.
+     * Checks if the aircraft is within the Locked Horizon where order cannot be changed.
      */
-    private fun SequenceCandidate.isInFrozenHorizon(): Boolean {
+    private fun SequenceCandidate.isInLockedHorizon(): Boolean {
         val remainingTime = this.preferredTime - Clock.System.now()
-        return remainingTime < FROZEN_HORIZON
+        return remainingTime < LOCKED_HORIZON
     }
 
     private val nmSpacingMap = mapOf(
@@ -420,10 +420,4 @@ object AmanDmanSequenceService {
         return (hours * 3600).seconds
     }
 
-    /**
-     * Automatically schedules aircraft inside the Active Advisory Horizon (AAH).
-     */
-    fun autoSchedueInsideAAH() {
-
-    }
 }
