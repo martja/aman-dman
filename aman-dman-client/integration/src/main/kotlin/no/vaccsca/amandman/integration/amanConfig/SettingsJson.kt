@@ -4,7 +4,6 @@ data class AmanDmanSettingsJson(
     //val openAutomatically: Boolean,
     val timelines: List<TimelineJson>,
     //val tagLayouts: Map<String, List<TagLayoutElementJson>>
-    val airports: Map<String, AirportConfigJson>
 )
 
 data class TimelineJson(
@@ -22,8 +21,4 @@ data class TagLayoutElementJson(
     val defaultValue: String? = null,
     val isViaFixIndicator: Boolean? = null,
     val rightAligned: Boolean? = null
-)
-
-data class AirportConfigJson(
-    val runwayModes: List<String>
 )

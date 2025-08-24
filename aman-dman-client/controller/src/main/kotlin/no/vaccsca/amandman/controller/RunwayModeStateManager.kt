@@ -15,8 +15,8 @@ class RunwayModeStateManager(private val view: ViewInterface) {
      * Updates runway statuses for an airport and triggers view update
      */
     fun updateRunwayStatuses(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>, minimumSpacingNm: Double) {
-        val runwayModes = getRunwayModesFromSettings(airportIcao)
-        val newState = RunwayModeState(airportIcao, runwayStatuses, minimumSpacingNm, runwayModes)
+        val possibleRunwayModes =  inferPossibleRunwayModes(runwayStatuses)
+        val newState = RunwayModeState(airportIcao, runwayStatuses, minimumSpacingNm, possibleRunwayModes)
 
         airportStates[airportIcao] = newState
         updateView(airportIcao, newState)
@@ -38,8 +38,8 @@ class RunwayModeStateManager(private val view: ViewInterface) {
      */
     fun refreshAllStates() {
         airportStates.forEach { (airportIcao, currentState) ->
-            val runwayModes = getRunwayModesFromSettings(airportIcao)
-            val updatedState = currentState.copy(runwayModes = runwayModes)
+            val possibleRunwayModes =  inferPossibleRunwayModes(currentState.runwayStatuses)
+            val updatedState = currentState.copy(runwayModes = possibleRunwayModes)
             airportStates[airportIcao] = updatedState
             updateView(airportIcao, updatedState)
         }
@@ -50,7 +50,11 @@ class RunwayModeStateManager(private val view: ViewInterface) {
         view.updateRunwayModes(airportIcao, displayLabels)
     }
 
-    private fun getRunwayModesFromSettings(airportIcao: String): List<String> {
-        return SettingsManager.getSettings().airports[airportIcao]?.runwayModes ?: emptyList()
+    private fun inferPossibleRunwayModes(runwayStatuses: Map<String, RunwayStatus>): List<String> {
+        val runwayNames = runwayStatuses.keys
+        val groupedByDirection = runwayNames.groupBy { it.take(2) }
+        return groupedByDirection.flatMap { (direction, runways) ->
+            runways + if (runways.size > 1) listOf(runways.sorted().joinToString("/")) else emptyList()
+        }
     }
 }

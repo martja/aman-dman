@@ -1,12 +1,4 @@
 {
-  "airports": {
-    "ENGM": {
-      "runwayModes": [ "01L", "01R","19L", "19R", "01L/01R", "19L/19R" ]
-    },
-    "ENBR": {
-      "runwayModes": [ "17", "35" ]
-    }
-  },
   "timelines": [
     {
       "airportIcao": "ENGM",

@@ -21,7 +21,7 @@ data class RunwayModeState(
         val airportLabel = Pair("[$airportIcao]", true)
         val modeLabel =
             when (activeArrivalRunways.size) {
-                0 -> Pair("No modes", false)
+                0 -> Pair("No active runway", false)
                 1 -> Pair("S${activeArrivalRunways.first()}", true)
                 else -> Pair("M${activeArrivalRunways.joinToString("/")}", true)
             }
