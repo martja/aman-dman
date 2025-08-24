@@ -1,17 +1,10 @@
 package no.vaccsca.amandman.integration.atcClient
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
-import no.vaccsca.amandman.integration.atcClient.entities.ArrivalsUpdate
-import no.vaccsca.amandman.integration.atcClient.entities.DepartureJson
-import no.vaccsca.amandman.integration.atcClient.entities.DeparturesUpdate
-import no.vaccsca.amandman.integration.atcClient.entities.IncomingMessageJson
-import no.vaccsca.amandman.integration.atcClient.entities.MessageToServer
-import no.vaccsca.amandman.integration.atcClient.entities.RegisterDeparturesMessage
-import no.vaccsca.amandman.integration.atcClient.entities.RegisterFixInboundsMessage
-import no.vaccsca.amandman.integration.atcClient.entities.UnregisterTimelineMessage
+import no.vaccsca.amandman.integration.atcClient.entities.*
 import no.vaccsca.amandman.model.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.timelineEvent.FixInboundEvent
+import kotlin.reflect.KFunction1
 
 abstract class AtcClient {
     abstract fun sendMessage(message: MessageToServer)
@@ -19,6 +12,7 @@ abstract class AtcClient {
     private val fixInboundCallbacks = mutableMapOf<Int, (List<FixInboundEvent>) -> Unit>()
     private val departureCallbacks = mutableMapOf<Int, (List<DepartureEvent>) -> Unit>()
     private val arrivalCallbacks = mutableMapOf<Int, (List<ArrivalJson>) -> Unit>()
+    private val runwayStatusCallbacks = mutableMapOf<Int, (Map<String, Map<String, RunwayStatus>>) -> Unit>()
 
     private var nextRequestId = 0
         get() {
@@ -45,10 +39,12 @@ abstract class AtcClient {
 
     fun collectArrivalsFor(
         airportIcao: String,
-        onDataReceived: (List<ArrivalJson>) -> Unit
+        onRunwayModesChanged: (Map<String, Map<String, RunwayStatus>>) -> Unit,
+        onDataReceived: (List<ArrivalJson>) -> Unit,
     ) {
         val timelineId = nextRequestId
         arrivalCallbacks[timelineId] = onDataReceived
+        runwayStatusCallbacks[timelineId] = onRunwayModesChanged
         sendMessage(
             RegisterFixInboundsMessage(
                 requestId = timelineId,
@@ -81,6 +77,9 @@ abstract class AtcClient {
             is DeparturesUpdate -> {
                 val departures = incomingMessageJson.outbounds.map { it.toDepartureEvent(incomingMessageJson.requestId) }
                 departureCallbacks[incomingMessageJson.requestId]?.invoke(departures)
+            }
+            is RunwayStatusesUpdate -> {
+                runwayStatusCallbacks[incomingMessageJson.requestId]?.invoke(incomingMessageJson.airports)
             }
         }
     }

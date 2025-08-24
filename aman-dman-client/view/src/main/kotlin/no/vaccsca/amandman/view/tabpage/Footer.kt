@@ -2,6 +2,7 @@ package no.vaccsca.amandman.view.tabpage
 
 import no.vaccsca.amandman.controller.ControllerInterface
 import no.vaccsca.amandman.view.util.Form
+import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Graphics
 import java.awt.event.MouseEvent
@@ -17,7 +18,7 @@ class Footer(
     private val reloadButton = JButton("Reload settings")
     private val newTabButton = JButton("New tab")
     private val spacingSelector = JSpinner(
-        SpinnerNumberModel(0.0, 0.0, 15.0, 1)
+        SpinnerNumberModel(3.0, 0.0, 20.0, 1)
     ).apply {
         toolTipText = "Minimum spacing on final"
         addChangeListener {
@@ -31,8 +32,11 @@ class Footer(
         add(reloadButton)
         add(metButton)
         add(profileButton)
-        add(timeLabel)
         add(newTabButton)
+        add(JSeparator(SwingConstants.VERTICAL).apply {
+            preferredSize = Dimension(2, 20)
+        })
+        add(timeLabel)
 
         // Every second, repaint the component
         Timer(1000) {

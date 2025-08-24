@@ -10,16 +10,10 @@ class TopBar(
 ) : JPanel() {
     private val nonSequencedButton = JButton("NonSeq")
     private val landingRatesButton = JButton("Landing Rates")
+    private val runwayModeList = JPanel(FlowLayout(FlowLayout.LEFT, 10, 5))
 
     init {
         layout = BorderLayout()
-
-        // Left-aligned labels
-        val leftPanel = JPanel(FlowLayout(FlowLayout.LEFT, 10, 5))
-        val toggles = listOf("S01R", "01L:3.0", "01R:3.0","19L:3.0", "19R:3.0", "01L/01R:3.0", "19L/19R:3.0")
-        toggles.forEach { labelText ->
-            leftPanel.add(ClickableLabel(labelText))
-        }
 
         landingRatesButton.addActionListener {
             controller.onOpenLandingRatesWindow()
@@ -34,7 +28,7 @@ class TopBar(
         rightPanel.add(nonSequencedButton)
         rightPanel.add(landingRatesButton)
 
-        add(leftPanel, BorderLayout.WEST)
+        add(runwayModeList, BorderLayout.WEST)
         add(rightPanel, BorderLayout.EAST)
     }
 
@@ -46,28 +40,14 @@ class TopBar(
         }
     }
 
-    private class ClickableLabel(text: String) : JLabel(text) {
-        private var active = false
-
-        init {
-            foreground = Color.GRAY
-            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-            isOpaque = false
-
-            addMouseListener(object : MouseAdapter() {
-                override fun mouseClicked(e: MouseEvent?) {
-                    active = !active
-                    foreground = if (active) Color.WHITE else Color.GRAY
-                }
-
-                override fun mouseEntered(e: MouseEvent?) {
-                    foreground = if (active) Color.WHITE else Color.LIGHT_GRAY
-                }
-
-                override fun mouseExited(e: MouseEvent?) {
-                    foreground = if (active) Color.WHITE else Color.GRAY
-                }
-            })
+    fun setRunwayModes(runwayModes: List<Pair<String, Boolean>>) {
+        runwayModeList.removeAll()
+        runwayModes.forEach { (modeName, isActive) ->
+            val label = JLabel(modeName)
+            label.foreground = if (isActive) Color.WHITE else Color.GRAY
+            runwayModeList.add(label)
         }
+        runwayModeList.revalidate()
+        runwayModeList.repaint()
     }
 }

@@ -64,9 +64,6 @@
     <ClInclude Include="AmanPlugIn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AmanAircraft.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -79,10 +76,10 @@
     <ClInclude Include="JsonMessageHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DmanAircraft.h">
+    <ClInclude Include="ServerEventsHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ServerEventsHandler.h">
+    <ClInclude Include="AmanDataTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

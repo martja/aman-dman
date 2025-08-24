@@ -43,3 +43,21 @@ public:
     int flightLevel;
     int flightPlanTas;
 };
+
+class DmanAircraft {
+public:
+    std::string callsign;
+    std::string sid;
+    std::string runway;
+    std::string icaoType;
+    char wakeCategory;
+
+    long estimatedDepartureTime;
+};
+
+struct RunwayStatus {
+    std::string airportIcao;
+    std::string runway;
+    bool isActiveForDepartures;
+    bool isActiveForArrivals;
+};

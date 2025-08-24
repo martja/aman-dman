@@ -4,16 +4,16 @@ import no.vaccsca.amandman.integration.amanConfig.AircraftPerformanceData
 import no.vaccsca.amandman.integration.atcClient.AtcClient
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
-import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.integration.NavdataRepository
+import no.vaccsca.amandman.integration.atcClient.entities.RunwayStatus
 import no.vaccsca.amandman.model.SequenceStatus
 import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalEvent
 
 class AmanDataService(
     private val navdataRepository: NavdataRepository,
-    private val atcClient: AtcClient
+    private val atcClient: AtcClient,
 ) {
     lateinit var livedataInterface: LiveDataHandler
 
@@ -28,7 +28,7 @@ class AmanDataService(
         sequences.computeIfAbsent(icao) { Sequence(emptyList()) }
         arrivalsCache.computeIfAbsent(icao) { emptyList() }
 
-        atcClient.collectArrivalsFor(icao) { arrivals ->
+        atcClient.collectArrivalsFor(icao, this::handleRunwayStatusUpdate) { arrivals ->
             val runwayArrivalEvents = createRunwayArrivalEvents(arrivals)
             val sequenceItems = runwayArrivalEvents.map {
                 AircraftSequenceCandidate(
@@ -53,6 +53,12 @@ class AmanDataService(
         }
     }
 
+    private fun handleRunwayStatusUpdate (map: Map<String, Map<String, RunwayStatus>>) {
+        map.forEach { (airportIcao, runwayStatuses) ->
+            livedataInterface.onRunwayModesUpdated(airportIcao, runwayStatuses, minimumSpacingNm)
+        }
+    }
+
     private fun createRunwayArrivalEvents(arrivalJsons: List<ArrivalJson>) =
         arrivalJsons.mapNotNull { arrival ->
             val aircraftPerformance = try {
@@ -74,6 +80,8 @@ class AmanDataService(
             sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequence)
             onSequenceUpdated(sequenceId)
         }
+        // Notify controller of the spacing change so UI can be updated
+        livedataInterface.onMinimumSpacingUpdated(newSpacing)
     }
 
     fun updateWeatherData(data: VerticalWeatherProfile?) {
@@ -104,13 +112,6 @@ class AmanDataService(
         scheduledTime: Instant
     ): Boolean {
         return AmanDmanSequenceService.isTimeSlotAvailable(sequences[sequenceId]!!, callsign, scheduledTime)
-    }
-
-    /**
-     * Automatically schedules aircraft inside the AAH (Active Advisory Horizon)
-     */
-    fun autoScheduleTimeline(timelineConfig: TimelineConfig) {
-        AmanDmanSequenceService.autoSchedueInsideAAH()
     }
 
     /**

@@ -4,6 +4,7 @@ import no.vaccsca.amandman.integration.amanConfig.SettingsManager
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.*
+import no.vaccsca.amandman.integration.atcClient.entities.RunwayStatus
 import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.dto.TabData
 import no.vaccsca.amandman.model.dto.TimelineData
@@ -30,6 +31,9 @@ class Controller(
     private val cachedAmanData = mutableMapOf<String, CachedEvent>()
     private val lock = Object()
 
+    // Replace the simple currentMinimumSpacingNm with a reactive state manager
+    private val runwayModeStateManager = RunwayModeStateManager(view)
+
     init {
         service.livedataInterface = this
         view.controllerInterface = this
@@ -43,6 +47,7 @@ class Controller(
         timelineGroups.clear()
         timelineConfigs.clear()
         view.updateTimelineGroups(timelineGroups)
+        runwayModeStateManager.refreshAllStates() // Refresh runway mode states when settings change
         loadSettingsAndOpenTabs()
     }
 
@@ -104,6 +109,18 @@ class Controller(
             }
         }
         updateViewFromCachedData()
+    }
+
+    override fun onRunwayModesUpdated(
+        airportIcao: String,
+        runwayStatuses: Map<String, RunwayStatus>,
+        minimumSpacingNm: Double
+    ) {
+        runwayModeStateManager.updateRunwayStatuses(airportIcao, runwayStatuses, minimumSpacingNm)
+    }
+
+    override fun onMinimumSpacingUpdated(minimumSpacingNm: Double) {
+        runwayModeStateManager.updateMinimumSpacing(minimumSpacingNm)
     }
 
     private fun updateViewFromCachedData() {

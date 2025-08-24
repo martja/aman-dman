@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "AmanAircraft.h"
+#include "AmanDataTypes.h"
 #include "AmanPlugIn.h"
 #include "windows.h"
 
@@ -60,6 +60,12 @@ void AmanPlugIn::OnTimer(int Counter) {
         auto outboundsJson = jsonSerializer.getJsonOfDepartures(timeline->requestId, outbounds);
         std::cout << "Enqueueing outbounds message: " << outboundsJson.substr(0, 100) << "..." << std::endl;
         enqueueMessage(outboundsJson);
+    }
+}
+
+void AmanPlugIn::OnAirportRunwayActivityChanged(void) {
+    for each(auto & timeline in inboundsSubscriptions) {
+        sendUpdatedRunwayStatuses(timeline->requestId);
     }
 }
 
@@ -138,6 +144,17 @@ std::vector<std::string> AmanPlugIn::splitString(const std::string& string, cons
     return output;
 }
 
+void AmanPlugIn::sendUpdatedRunwayStatuses(long requestId) {
+    for each(auto& timeline in inboundsSubscriptions) {
+        if (timeline->requestId != requestId)
+            continue;
+
+        auto runwayStatuses = collectRunwayStatuses(timeline->destinationAirports.size() > 0 ? timeline->destinationAirports[0] : "");
+        auto runwaysJson = jsonSerializer.getJsonOfRunwayStatuses(timeline->requestId, runwayStatuses);
+        enqueueMessage(runwaysJson);
+    }
+}
+
 void AmanPlugIn::onRequestInboundsForFix(long requestId, const std::vector<std::string>& viaFixes, const std::vector<std::string>& destinationFixes, const std::vector<std::string>& destinationAirports) {
 
     // If id exists, update the subscription
@@ -157,6 +174,8 @@ void AmanPlugIn::onRequestInboundsForFix(long requestId, const std::vector<std::
     sub->destinationFixes = destinationFixes;
     sub->destinationAirports = destinationAirports;
     inboundsSubscriptions.push_back(sub);
+
+    sendUpdatedRunwayStatuses(requestId);
 }
 
 void AmanPlugIn::onRequestOutboundsFromAirport(long requestId, const std::string& icao) {
@@ -172,6 +191,8 @@ void AmanPlugIn::onRequestOutboundsFromAirport(long requestId, const std::string
     sub->requestId = requestId;
     sub->airport = icao;
     outboundsSubscriptions.push_back(sub);
+
+    sendUpdatedRunwayStatuses(requestId);
 }
 
 void AmanPlugIn::onUnsubscribe(long requestId) {
@@ -283,6 +304,45 @@ std::vector<DmanAircraft> AmanPlugIn::getOutboundsFromAirport(const std::string&
     return departures;
 }
 
+std::vector<RunwayStatus> AmanPlugIn::collectRunwayStatuses(const std::string& airportIcao) {
+    std::vector<RunwayStatus> activeRunways;
+
+    for (auto airport = this->SectorFileElementSelectFirst(EuroScopePlugIn::SECTOR_ELEMENT_AIRPORT);
+         airport.IsValid();
+         airport = this->SectorFileElementSelectNext(airport, EuroScopePlugIn::SECTOR_ELEMENT_AIRPORT)) {
+
+        std::string currentIcao = airport.GetName();
+        if (currentIcao != airportIcao)
+            continue;
+
+        for (auto runway = this->SectorFileElementSelectFirst(EuroScopePlugIn::SECTOR_ELEMENT_RUNWAY);
+                runway.IsValid();
+                runway = this->SectorFileElementSelectNext(runway, EuroScopePlugIn::SECTOR_ELEMENT_RUNWAY)) {
+
+            auto runwayAirportName = trimString(std::string(runway.GetAirportName()));
+            if (runwayAirportName == airportIcao) {
+                for (int runwayDirection = 0; runwayDirection < 2; runwayDirection++) {
+                    if (runwayAirportName == airportIcao) {
+                        auto runwayName = trimString(std::string(runway.GetRunwayName(runwayDirection)));
+                        activeRunways.push_back({ 
+                            airportIcao,
+                            runwayName,
+                            runway.IsElementActive(true, runwayDirection), // Departures
+                            runway.IsElementActive(false, runwayDirection) // Arrivals
+                        });
+                    }
+                }
+            }
+        }
+        break; // ICAO found, no need to continue
+    }
+
+    return activeRunways;
+}
+
+inline std::string AmanPlugIn::trimString(const std::string& value) {
+    return std::regex_replace(value, std::regex("^ +| +$|( ) +"), "$1");
+}
 
 // HHMM to epoch time
 long AmanPlugIn::processDepartureTime(const std::string& departureTime) {

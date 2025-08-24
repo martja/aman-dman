@@ -14,7 +14,7 @@ object SettingsManager {
         loadSettings()
     }
 
-    fun getSettings(reload: Boolean): AmanDmanSettingsJson {
+    fun getSettings(reload: Boolean = false): AmanDmanSettingsJson {
         if (settingsJson == null || reload) {
             loadSettings()
         }

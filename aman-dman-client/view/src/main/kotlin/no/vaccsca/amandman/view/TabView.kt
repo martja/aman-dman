@@ -95,4 +95,8 @@ class TabView(
         }
         repaint()
     }
+
+    fun updateRunwayModes(runwayModes: List<Pair<String, Boolean>>) {
+        topBar.setRunwayModes(runwayModes)
+    }
 }

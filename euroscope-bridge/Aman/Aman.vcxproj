@@ -162,11 +162,10 @@
   <ItemGroup>
     <ClInclude Include="..\lib\include\EuroScopePlugIn.h" />
     <ClInclude Include="Aman.h" />
-    <ClInclude Include="AmanAircraft.h" />
+    <ClInclude Include="AmanDataTypes.h" />
     <ClInclude Include="AmanPlugIn.h" />
     <ClInclude Include="AmanServer.h" />
     <ClInclude Include="Constants.h" />
-    <ClInclude Include="DmanAircraft.h" />
     <ClInclude Include="JsonMessageHelper.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ServerEventsHandler.h" />

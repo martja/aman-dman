@@ -1,4 +1,6 @@
 #include "stdafx.h"
+
+#include <map>
 #include "JsonMessageHelper.h"
 
 #define RAPIDJSON_HAS_STDSTRING 1
@@ -65,6 +67,49 @@ const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std
     document.AddMember("type", "arrivals", allocator);
     document.AddMember("requestId", requestId, allocator);
     document.AddMember("inbounds", arrivalsArray, allocator);
+
+    StringBuffer sb;
+    Writer<StringBuffer> writer(sb);
+    document.Accept(writer);
+
+    return sb.GetString();
+}
+
+const std::string JsonMessageHelper::getJsonOfRunwayStatuses(long requestId, const std::vector<RunwayStatus>& runways) {
+    Document document;
+    document.SetObject();
+    Document::AllocatorType& allocator = document.GetAllocator();
+
+    Value airportsObj(kObjectType);
+
+    // Create nested map structure: airport ICAO -> runway ID -> arrivals/departures -> bool
+    std::map<std::string, std::map<std::string, std::map<std::string, bool>>> airportRunwayMap;
+    
+    for (const auto& rs : runways) {
+        airportRunwayMap[rs.airportIcao][rs.runway]["arrivals"] = rs.isActiveForArrivals;
+        airportRunwayMap[rs.airportIcao][rs.runway]["departures"] = rs.isActiveForDepartures;
+    }   
+
+    // Convert the nested map to RapidJSON structure
+    for (const auto& airportPair : airportRunwayMap) {
+        Value runwaysObj(kObjectType);
+        
+        for (const auto& runwayPair : airportPair.second) {
+            Value statusObj(kObjectType);
+            
+            for (const auto& statusPair : runwayPair.second) {
+                statusObj.AddMember(Value(statusPair.first, allocator).Move(), statusPair.second, allocator);
+            }
+            
+            runwaysObj.AddMember(Value(runwayPair.first, allocator).Move(), statusObj, allocator);
+        }
+        
+        airportsObj.AddMember(Value(airportPair.first, allocator).Move(), runwaysObj, allocator);
+    }
+
+    document.AddMember("type", "runwayStatuses", allocator);
+    document.AddMember("requestId", requestId, allocator);
+    document.AddMember("airports", airportsObj, allocator);
 
     StringBuffer sb;
     Writer<StringBuffer> writer(sb);

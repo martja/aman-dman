@@ -34,7 +34,8 @@ data class AircraftSequenceCandidate(
     val callsign: String,
     override val preferredTime: Instant,
     val landingIas: Int,
-    val wakeCategory: Char
+    val wakeCategory: Char,
+    val assignedRunway: String? = null
 ) : SequenceCandidate(
     id = callsign,
     preferredTime = preferredTime,
@@ -351,13 +352,17 @@ object AmanDmanSequenceService {
             // But don't push aircraft in locked horizon
             if (follower.scheduledTime < requiredFollowerTime && !follower.item.isInLockedHorizon()) {
                 // Move to an earlier time to avoid pushing the follower
-                val effectiveSpacing = maxOf(
-                    nmSpacingMap[Pair(newCandidate.wakeCategory, follower.item.wakeCategory)] ?: 3.0,
+                val effectiveSpacing = if (areOnDifferentRunways(newCandidate, follower.item as AircraftSequenceCandidate)) {
                     minimumSeparationNm
-                )
+                } else {
+                    maxOf(
+                        nmSpacingMap[Pair(newCandidate.wakeCategory, (follower.item as AircraftSequenceCandidate).wakeCategory)] ?: 3.0,
+                        minimumSeparationNm
+                    )
+                }
                 bestTime = follower.scheduledTime - nmToDuration(
                     effectiveSpacing,
-                    follower.item.landingIas
+                    (follower.item as AircraftSequenceCandidate).landingIas
                 )
             }
         }
@@ -370,11 +375,13 @@ object AmanDmanSequenceService {
     }
 
     /**
-     * Calculates the final scheduled time for an aircraft based on the leader's wake turbulence category.
+     * Calculates the final scheduled time for an aircraft based on runway assignment and wake turbulence category.
+     * Uses minimum separation for different runways, wake category spacing for same runway.
      *
      * @param referenceTime The scheduled time of the preceding aircraft in the sequence.
      * @param leader The preceding aircraft in the sequence.
      * @param follower The aircraft for which the final time is being calculated.
+     * @param minimumSeparationNm The minimum separation to use for different runways.
      */
     private fun calculateSafeLandingTime(
         referenceTime: Instant,
@@ -382,10 +389,34 @@ object AmanDmanSequenceService {
         follower: AircraftSequenceCandidate,
         minimumSeparationNm: Double
     ): Instant {
-        val wakeSpacingNm = nmSpacingMap[Pair(leader.wakeCategory, follower.wakeCategory)] ?: 3.0
-        val effectiveSpacingNm = maxOf(wakeSpacingNm, minimumSeparationNm)
+        val effectiveSpacingNm = if (areOnDifferentRunways(leader, follower)) {
+            // Use minimum separation for aircraft on different runways
+            minimumSeparationNm
+        } else {
+            // Use wake category spacing for aircraft on same runway
+            val wakeSpacingNm = nmSpacingMap[Pair(leader.wakeCategory, follower.wakeCategory)] ?: 3.0
+            maxOf(wakeSpacingNm, minimumSeparationNm)
+        }
+
         val requiredSpacing = nmToDuration(effectiveSpacingNm, follower.landingIas)
         return referenceTime + requiredSpacing
+    }
+
+    /**
+     * Checks if two aircraft are assigned to different runways.
+     * Returns true if they have different non-null runway assignments, false otherwise.
+     */
+    private fun areOnDifferentRunways(aircraft1: AircraftSequenceCandidate, aircraft2: AircraftSequenceCandidate): Boolean {
+        val runway1 = aircraft1.assignedRunway
+        val runway2 = aircraft2.assignedRunway
+
+        // If either aircraft doesn't have a runway assignment, treat as same runway (use wake spacing)
+        if (runway1 == null || runway2 == null) {
+            return false
+        }
+
+        // Return true if runways are different
+        return runway1 != runway2
     }
 
     /**

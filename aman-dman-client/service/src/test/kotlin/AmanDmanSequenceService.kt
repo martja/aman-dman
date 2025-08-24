@@ -375,18 +375,147 @@ class AmanDmanSequenceServiceTest {
         assertEquals(0, clearedSequence.sequecencePlaces.size)
     }
 
+    // Test 16: Aircraft on different runways should use minimum separation
+    @Test
+    fun `Aircraft on different runways should use minimum separation instead of wake spacing`() {
+        val now = Clock.System.now()
+        val sequence = Sequence(emptyList())
+
+        // Heavy aircraft on runway 09L
+        val heavy = makeAircraft("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
+        // Light aircraft on runway 09R (different runway)
+        val light = makeAircraft("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = "09R")
+
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+
+        assertEquals(2, updatedSequence.sequecencePlaces.size)
+        val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
+
+        val spacing = sortedPlaces[1].scheduledTime - sortedPlaces[0].scheduledTime
+
+        // With different runways, should use minimum separation (3.0nm) instead of wake spacing (6.0nm for H->L)
+        val minimumSpacing = (3.0 / 150 * 3600).seconds
+        val wakeSpacing = (6.0 / 150 * 3600).seconds
+
+        // Spacing should be close to minimum separation, not wake separation
+        assertTrue(spacing >= minimumSpacing, "Should use minimum separation for different runways")
+        assertTrue(spacing < wakeSpacing, "Should not use wake spacing for different runways")
+    }
+
+    // Test 17: Aircraft on same runway should use wake category spacing
+    @Test
+    fun `Aircraft on same runway should use wake category spacing`() {
+        val now = Clock.System.now()
+        val sequence = Sequence(emptyList())
+
+        // Heavy and light aircraft both on runway 09L (same runway)
+        val heavy = makeAircraft("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
+        val light = makeAircraft("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = "09L")
+
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+
+        assertEquals(2, updatedSequence.sequecencePlaces.size)
+        val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
+
+        val spacing = sortedPlaces[1].scheduledTime - sortedPlaces[0].scheduledTime
+
+        // With same runway, should use wake spacing (6.0nm for H->L)
+        val wakeSpacing = (6.0 / 150 * 3600).seconds
+
+        assertTrue(spacing >= wakeSpacing, "Should use wake category spacing for same runway")
+    }
+
+    // Test 18: Aircraft without runway assignment should use wake category spacing
+    @Test
+    fun `Aircraft without runway assignment should use wake category spacing`() {
+        val now = Clock.System.now()
+        val sequence = Sequence(emptyList())
+
+        // Aircraft without runway assignments
+        val heavy = makeAircraft("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = null)
+        val light = makeAircraft("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = null)
+
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+
+        assertEquals(2, updatedSequence.sequecencePlaces.size)
+        val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
+
+        val spacing = sortedPlaces[1].scheduledTime - sortedPlaces[0].scheduledTime
+
+        // Without runway assignments, should use wake spacing (6.0nm for H->L)
+        val wakeSpacing = (6.0 / 150 * 3600).seconds
+
+        assertTrue(spacing >= wakeSpacing, "Should use wake category spacing when no runway assigned")
+    }
+
+    // Test 19: Mixed runway assignments should handle spacing correctly
+    @Test
+    fun `Mixed runway assignments should handle spacing correctly`() {
+        val now = Clock.System.now()
+        val sequence = Sequence(emptyList())
+
+        // First aircraft with runway assignment
+        val first = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
+        // Second aircraft without runway assignment
+        val second = makeAircraft("SECOND", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = null)
+
+        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(first, second), 3.0)
+
+        assertEquals(2, updatedSequence.sequecencePlaces.size)
+        val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
+
+        val spacing = sortedPlaces[1].scheduledTime - sortedPlaces[0].scheduledTime
+
+        // When one aircraft has no runway assignment, should use wake spacing
+        val wakeSpacing = (6.0 / 150 * 3600).seconds
+
+        assertTrue(spacing >= wakeSpacing, "Should use wake category spacing when one aircraft has no runway")
+    }
+
+    // Test 20: Manual movement should respect runway-based spacing
+    @Test
+    fun `Manual movement should respect runway-based spacing rules`() {
+        val now = Clock.System.now()
+
+        val aircraft1 = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
+        val aircraft2 = makeAircraft("SECOND", now + 20.minutes, wakeCategory = 'L', assignedRunway = "09R")
+
+        val sequence = Sequence(listOf(
+            SequencePlace(aircraft1, now + 10.minutes, false),
+            SequencePlace(aircraft2, now + 20.minutes, false)
+        ))
+
+        // Manually move FIRST to a later time, creating potential conflict with SECOND
+        val updatedSequence = AmanDmanSequenceService.suggestScheduledTime(
+            sequence, "FIRST", now + 19.minutes, 3.0
+        )
+
+        val firstPlace = updatedSequence.sequecencePlaces.find { it.item.id == "FIRST" }!!
+        val secondPlace = updatedSequence.sequecencePlaces.find { it.item.id == "SECOND" }!!
+
+        assertTrue(firstPlace.isManuallyAssigned)
+
+        // Check that spacing uses minimum separation for different runways (3nm)
+        val spacing = secondPlace.scheduledTime - firstPlace.scheduledTime
+        val minimumSpacing = (3.0 / 150 * 3600).seconds
+
+        assertTrue(spacing >= minimumSpacing, "Should use minimum separation for different runways in manual movement")
+    }
+
     // Helper function to create test aircraft
     private fun makeAircraft(
         callsign: String,
         preferredTime: Instant,
         landingIas: Int = 150,
-        wakeCategory: Char = 'M'
+        wakeCategory: Char = 'M',
+        assignedRunway: String? = null
     ): AircraftSequenceCandidate {
         return AircraftSequenceCandidate(
             callsign = callsign,
             preferredTime = preferredTime,
             landingIas = landingIas,
-            wakeCategory = wakeCategory
+            wakeCategory = wakeCategory,
+            assignedRunway = assignedRunway
         )
     }
 

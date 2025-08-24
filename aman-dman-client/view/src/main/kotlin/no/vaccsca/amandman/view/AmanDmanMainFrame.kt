@@ -66,7 +66,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
                 if (e.isPopupTrigger) {
                     val tabIndex = tabPane.indexAtLocation(e.x, e.y)
                     if (tabIndex >= 0) {
-                        val airportIcao = (tabPane.getComponentAt(tabIndex) as no.vaccsca.amandman.view.TabView).airportIcao
+                        val airportIcao = (tabPane.getComponentAt(tabIndex) as TabView).airportIcao
                         controllerInterface.onTabMenu(tabIndex, airportIcao)
                     }
                 }
@@ -77,7 +77,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
     override fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>) {
         val popup = JPopupMenu()
-        val tab = tabPane.getComponentAt(tabIndex) as no.vaccsca.amandman.view.TabView
+        val tab = tabPane.getComponentAt(tabIndex) as TabView
 
         val loadTimelineMenu = JMenu("Add timeline")
         if (availableTimelines.isEmpty()) {
@@ -109,7 +109,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
     }
 
     override fun updateTab(airportIcao: String, tabData: TabData) {
-        tabPane.components.filterIsInstance<no.vaccsca.amandman.view.TabView>()
+        tabPane.components.filterIsInstance<TabView>()
             .filter { it.airportIcao == airportIcao }
             .forEach { it.updateAmanData(tabData) }
 
@@ -124,7 +124,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
     }
 
     override fun removeTab(airportIcao: String) {
-        val tabIndex = tabPane.components.indexOfFirst { (it as no.vaccsca.amandman.view.TabView).airportIcao == airportIcao }
+        val tabIndex = tabPane.components.indexOfFirst { (it as TabView).airportIcao == airportIcao }
         if (tabIndex >= 0) {
             tabPane.removeTabAt(tabIndex)
         }
@@ -133,6 +133,12 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
     override fun updateDraggedLabel(callsign: String, newInstant: Instant, isAvailable: Boolean) {
         tabPane.components.filterIsInstance<TabView>()
             .forEach { it.updateDraggedLabel(callsign, newInstant, isAvailable) }
+    }
+
+    override fun updateRunwayModes(airportIcao: String, runwayModes: List<Pair<String, Boolean>>) {
+        tabPane.components.filterIsInstance<TabView>()
+            .filter { it.airportIcao == airportIcao }
+            .forEach { it.updateRunwayModes(runwayModes) }
     }
 
     override fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig?) {
@@ -162,7 +168,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
     }
 
     override fun showTabContextMenu(tabIndex: Int, airportIcao: String) {
-        val tab = tabPane.getComponentAt(tabIndex) as no.vaccsca.amandman.view.TabView
+        val tab = tabPane.getComponentAt(tabIndex) as TabView
         controllerInterface?.onTabMenu(tabIndex, airportIcao)
     }
 
@@ -234,7 +240,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
     override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) {
         // Close tabs that are not in the groups
         for (i in tabPane.tabCount - 1 downTo 0) {
-            val tab = tabPane.getComponentAt(i) as no.vaccsca.amandman.view.TabView
+            val tab = tabPane.getComponentAt(i) as TabView
             if (timelineGroups.none { it.airportIcao == tab.airportIcao }) {
                 tabPane.removeTabAt(i)
             }
@@ -242,15 +248,15 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
         // Add new tabs for groups that are not already present
         for (group in timelineGroups) {
-            if (tabPane.components.none { (it as no.vaccsca.amandman.view.TabView).airportIcao == group.airportIcao }) {
-                val tabView = no.vaccsca.amandman.view.TabView(controllerInterface!!, group.airportIcao)
+            if (tabPane.components.none { (it as TabView).airportIcao == group.airportIcao }) {
+                val tabView = TabView(controllerInterface!!, group.airportIcao)
                 tabPane.addTab(group.name, tabView)
             }
         }
 
         // Update existing tabs with new data
         for (i in 0 until tabPane.tabCount) {
-            val tab = tabPane.getComponentAt(i) as no.vaccsca.amandman.view.TabView
+            val tab = tabPane.getComponentAt(i) as TabView
             val group = timelineGroups.find { it.airportIcao == tab.airportIcao }
             if (group != null) {
                 tab.updateTimelines(group)
