@@ -40,7 +40,7 @@ class TabView(
     )
 
     val timeWindowScrollbar = TimeRangeScrollBarVertical(selectedTimeRange, availableTimeRange)
-    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, controller)
+    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, controller)
     val topBar = TopBar(controller)
 
     init {

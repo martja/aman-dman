@@ -11,10 +11,14 @@ import java.awt.GridBagLayout
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
+import kotlin.math.pow
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 
 class TimelineScrollPane(
     val selectedTimeRange: SharedValue<TimeRange>,
+    val availableTimeRange: SharedValue<TimeRange>,
     val controllerInterface: ControllerInterface
 ) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
     init {
@@ -72,5 +76,22 @@ class TimelineScrollPane(
                 }
             }
         }
+    }
+
+    // Zoom when using scrollwheel
+    override fun processMouseWheelEvent(e: java.awt.event.MouseWheelEvent) {
+        val currentRange = selectedTimeRange.value
+        val rangeDuration = currentRange.end - currentRange.start
+        val zoomFactor = 1.1.pow(e.wheelRotation.toDouble())
+        val newDuration = (rangeDuration * zoomFactor).coerceAtLeast(1.seconds)
+        val centerTime = currentRange.start + rangeDuration / 2
+        val newEnd = centerTime + newDuration / 2
+
+        if (newEnd > availableTimeRange.value.end || newEnd < currentRange.start + 1.seconds || newDuration < 10.minutes) {
+            return
+        }
+
+        selectedTimeRange.value = TimeRange(currentRange.start, newEnd)
+        e.consume()
     }
 }
