@@ -25,10 +25,13 @@ class TabView(
     val airportIcao: String,
 ) : JPanel(BorderLayout()) {
 
+    private val maxHistory = 20.minutes
+    private val maxFuture = 2.hours
+
     private val availableTimeRange = SharedValue(
         initialValue = TimeRange(
-            Clock.System.now() - 1.hours,
-            Clock.System.now() + 3.hours,
+            Clock.System.now() - maxHistory,
+            Clock.System.now() + maxFuture,
         )
     )
 
@@ -52,6 +55,10 @@ class TabView(
             selectedTimeRange.value = TimeRange(
                 selectedTimeRange.value.start + 1.seconds,
                 selectedTimeRange.value.end + 1.seconds,
+            )
+            availableTimeRange.value = TimeRange(
+                Clock.System.now() - maxHistory,
+                Clock.System.now() + maxFuture,
             )
         }
 
