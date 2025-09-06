@@ -1,15 +1,20 @@
 package no.vaccsca.amandman.service
 
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import no.vaccsca.amandman.integration.NavdataRepository
 import no.vaccsca.amandman.integration.amanConfig.AircraftPerformanceData
 import no.vaccsca.amandman.integration.atcClient.AtcClient
-import kotlinx.datetime.Instant
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
-import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
-import no.vaccsca.amandman.integration.NavdataRepository
 import no.vaccsca.amandman.integration.atcClient.entities.RunwayStatus
 import no.vaccsca.amandman.model.SequenceStatus
+import no.vaccsca.amandman.model.TrajectoryPoint
+import no.vaccsca.amandman.model.navigation.AircraftPosition
+import no.vaccsca.amandman.model.navigation.LatLng
+import no.vaccsca.amandman.model.navigation.RoutePoint
 import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalEvent
+import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.service.DescentTrajectoryService.calculateDescentTrajectory
 
 class AmanDataService(
     private val navdataRepository: NavdataRepository,
@@ -24,12 +29,14 @@ class AmanDataService(
     private val sequences: MutableMap<String, Sequence> = mutableMapOf()
     private var minimumSpacingNm = 3.0 // Minimum spacing in nautical miles
 
+    private val descentTrajectoryCache = mutableMapOf<String, List<TrajectoryPoint>>()
+
     fun subscribeForInbounds(icao: String) {
         sequences.computeIfAbsent(icao) { Sequence(emptyList()) }
         arrivalsCache.computeIfAbsent(icao) { emptyList() }
 
         atcClient.collectArrivalsFor(icao, this::handleRunwayStatusUpdate) { arrivals ->
-            val runwayArrivalEvents = createRunwayArrivalEvents(arrivals)
+            val runwayArrivalEvents = arrivals.mapNotNull { arrival -> createRunwayArrivalEvent(arrival) }
             val sequenceItems = runwayArrivalEvents.map {
                 AircraftSequenceCandidate(
                     callsign = it.callsign,
@@ -59,20 +66,63 @@ class AmanDataService(
         }
     }
 
-    private fun createRunwayArrivalEvents(arrivalJsons: List<ArrivalJson>) =
-        arrivalJsons.mapNotNull { arrival ->
-            val aircraftPerformance = try {
-                AircraftPerformanceData.get(arrival.icaoType)
-            } catch (e: Exception) {
-                println("Error fetching performance data for ${arrival.icaoType}: ${e.message}")
-                return@mapNotNull null
-            }
-            arrival.toRunwayArrivalEvent(
-                star = navdataRepository.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway },
-                weatherData = weatherData,
-                performance = aircraftPerformance
-            )
+    private fun createRunwayArrivalEvent(arrivalJson: ArrivalJson): RunwayArrivalEvent? {
+        val aircraftPerformance = try {
+            AircraftPerformanceData.get(arrivalJson.icaoType)
+        } catch (e: Exception) {
+            println("Error fetching performance data for ${arrivalJson.icaoType}: ${e.message}")
+            return null
         }
+
+        val position =
+            AircraftPosition(
+                position = LatLng(arrivalJson.latitude, arrivalJson.longitude),
+                altitudeFt = arrivalJson.flightLevel,
+                groundspeedKts = arrivalJson.groundSpeed,
+                trackDeg = arrivalJson.track
+            )
+
+        val route = arrivalJson.route.map { RoutePoint(it.name, LatLng(it.latitude, it.longitude), it.isPassed, it.isOnStar) }
+        val star = navdataRepository.stars.find { it.id == arrivalJson.assignedStar && it.runway == arrivalJson.assignedRunway }
+
+        val trajectory = calculateDescentTrajectory(
+            route = route,
+            aircraftPosition = position,
+            verticalWeatherProfile = weatherData,
+            star = star,
+            aircraftPerformance = aircraftPerformance,
+            flightPlanTas = arrivalJson.flightPlanTas,
+        )
+
+        descentTrajectoryCache[arrivalJson.callsign] = trajectory
+
+        if (arrivalJson.assignedRunway == null) {
+            return null
+        }
+
+        val estimatedTime = Clock.System.now() + trajectory.first().remainingTime
+
+        return RunwayArrivalEvent(
+            callsign = arrivalJson.callsign,
+            icaoType = arrivalJson.icaoType,
+            flightLevel = arrivalJson.flightLevel,
+            groundSpeed = arrivalJson.groundSpeed,
+            wakeCategory = aircraftPerformance.takeOffWTC,
+            assignedStar = arrivalJson.assignedStar,
+            trackingController = arrivalJson.trackingController,
+            runway = arrivalJson.assignedRunway!!,
+            estimatedTime = estimatedTime,
+            scheduledTime = estimatedTime,
+            pressureAltitude = arrivalJson.pressureAltitude,
+            airportIcao = arrivalJson.arrivalAirportIcao,
+            remainingDistance = trajectory.first().remainingDistance,
+            timelineId = 0,
+            assignedStarOk = star != null,
+            withinActiveAdvisoryHorizon = false,
+            sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE,
+            landingIas = aircraftPerformance.landingVat
+        )
+    }
 
     fun setMinimumSpacing(newSpacing: Double) {
         this.minimumSpacingNm = newSpacing
@@ -159,10 +209,14 @@ class AmanDataService(
      */
     private fun RunwayArrivalEvent.withDistanceToPreceding(next: RunwayArrivalEvent?): RunwayArrivalEvent {
         val distanceToPreceding = if (next != null) {
-            this.descentTrajectory.first().remainingDistance - next.descentTrajectory.first().remainingDistance
+            this.remainingDistance - next.remainingDistance
         } else {
-            this.descentTrajectory.first().remainingDistance
+            this.remainingDistance
         }
         return this.copy(distanceToPreceding = distanceToPreceding)
+    }
+
+    fun getDescentProfileForCallsign(callsign: String): List<TrajectoryPoint>? {
+        return descentTrajectoryCache[callsign]
     }
 }

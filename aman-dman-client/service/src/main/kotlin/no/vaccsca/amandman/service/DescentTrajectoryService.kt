@@ -22,15 +22,16 @@ import kotlin.time.Duration.Companion.seconds
 object DescentTrajectoryService {
 
     private const val CURRENT_ID = "CURRENT"
+    private const val RUNWAY_ID = "RWY"
     private const val DECELERATION_RATE = 0.5
     private val calmWind = Wind(0, 0)
 
-    fun List<RoutePoint>.calculateDescentTrajectory(
+    fun calculateDescentTrajectory(
+        route: List<RoutePoint>,
         aircraftPosition: AircraftPosition,
         verticalWeatherProfile: VerticalWeatherProfile?,
         star: Star?,
         aircraftPerformance: AircraftPerformance,
-        landingAirportIcao: String,
         flightPlanTas: Int?
     ): List<TrajectoryPoint> {
         val starMap = star?.fixes?.associateBy { it.id }
@@ -38,13 +39,13 @@ object DescentTrajectoryService {
         val lastAltitudeConstraint = star?.findFinalAltitude()
 
         // Starts at the airports and works backwards
-        var probePosition = this.last().position
+        var probePosition = route.last().position
         var probeAltitude = lastAltitudeConstraint ?: 0
         var probingDistance = 0f
         var accumulatedTimeFromDestination = 0.seconds
 
         val remainingRoute =
-            listOf(RoutePoint(id = CURRENT_ID, position = aircraftPosition.position, isOnStar = false, isPassed = false)) + this.filter { !it.isPassed }
+            listOf(RoutePoint(id = CURRENT_ID, position = aircraftPosition.position, isOnStar = false, isPassed = false)) + route.filter { !it.isPassed }
 
         // Add the last point (the airport) to the profile
         trajectoryPoints +=
@@ -57,8 +58,8 @@ object DescentTrajectoryService {
                 tas = aircraftPerformance.landingVat,
                 wind = calmWind, // TODO: use wind from METAR
                 ias = aircraftPerformance.landingVat,
-                heading = this.getFinalHeading() ?: aircraftPosition.trackDeg,
-                fixId = landingAirportIcao,
+                heading = route.getFinalHeading() ?: aircraftPosition.trackDeg,
+                fixId = RUNWAY_ID,
             )
 
         // Start from the last waypoint (the airport) and work backward
@@ -72,7 +73,7 @@ object DescentTrajectoryService {
                 ?: aircraftPosition.altitudeFt
 
             val earlierSpeedExpectation = star?.let {
-                getInterpolatedSpeedExpectation(star = it.fixes, atRoutePoint = earlierPoint)
+                route.getInterpolatedSpeedExpectation(star = it.fixes, atRoutePoint = earlierPoint)
             } ?: aircraftPerformance.getPreferredIas(
                 altitudeFt = nextAltitudeExpectation,
                 temperatureC = verticalWeatherProfile?.interpolateWeatherAtAltitude(nextAltitudeExpectation)?.temperatureC,

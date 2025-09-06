@@ -20,7 +20,7 @@ data class RunwayArrivalEvent(
     val pressureAltitude: Int,
     val groundSpeed: Int,
     val trackingController: String?,
-    val descentTrajectory: List<TrajectoryPoint>,
+    val remainingDistance: Float,
     val withinActiveAdvisoryHorizon: Boolean,
     val sequenceStatus: SequenceStatus,
     val landingIas: Int,

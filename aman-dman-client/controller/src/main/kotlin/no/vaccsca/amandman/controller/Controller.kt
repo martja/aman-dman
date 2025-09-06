@@ -145,11 +145,9 @@ class Controller(
         }
 
         selectedCallsign?.let { callsign ->
-            val selectedDescentProfile = snapshot.filterIsInstance<RunwayArrivalEvent>()
-                .find { it.callsign == callsign }
-
+            val selectedDescentProfile = service.getDescentProfileForCallsign(callsign)
             selectedDescentProfile?.let {
-                view.updateDescentTrajectory(callsign, it.descentTrajectory)
+                view.updateDescentTrajectory(callsign, selectedDescentProfile)
             }
         }
     }
