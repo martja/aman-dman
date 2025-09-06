@@ -5,7 +5,8 @@ import no.vaccsca.amandman.controller.Controller
 import no.vaccsca.amandman.integration.atcClient.AtcClientEuroScope
 import no.vaccsca.amandman.integration.NavdataRepository
 import no.vaccsca.amandman.integration.weather.WeatherDataRepository
-import no.vaccsca.amandman.service.AmanDataService
+import no.vaccsca.amandman.service.AmanPlannerService
+import no.vaccsca.amandman.service.DataUpdatesGuiUpdater
 import no.vaccsca.amandman.view.AmanDmanMainFrame
 import java.util.*
 import javax.swing.SwingUtilities
@@ -50,10 +51,12 @@ fun main() {
         )
 
         // --- Service ---
-        val service = AmanDataService(navdataRepository, atcClient)
+        val guiUpdater = DataUpdatesGuiUpdater()
+        val service = AmanPlannerService(navdataRepository, atcClient, weatherDataRepository, guiUpdater)
 
         // --- Controller ---
-        val controller = Controller(service, view, weatherDataRepository)
+        val controller = Controller(service, view)
+        guiUpdater.livedataInterface = controller
 
         view.openWindow()
 

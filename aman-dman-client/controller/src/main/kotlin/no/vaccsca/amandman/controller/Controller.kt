@@ -1,28 +1,26 @@
 package no.vaccsca.amandman.controller
 
-import no.vaccsca.amandman.integration.amanConfig.SettingsManager
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.*
+import no.vaccsca.amandman.common.TimelineConfig
+import no.vaccsca.amandman.common.TimelineGroup
+import no.vaccsca.amandman.integration.amanConfig.SettingsManager
 import no.vaccsca.amandman.integration.atcClient.entities.RunwayStatus
 import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.dto.TabData
 import no.vaccsca.amandman.model.dto.TimelineData
-import no.vaccsca.amandman.service.LiveDataHandler
 import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.integration.weather.WeatherDataRepository
 import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
-import no.vaccsca.amandman.service.AmanDataService
+import no.vaccsca.amandman.service.AmanPlannerService
+import no.vaccsca.amandman.service.LiveDataHandler
 import kotlin.time.Duration.Companion.seconds
 
 class Controller(
-    private val service: AmanDataService,
+    private val service: AmanPlannerService,
     private val view: ViewInterface,
-    private val weatherDataRepository: WeatherDataRepository
 ) : ControllerInterface, LiveDataHandler {
 
-    private var weatherProfile: VerticalWeatherProfile? = null
     private val timelineGroups = mutableListOf<TimelineGroup>()
     private var selectedCallsign: String? = null
 
@@ -33,9 +31,9 @@ class Controller(
 
     // Replace the simple currentMinimumSpacingNm with a reactive state manager
     private val runwayModeStateManager = RunwayModeStateManager(view)
+    private var minimumSpacingNm: Double = 0.0
 
     init {
-        service.livedataInterface = this
         view.controllerInterface = this
 
         javax.swing.Timer(1000) {
@@ -77,12 +75,7 @@ class Controller(
     }
 
     override fun refreshWeatherData(lat: Double, lon: Double) {
-        Thread {
-            val weather = weatherDataRepository.getWindData(lat, lon)
-            weatherProfile = weather
-            service.updateWeatherData(weather)
-            view.updateWeatherData(weather) // This is a call to the interface
-        }.start()
+        service.refreshWeatherData(lat, lon)
     }
 
     override fun onOpenVerticalProfileWindowClicked() {
@@ -114,13 +107,17 @@ class Controller(
     override fun onRunwayModesUpdated(
         airportIcao: String,
         runwayStatuses: Map<String, RunwayStatus>,
-        minimumSpacingNm: Double
     ) {
         runwayModeStateManager.updateRunwayStatuses(airportIcao, runwayStatuses, minimumSpacingNm)
     }
 
     override fun onMinimumSpacingUpdated(minimumSpacingNm: Double) {
-        runwayModeStateManager.updateMinimumSpacing(minimumSpacingNm)
+        this.minimumSpacingNm = minimumSpacingNm
+        runwayModeStateManager.updateMinimumSpacing(this.minimumSpacingNm)
+    }
+
+    override fun onWeatherDataUpdated(data: VerticalWeatherProfile?) {
+        view.updateWeatherData(data)
     }
 
     private fun updateViewFromCachedData() {

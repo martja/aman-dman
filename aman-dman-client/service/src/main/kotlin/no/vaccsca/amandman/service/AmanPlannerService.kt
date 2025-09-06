@@ -6,7 +6,7 @@ import no.vaccsca.amandman.integration.NavdataRepository
 import no.vaccsca.amandman.integration.amanConfig.AircraftPerformanceData
 import no.vaccsca.amandman.integration.atcClient.AtcClient
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
-import no.vaccsca.amandman.integration.atcClient.entities.RunwayStatus
+import no.vaccsca.amandman.integration.weather.WeatherDataRepository
 import no.vaccsca.amandman.model.SequenceStatus
 import no.vaccsca.amandman.model.TrajectoryPoint
 import no.vaccsca.amandman.model.navigation.AircraftPosition
@@ -16,12 +16,16 @@ import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.service.DescentTrajectoryService.calculateDescentTrajectory
 
-class AmanDataService(
+/**
+ * This is only used in the Master instance of the application
+ */
+
+class AmanPlannerService(
     private val navdataRepository: NavdataRepository,
     private val atcClient: AtcClient,
+    private val weatherDataRepository: WeatherDataRepository,
+    private vararg val dataUpdatesHandlers: DataUpdatesHandler,
 ) {
-    lateinit var livedataInterface: LiveDataHandler
-
     private var weatherData: VerticalWeatherProfile? = null
 
     // ID of the sequence, typically the airport ICAO code
@@ -35,35 +39,39 @@ class AmanDataService(
         sequences.computeIfAbsent(icao) { Sequence(emptyList()) }
         arrivalsCache.computeIfAbsent(icao) { emptyList() }
 
-        atcClient.collectArrivalsFor(icao, this::handleRunwayStatusUpdate) { arrivals ->
-            val runwayArrivalEvents = arrivals.mapNotNull { arrival -> createRunwayArrivalEvent(arrival) }
-            val sequenceItems = runwayArrivalEvents.map {
-                AircraftSequenceCandidate(
-                    callsign = it.callsign,
-                    preferredTime = it.estimatedTime,
-                    landingIas = it.landingIas,
-                    wakeCategory = it.wakeCategory
-                )
-            }
-
-            val aircraftToRemove = sequences[icao]!!.sequecencePlaces.map { it.item.id }.filter { it !in runwayArrivalEvents.map { it.callsign } }
-            val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequences[icao]!!, *aircraftToRemove.toTypedArray())
-            sequences[icao] = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm)
-            arrivalsCache[icao] = runwayArrivalEvents.map { arrivalEvent ->
-                val sequenceSchedule = sequences[icao]!!.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
-                arrivalEvent.copy(
-                    scheduledTime = sequenceSchedule ?: arrivalEvent.scheduledTime,
-                    sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
-                )
-            }
-            onSequenceUpdated(icao)
-        }
+        atcClient.collectArrivalsFor(
+            airportIcao =  icao,
+            onRunwayModesChanged = { runwayStatuses ->
+                dataUpdatesHandlers.forEach { handler ->
+                    handler.handleRunwayStatusUpdate(runwayStatuses)
+                }
+            },
+            onDataReceived = { arrivals -> handleArrivalsUpdate(icao, arrivals) }
+        )
     }
 
-    private fun handleRunwayStatusUpdate (map: Map<String, Map<String, RunwayStatus>>) {
-        map.forEach { (airportIcao, runwayStatuses) ->
-            livedataInterface.onRunwayModesUpdated(airportIcao, runwayStatuses, minimumSpacingNm)
+    private fun handleArrivalsUpdate(icao: String, arrivals: List<ArrivalJson>) {
+        val runwayArrivalEvents = arrivals.mapNotNull { arrival -> createRunwayArrivalEvent(arrival) }
+        val sequenceItems = runwayArrivalEvents.map {
+            AircraftSequenceCandidate(
+                callsign = it.callsign,
+                preferredTime = it.estimatedTime,
+                landingIas = it.landingIas,
+                wakeCategory = it.wakeCategory
+            )
         }
+
+        val aircraftToRemove = sequences[icao]!!.sequecencePlaces.map { it.item.id }.filter { it !in runwayArrivalEvents.map { it.callsign } }
+        val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequences[icao]!!, *aircraftToRemove.toTypedArray())
+        sequences[icao] = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm)
+        arrivalsCache[icao] = runwayArrivalEvents.map { arrivalEvent ->
+            val sequenceSchedule = sequences[icao]!!.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
+            arrivalEvent.copy(
+                scheduledTime = sequenceSchedule ?: arrivalEvent.scheduledTime,
+                sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
+            )
+        }
+        onSequenceUpdated(icao)
     }
 
     private fun createRunwayArrivalEvent(arrivalJson: ArrivalJson): RunwayArrivalEvent? {
@@ -131,11 +139,15 @@ class AmanDataService(
             onSequenceUpdated(sequenceId)
         }
         // Notify controller of the spacing change so UI can be updated
-        livedataInterface.onMinimumSpacingUpdated(newSpacing)
+        dataUpdatesHandlers.forEach { handler -> handler.onMinimumSpacingUpdated(newSpacing) }
     }
 
-    fun updateWeatherData(data: VerticalWeatherProfile?) {
-        weatherData = data
+    fun refreshWeatherData(lat: Double, lon: Double) {
+        Thread {
+            val weather = weatherDataRepository.getWindData(lat, lon)
+            weatherData = weather
+            dataUpdatesHandlers.forEach { handler -> handler.onWeatherDataUpdated(weather) }
+        }.start()
     }
 
     fun suggestScheduledTime(sequenceId: String, callsign: String, scheduledTime: Instant) {
@@ -187,7 +199,7 @@ class AmanDataService(
         }
 
         arrivalsCache[sequenceId] = sequencedArrivals
-        livedataInterface.onLiveData(sequencedArrivals)
+        dataUpdatesHandlers.forEach { handler -> handler.onSequenceUpdated(sequenceId, sequencedArrivals) }
     }
 
     /**
