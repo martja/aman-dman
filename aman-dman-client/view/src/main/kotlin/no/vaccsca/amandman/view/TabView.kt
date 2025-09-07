@@ -3,10 +3,10 @@ package no.vaccsca.amandman.view
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineGroup
-import no.vaccsca.amandman.controller.ControllerInterface
-import no.vaccsca.amandman.model.SequenceStatus
-import no.vaccsca.amandman.model.dto.TabData
-import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
+import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.tabpage.TimeRangeScrollBarVertical
 import no.vaccsca.amandman.view.tabpage.TimelineScrollPane
@@ -21,7 +21,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class TabView(
-    controller: ControllerInterface,
+    presenter: PresenterInterface,
     val airportIcao: String,
 ) : JPanel(BorderLayout()) {
 
@@ -43,8 +43,8 @@ class TabView(
     )
 
     val timeWindowScrollbar = TimeRangeScrollBarVertical(selectedTimeRange, availableTimeRange)
-    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, controller)
-    val topBar = TopBar(controller)
+    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, presenter)
+    val topBar = TopBar(presenter)
 
     init {
         add(topBar, BorderLayout.NORTH)

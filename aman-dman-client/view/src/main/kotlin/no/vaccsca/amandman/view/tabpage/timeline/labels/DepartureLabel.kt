@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.view.tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.model.data.dto.timelineEvent.DepartureEvent
 import java.awt.Color
 
 class DepartureLabel(

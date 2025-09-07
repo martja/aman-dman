@@ -1,14 +1,14 @@
 package no.vaccsca.amandman
 
 import com.jtattoo.plaf.hifi.HiFiLookAndFeel
-import no.vaccsca.amandman.controller.Controller
-import no.vaccsca.amandman.integration.atcClient.AmanDataClientEuroScope
-import no.vaccsca.amandman.integration.NavdataRepository
-import no.vaccsca.amandman.integration.weather.WeatherDataRepository
+import no.vaccsca.amandman.presenter.Presenter
+import no.vaccsca.amandman.model.AmanModel
+import no.vaccsca.amandman.model.data.service.AmanDataClientEuroScope
+import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.ApplicationMode
-import no.vaccsca.amandman.service.AmanPlannerService
-import no.vaccsca.amandman.service.DataUpdatesServerSender
-import no.vaccsca.amandman.service.GuiDataHandler
+import no.vaccsca.amandman.model.data.service.AmanPlannerService
+import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
+import no.vaccsca.amandman.model.domain.service.GuiDataHandler
 import no.vaccsca.amandman.view.AmanDmanMainFrame
 import java.util.*
 import javax.swing.SwingUtilities
@@ -44,7 +44,7 @@ fun main() {
 
         // --- Model ---
         val navdataRepository = NavdataRepository()
-        val weatherDataRepository = WeatherDataRepository()
+        val model = AmanModel()
 
         // --- View ---
         val view = AmanDmanMainFrame()
@@ -60,30 +60,28 @@ fun main() {
         val plannerService = when(applicationMode) {
             ApplicationMode.MASTER ->
                 AmanPlannerService(
-                    navdataRepository = navdataRepository,
                     amanDataClient = atcClient,
-                    weatherDataRepository = weatherDataRepository,
+                    amanModel = model,
                     dataUpdateListeners = arrayOf(guiUpdater, DataUpdatesServerSender()),
                 )
             ApplicationMode.LOCAL ->
                 AmanPlannerService(
-                    navdataRepository = navdataRepository,
                     amanDataClient = atcClient,
-                    weatherDataRepository = weatherDataRepository,
+                    amanModel = model,
                     dataUpdateListeners = arrayOf(guiUpdater),
                 )
             ApplicationMode.SLAVE -> null
         }
 
         // --- Controller ---
-        val controller = Controller(plannerService, view, applicationMode)
-        guiUpdater.controller = controller
+        val presenter = Presenter(plannerService, view, model, applicationMode)
+        guiUpdater.presenter = presenter
 
         // Update window title to show network mode
         view.setWindowTitle("AMAN-DMAN - ${applicationMode.name} Mode")
         view.openWindow()
 
-        controller.refreshWeatherData(60.0, 11.0)
+        presenter.refreshWeatherData(60.0, 11.0)
     }
 
     // Create a new JFrame

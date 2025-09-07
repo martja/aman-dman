@@ -1,9 +1,8 @@
 package no.vaccsca.amandman.view.tabpage.timeline.labels
 
-import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.presenter.PresenterInterface
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.SequenceStatus
-import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayArrivalEvent
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -17,7 +16,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class ArrivalLabel(
     val arrivalEvent: RunwayArrivalEvent,
-    val controllerInterface: ControllerInterface
+    val presenterInterface: PresenterInterface
 ) : TimelineLabel(arrivalEvent) {
 
     private val TTL_TTG_THRESHOLD = 10.seconds
@@ -45,7 +44,7 @@ class ArrivalLabel(
 
         val rescheduleItem = JMenuItem("Re-schedule")
         rescheduleItem.addActionListener {
-            controllerInterface.onRecalculateSequenceClicked(arrivalEvent.airportIcao, arrivalEvent.callsign)
+            presenterInterface.onRecalculateSequenceClicked(arrivalEvent.airportIcao, arrivalEvent.callsign)
         }
 
         popup.add(rescheduleItem)
@@ -112,7 +111,7 @@ class ArrivalLabel(
     }
 
     override fun getTimelinePlacement(): Instant {
-        return (timelineEvent).scheduledTime
+        return (timelineEvent as RunwayArrivalEvent).scheduledTime
     }
 
     private fun toNormalizedMinutes(seconds: Duration): Int {

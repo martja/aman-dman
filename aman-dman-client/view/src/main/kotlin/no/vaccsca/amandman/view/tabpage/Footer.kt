@@ -1,6 +1,6 @@
 package no.vaccsca.amandman.view.tabpage
 
-import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.util.Form
 import java.awt.Dimension
 import java.awt.FlowLayout
@@ -10,7 +10,7 @@ import java.time.Instant
 import javax.swing.*
 
 class Footer(
-    private val controllerInterface: ControllerInterface
+    private val presenterInterface: PresenterInterface
 ) : JPanel(FlowLayout(FlowLayout.RIGHT)) {
     private val timeLabel = JLabel("10:00:22")
     private val metButton = JButton("MET")
@@ -23,7 +23,7 @@ class Footer(
         toolTipText = "Minimum spacing on final"
         addChangeListener {
             val value = value as Double
-            controllerInterface.setMinimumSpacingDistance(value)
+            presenterInterface.setMinimumSpacingDistance(value)
         }
     }
 
@@ -46,21 +46,21 @@ class Footer(
         metButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                controllerInterface.onOpenMetWindowClicked()
+                presenterInterface.onOpenMetWindowClicked()
             }
         })
 
         reloadButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                controllerInterface.onReloadSettingsRequested()
+                presenterInterface.onReloadSettingsRequested()
             }
         })
 
         profileButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                controllerInterface.onOpenVerticalProfileWindowClicked()
+                presenterInterface.onOpenVerticalProfileWindowClicked()
             }
         })
 
@@ -81,7 +81,7 @@ class Footer(
                 if (result == JOptionPane.OK_OPTION) {
                     val name = textField.text
                     if (name.isNotBlank()) {
-                        controllerInterface.onNewTimelineGroup(name)
+                        presenterInterface.onNewTimelineGroup(name)
                     }
                 }
             }

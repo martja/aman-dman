@@ -1,13 +1,13 @@
 package no.vaccsca.amandman.view.windows
 
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.controller.ControllerInterface
-import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.view.util.Form.enforceUppercase
 import java.awt.*
 import javax.swing.*
 
-class NewTimelineForm(val controllerInterface: ControllerInterface, groupId: String, existingConfig: TimelineConfig?) : JPanel() {
+class NewTimelineForm(val presenterInterface: PresenterInterface, groupId: String, existingConfig: TimelineConfig?) : JPanel() {
     private val icaoField = JTextField(4)
 
     private val radioButtonRunway = JRadioButton("Runway")
@@ -53,7 +53,7 @@ class NewTimelineForm(val controllerInterface: ControllerInterface, groupId: Str
         val submitButton = JButton("Submit")
         submitButton.alignmentX = CENTER_ALIGNMENT
         submitButton.addActionListener {
-            controllerInterface.onCreateNewTimeline(
+            presenterInterface.onCreateNewTimeline(
                 CreateOrUpdateTimelineDto(
                     groupId = groupId,
                     title = "${icaoField.text} Timeline",

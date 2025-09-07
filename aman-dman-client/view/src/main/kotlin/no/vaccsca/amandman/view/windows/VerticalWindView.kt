@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.view.windows
 
 import no.vaccsca.amandman.common.util.NumberUtils.format
-import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.view.util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color
@@ -40,13 +40,13 @@ class VerticalWindView: JPanel(BorderLayout()) {
                     g,
                     width - diagramMargin - 20,
                     yPos,
-                    it.wind.directionDeg,
-                    it.wind.speedKts,
+                    it.windVector.directionDeg,
+                    it.windVector.speedKts,
                     length = 40,
                     barbMaxLength = 12,
                 )
 
-                g.drawString("FL${(it.flightLevelFt / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.wind.directionDeg.toString().padStart(3, '0')} / ${it.wind.speedKts} kt / ${it.temperatureC} C", 30, yPos)
+                g.drawString("FL${(it.flightLevelFt / 100.0).roundToInt().toString().padStart(3, '0')}: ${it.windVector.directionDeg.toString().padStart(3, '0')} / ${it.windVector.speedKts} kt / ${it.temperatureC} C", 30, yPos)
             }
 
             g.drawString("Valid " + currentProfile.time.format("yyyy/MM/dd HH:mm") + "Z", 5, height - 5)

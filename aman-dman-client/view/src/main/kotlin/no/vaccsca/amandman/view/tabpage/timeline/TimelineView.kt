@@ -2,8 +2,8 @@ package no.vaccsca.amandman.view.tabpage.timeline
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.controller.ControllerInterface
-import no.vaccsca.amandman.model.dto.TimelineData
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.Dimension
@@ -17,12 +17,12 @@ import kotlin.time.Duration.Companion.seconds
 class TimelineView(
     val timelineConfig: TimelineConfig,
     private val selectedTimeRange: SharedValue<TimeRange>,
-    private val controllerInterface: ControllerInterface,
+    private val presenterInterface: PresenterInterface,
 ) : JLayeredPane() {
     private val basePanel = JPanel(GridBagLayout()) // Panel to hold components in a layout
-    private val labelContainer = TimelineOverlay(timelineConfig, this, controllerInterface)
+    private val labelContainer = TimelineOverlay(timelineConfig, this, presenterInterface)
     private val isDual = timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
-    private val timeScale = TimeScale(this, selectedTimeRange, !isDual, controllerInterface)
+    private val timeScale = TimeScale(this, selectedTimeRange, !isDual, presenterInterface)
 
     init {
         layout = null // JLayeredPane requires explicit bounds for components
