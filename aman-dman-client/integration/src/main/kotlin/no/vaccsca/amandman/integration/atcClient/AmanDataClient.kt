@@ -2,11 +2,11 @@ package no.vaccsca.amandman.integration.atcClient
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.integration.atcClient.entities.*
+import no.vaccsca.amandman.model.dto.RunwayStatus
 import no.vaccsca.amandman.model.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.timelineEvent.FixInboundEvent
-import kotlin.reflect.KFunction1
 
-abstract class AtcClient {
+abstract class AmanDataClient {
     abstract fun sendMessage(message: MessageToServer)
 
     private val fixInboundCallbacks = mutableMapOf<Int, (List<FixInboundEvent>) -> Unit>()
@@ -71,15 +71,16 @@ abstract class AtcClient {
 
     protected fun handleMessage(incomingMessageJson: IncomingMessageJson) {
         when (incomingMessageJson) {
-            is ArrivalsUpdate -> {
+            is ArrivalsUpdateJson -> {
                 arrivalCallbacks[incomingMessageJson.requestId]?.invoke(incomingMessageJson.inbounds)
             }
-            is DeparturesUpdate -> {
+            is DeparturesUpdateJson -> {
                 val departures = incomingMessageJson.outbounds.map { it.toDepartureEvent(incomingMessageJson.requestId) }
                 departureCallbacks[incomingMessageJson.requestId]?.invoke(departures)
             }
-            is RunwayStatusesUpdate -> {
-                runwayStatusCallbacks[incomingMessageJson.requestId]?.invoke(incomingMessageJson.airports)
+            is RunwayStatusesUpdateJson -> {
+                val statuses = incomingMessageJson.airports.mapValues { entry -> entry.value.mapValues { it.value.toRunwayStatus() } }
+                runwayStatusCallbacks[incomingMessageJson.requestId]?.invoke(statuses)
             }
         }
     }
@@ -103,5 +104,11 @@ abstract class AtcClient {
             scheduledTime = Instant.fromEpochSeconds(this.estimatedDepartureTime),
             estimatedTime = Instant.fromEpochSeconds(this.estimatedDepartureTime),
             airportIcao = this.airportIcao,
+        )
+
+    private fun RunwayStatusJson.toRunwayStatus() =
+        RunwayStatus(
+            departures = this.departures,
+            arrivals = this.arrivals,
         )
 }

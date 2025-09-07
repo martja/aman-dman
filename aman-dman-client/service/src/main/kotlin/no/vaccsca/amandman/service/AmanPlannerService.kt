@@ -2,9 +2,10 @@ package no.vaccsca.amandman.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.model.DataUpdateListener
 import no.vaccsca.amandman.integration.NavdataRepository
 import no.vaccsca.amandman.integration.amanConfig.AircraftPerformanceData
-import no.vaccsca.amandman.integration.atcClient.AtcClient
+import no.vaccsca.amandman.integration.atcClient.AmanDataClient
 import no.vaccsca.amandman.integration.atcClient.entities.ArrivalJson
 import no.vaccsca.amandman.integration.weather.WeatherDataRepository
 import no.vaccsca.amandman.model.SequenceStatus
@@ -17,15 +18,14 @@ import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.service.DescentTrajectoryService.calculateDescentTrajectory
 
 /**
- * This is only used in the Master instance of the application
+ * This is only used in the Master and Local instances of the application
  */
-
 class AmanPlannerService(
     private val navdataRepository: NavdataRepository,
-    private val atcClient: AtcClient,
+    private val amanDataClient: AmanDataClient,
     private val weatherDataRepository: WeatherDataRepository,
-    private vararg val dataUpdatesHandlers: DataUpdatesHandler,
-) {
+    private vararg val dataUpdateListeners: DataUpdateListener,
+)  {
     private var weatherData: VerticalWeatherProfile? = null
 
     // ID of the sequence, typically the airport ICAO code
@@ -39,11 +39,13 @@ class AmanPlannerService(
         sequences.computeIfAbsent(icao) { Sequence(emptyList()) }
         arrivalsCache.computeIfAbsent(icao) { emptyList() }
 
-        atcClient.collectArrivalsFor(
+        amanDataClient.collectArrivalsFor(
             airportIcao =  icao,
             onRunwayModesChanged = { runwayStatuses ->
-                dataUpdatesHandlers.forEach { handler ->
-                    handler.handleRunwayStatusUpdate(runwayStatuses)
+                runwayStatuses.forEach { (airportIcao, statuses) ->
+                    dataUpdateListeners.forEach { listener ->
+                        listener.onRunwayModesUpdated(airportIcao, statuses)
+                    }
                 }
             },
             onDataReceived = { arrivals -> handleArrivalsUpdate(icao, arrivals) }
@@ -132,21 +134,25 @@ class AmanPlannerService(
         )
     }
 
-    fun setMinimumSpacing(newSpacing: Double) {
-        this.minimumSpacingNm = newSpacing
+    fun setMinimumSpacing(minimumSpacingDistanceNm: Double) {
+        this.minimumSpacingNm = minimumSpacingDistanceNm
         sequences.forEach { (sequenceId, sequence) ->
             sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequence)
             onSequenceUpdated(sequenceId)
         }
-        // Notify controller of the spacing change so UI can be updated
-        dataUpdatesHandlers.forEach { handler -> handler.onMinimumSpacingUpdated(newSpacing) }
+        // Notify listeners of the spacing change
+        dataUpdateListeners.forEach { listener ->
+            listener.onMinimumSpacingUpdated(minimumSpacingDistanceNm)
+        }
     }
 
     fun refreshWeatherData(lat: Double, lon: Double) {
         Thread {
             val weather = weatherDataRepository.getWindData(lat, lon)
             weatherData = weather
-            dataUpdatesHandlers.forEach { handler -> handler.onWeatherDataUpdated(weather) }
+            dataUpdateListeners.forEach { listener ->
+                listener.onWeatherDataUpdated(weather)
+            }
         }.start()
     }
 
@@ -199,7 +205,9 @@ class AmanPlannerService(
         }
 
         arrivalsCache[sequenceId] = sequencedArrivals
-        dataUpdatesHandlers.forEach { handler -> handler.onSequenceUpdated(sequenceId, sequencedArrivals) }
+        dataUpdateListeners.forEach { listener ->
+            listener.onLiveData(sequencedArrivals)
+        }
     }
 
     /**

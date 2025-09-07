@@ -41,7 +41,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         layout = BorderLayout()
     }
 
-    fun openWindow() {
+    override fun openWindow() {
 
         controllerInterface.onReloadSettingsRequested()
         footer = Footer(controllerInterface)
@@ -262,5 +262,18 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
                 tab.updateTimelines(group)
             }
         }
+    }
+
+    override fun showErrorMessage(message: String) {
+        JOptionPane.showMessageDialog(
+            this,
+            message,
+            "Error",
+            JOptionPane.ERROR_MESSAGE
+        )
+    }
+
+    fun setWindowTitle(title: String) {
+        this.title = title
     }
 }

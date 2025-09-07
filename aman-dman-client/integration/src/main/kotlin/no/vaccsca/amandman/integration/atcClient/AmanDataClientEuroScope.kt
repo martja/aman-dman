@@ -8,10 +8,10 @@ import no.vaccsca.amandman.integration.atcClient.entities.MessageToServer
 import java.io.*
 import java.net.Socket
 
-class AtcClientEuroScope(
+class AmanDataClientEuroScope(
     private val host: String,
     private val port: Int,
-) : AtcClient() {
+) : AmanDataClient() {
     private var socket: Socket? = null
     private var writer: OutputStreamWriter? = null
     private var reader: InputStreamReader? = null

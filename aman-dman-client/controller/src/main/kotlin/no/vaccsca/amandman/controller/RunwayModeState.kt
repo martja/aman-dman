@@ -1,6 +1,6 @@
 package no.vaccsca.amandman.controller
 
-import no.vaccsca.amandman.integration.atcClient.entities.RunwayStatus
+import no.vaccsca.amandman.model.dto.RunwayStatus
 
 /**
  * Holds the complete state needed to generate runway mode labels.

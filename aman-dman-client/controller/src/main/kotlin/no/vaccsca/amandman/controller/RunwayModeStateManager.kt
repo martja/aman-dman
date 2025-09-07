@@ -1,7 +1,6 @@
 package no.vaccsca.amandman.controller
 
-import no.vaccsca.amandman.integration.atcClient.entities.RunwayStatus
-import no.vaccsca.amandman.integration.amanConfig.SettingsManager
+import no.vaccsca.amandman.model.dto.RunwayStatus
 
 /**
  * Manages runway mode state and automatically updates the view when any component changes.

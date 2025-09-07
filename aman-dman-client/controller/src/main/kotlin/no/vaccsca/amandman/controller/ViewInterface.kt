@@ -25,4 +25,6 @@ interface ViewInterface {
     fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>)
     fun updateDraggedLabel(callsign: String, newInstant: Instant, isAvailable: Boolean)
     fun updateRunwayModes(airportIcao: String, runwayModes: List<Pair<String, Boolean>>)
+    fun showErrorMessage(message: String)
+    fun openWindow()
 }

@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.integration.atcClient.entities
+package no.vaccsca.amandman.model.dto
 
 data class RunwayStatus(
     val arrivals: Boolean,

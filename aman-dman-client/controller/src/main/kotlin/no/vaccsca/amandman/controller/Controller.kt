@@ -2,10 +2,12 @@ package no.vaccsca.amandman.controller
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.model.DataUpdateListener
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.TimelineGroup
 import no.vaccsca.amandman.integration.amanConfig.SettingsManager
-import no.vaccsca.amandman.integration.atcClient.entities.RunwayStatus
+import no.vaccsca.amandman.model.dto.RunwayStatus
+import no.vaccsca.amandman.model.ApplicationMode
 import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.dto.TabData
 import no.vaccsca.amandman.model.dto.TimelineData
@@ -13,13 +15,13 @@ import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.service.AmanPlannerService
-import no.vaccsca.amandman.service.LiveDataHandler
 import kotlin.time.Duration.Companion.seconds
 
 class Controller(
-    private val service: AmanPlannerService,
+    private val plannerService: AmanPlannerService?,
     private val view: ViewInterface,
-) : ControllerInterface, LiveDataHandler {
+    override val applicationMode: ApplicationMode
+) : ModeAwareControllerInterface, DataUpdateListener {
 
     private val timelineGroups = mutableListOf<TimelineGroup>()
     private var selectedCallsign: String? = null
@@ -75,10 +77,14 @@ class Controller(
     }
 
     override fun refreshWeatherData(lat: Double, lon: Double) {
-        service.refreshWeatherData(lat, lon)
+        plannerService?.refreshWeatherData(lat, lon)
     }
 
     override fun onOpenVerticalProfileWindowClicked() {
+        if (!isFeatureAvailable(Feature.VIEW_DESCENT_PROFILE)) {
+            view.showErrorMessage("Descent profile view not available in slave mode")
+            return
+        }
         view.openDescentProfileWindow()
     }
 
@@ -86,9 +92,9 @@ class Controller(
         selectedCallsign = callsign
     }
 
-    override fun onLiveData(amanData: List<TimelineEvent>) {
+    override fun onLiveData(timelineEvents: List<TimelineEvent>) {
         synchronized(lock) {
-            amanData.filterIsInstance<RunwayArrivalEvent>().forEach {
+            timelineEvents.filterIsInstance<RunwayArrivalEvent>().forEach {
                 cachedAmanData[it.callsign] = CachedEvent(
                     lastTimestamp = Clock.System.now(),
                     timelineEvent = it
@@ -141,10 +147,12 @@ class Controller(
             ))
         }
 
-        selectedCallsign?.let { callsign ->
-            val selectedDescentProfile = service.getDescentProfileForCallsign(callsign)
-            selectedDescentProfile?.let {
-                view.updateDescentTrajectory(callsign, selectedDescentProfile)
+        if (plannerService != null) {
+            selectedCallsign?.let { callsign ->
+                val selectedDescentProfile = plannerService.getDescentProfileForCallsign(callsign)
+                selectedDescentProfile?.let {
+                    view.updateDescentTrajectory(callsign, selectedDescentProfile)
+                }
             }
         }
     }
@@ -191,33 +199,27 @@ class Controller(
     }
 
     override fun move(sequenceId: String, callsign: String, newScheduledTime: Instant) {
-        service.suggestScheduledTime(
-            sequenceId,
-            callsign,
-            newScheduledTime
-        )
+        if (!isFeatureAvailable(Feature.MANUAL_AIRCRAFT_MOVEMENT)) {
+            view.showErrorMessage("Manual aircraft movement not available in slave mode")
+            return
+        }
+        plannerService?.suggestScheduledTime(sequenceId, callsign, newScheduledTime)
     }
 
     override fun onRecalculateSequenceClicked(sequenceId: String, callSign: String?) {
-        service.reSchedule(sequenceId, callSign)
-    }
-
-    override fun onRemoveTimelineClicked(timelineConfig: TimelineConfig) {
-        timelineGroups.forEach { group ->
-            group.timelines.removeIf { it.title == timelineConfig.title }
+        if (!isFeatureAvailable(Feature.RECALCULATE_SEQUENCE)) {
+            view.showErrorMessage("Sequence recalculation not available in slave mode")
+            return
         }
-        view.updateTimelineGroups(timelineGroups)
-        // TODO: unsubscribe from inbounds if no timelines left
-    }
-
-    override fun onLabelDragged(sequenceId: String, callsign: String, newInstant: Instant) {
-        // Check if the new scheduled time is available
-        val isAvailable = service.isTimeSlotAvailable(sequenceId, callsign, newInstant)
-        view.updateDraggedLabel(callsign, newInstant, isAvailable)
+        plannerService?.reSchedule(sequenceId, callSign)
     }
 
     override fun setMinimumSpacingDistance(minimumSpacingDistanceNm: Double) {
-        service.setMinimumSpacing(minimumSpacingDistanceNm)
+        if (!isFeatureAvailable(Feature.SET_MINIMUM_SPACING)) {
+            view.showErrorMessage("Minimum spacing adjustment not available in slave mode")
+            return
+        }
+        plannerService?.setMinimumSpacing(minimumSpacingDistanceNm)
     }
 
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
@@ -233,6 +235,33 @@ class Controller(
             )
         )
     }
+
+    override fun onRemoveTimelineClicked(timelineConfig: TimelineConfig) {
+        if (!isFeatureAvailable(Feature.DELETE_TIMELINE)) {
+            view.showErrorMessage("Timeline deletion not available in slave mode")
+            return
+        }
+        timelineGroups.forEach { group ->
+            group.timelines.removeIf { it.title == timelineConfig.title }
+        }
+        view.updateTimelineGroups(timelineGroups)
+        // TODO: unsubscribe from inbounds if no timelines left
+    }
+
+    override fun onLabelDragged(sequenceId: String, callsign: String, newInstant: Instant) {
+        if (!isFeatureAvailable(Feature.MANUAL_AIRCRAFT_MOVEMENT)) {
+            view.showErrorMessage("Manual aircraft movement not available in slave mode")
+            return
+        }
+        // Check if the new scheduled time is available
+        if (plannerService == null) {
+            return
+        }
+        val isAvailable = plannerService.isTimeSlotAvailable(sequenceId, callsign, newInstant)
+        view.updateDraggedLabel(callsign, newInstant, isAvailable)
+    }
+
+    // Remove the old withModeCheck helper function as it's no longer needed
 
     private fun registerNewTimelineGroup(timelineGroup: TimelineGroup) {
         if (timelineGroups.any { it.airportIcao == timelineGroup.airportIcao }) {
@@ -250,7 +279,7 @@ class Controller(
             view.updateTimelineGroups(timelineGroups)
             view.closeTimelineForm()
         }
-        service.subscribeForInbounds(timelineConfig.airportIcao)
+        plannerService?.subscribeForInbounds(timelineConfig.airportIcao)
     }
 
     override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {
