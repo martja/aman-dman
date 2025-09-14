@@ -309,6 +309,7 @@ class Presenter(
         }
 
         plannerManager.registerService(plannerService)
+        plannerManager.getServiceForAirport(timelineGroup.airportIcao).planArrivals()
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
     }
@@ -320,7 +321,6 @@ class Presenter(
             view.updateTimelineGroups(timelineGroups)
             view.closeTimelineForm()
         }
-        plannerManager.getServiceForAirport(airportIcao).planArrivals()
     }
 
     override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {

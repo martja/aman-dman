@@ -27,7 +27,6 @@ data class RunwayModeState(
             }
 
         val runwayModeLabels = runwayModes.map { mode -> formatLabel(mode, activeArrivalRunways) }
-            .sortedBy { it.first }
 
         return listOf(airportLabel, modeLabel) + runwayModeLabels
     }
