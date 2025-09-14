@@ -36,6 +36,7 @@ class SharedStateHttpClient {
         findAndRegisterModules()
     }
 
+    val BASE_URL = "https://aman-dman-api.fly.dev"
     val JSON = "application/json".toMediaType()
 
     fun sendTimelineEvents(airportIcao: String, timelineEvents: List<TimelineEvent>) {
@@ -57,7 +58,7 @@ class SharedStateHttpClient {
         val json = objectMapper.writeValueAsString(sharedState)
 
         val request = Request.Builder()
-            .url("http://localhost:3000/api/v1/airports/$airportIcao/events")
+            .url("$BASE_URL/api/v1/airports/$airportIcao/events")
             .post(json.toRequestBody(JSON))
             .build()
 
@@ -68,7 +69,7 @@ class SharedStateHttpClient {
 
     fun getTimelineEvents(airportIcao: String): List<TimelineEvent> {
         val request = Request.Builder()
-            .url("http://localhost:3000/api/v1/airports/$airportIcao/events")
+            .url("$BASE_URL/api/v1/airports/$airportIcao/events")
             .get()
             .build()
 
@@ -90,7 +91,7 @@ class SharedStateHttpClient {
 
     fun getRunwayStatuses(airportIcao: String): Map<String, RunwayStatus> {
         val request = Request.Builder()
-            .url("http://localhost:3000/api/v1/airports/$airportIcao/runway-modes")
+            .url("$BASE_URL/api/v1/airports/$airportIcao/runway-modes")
             .get()
             .build()
 
@@ -112,7 +113,7 @@ class SharedStateHttpClient {
         val json = objectMapper.writeValueAsString(sharedStateJson)
 
         val request = Request.Builder()
-            .url("http://localhost:3000/api/v1/airports/$airportIcao/runway-modes")
+            .url("$BASE_URL/api/v1/airports/$airportIcao/runway-modes")
             .post(json.toRequestBody(JSON))
             .build()
 
@@ -131,7 +132,7 @@ class SharedStateHttpClient {
         val json = objectMapper.writeValueAsString(sharedStateJson)
 
         val request = Request.Builder()
-            .url("http://localhost:3000/api/v1/airports/$airportIcao/weather")
+            .url("$BASE_URL/api/v1/airports/$airportIcao/weather")
             .post(json.toRequestBody(JSON))
             .build()
 
@@ -144,7 +145,7 @@ class SharedStateHttpClient {
 
     fun getWeatherData(airportIcao: String): VerticalWeatherProfile? {
         val request = Request.Builder()
-            .url("http://localhost:3000/api/v1/airports/$airportIcao/weather")
+            .url("$BASE_URL/api/v1/airports/$airportIcao/weather")
             .get()
             .build()
 
@@ -159,7 +160,7 @@ class SharedStateHttpClient {
 
     fun getMinimumSpacing(airportIcao: String): Double {
         val request = Request.Builder()
-            .url("http://localhost:3000/api/v1/airports/$airportIcao/minimum-spacing")
+            .url("$BASE_URL/api/v1/airports/$airportIcao/minimum-spacing")
             .get()
             .build()
 
@@ -180,7 +181,7 @@ class SharedStateHttpClient {
 
         val json = objectMapper.writeValueAsString(sharedStateJson)
         val request = Request.Builder()
-            .url("http://localhost:3000/api/v1/airports/$airportIcao/minimum-spacing")
+            .url("$BASE_URL/api/v1/airports/$airportIcao/minimum-spacing")
             .post(json.toRequestBody(JSON))
             .build()
 

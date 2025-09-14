@@ -156,6 +156,7 @@ class Presenter(
         }
 
         selectedCallsign?.let { callsign ->
+            if (applicationMode == ApplicationMode.SLAVE) return
             plannerService.getDescentProfileForCallsign(callsign)
                 .onSuccess { selectedDescentProfile ->
                     if (selectedDescentProfile != null)

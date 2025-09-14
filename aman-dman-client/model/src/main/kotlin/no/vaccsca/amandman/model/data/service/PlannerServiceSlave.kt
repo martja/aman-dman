@@ -19,7 +19,7 @@ class PlannerServiceSlave(
             override fun run() {
                 fetchAll()
             }
-        }, 0, 10_000)
+        }, 0, 1000)
     }
 
     private fun fetchAll() {

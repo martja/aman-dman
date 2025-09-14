@@ -59,7 +59,7 @@ class DescentProfileTest {
         dmsToDecimal("""58°50'25.3"N  011°20'7.2"E"""),
         22000,
         250,
-        180
+        180,
     )
 
     val testRoute = listOf(
