@@ -1,18 +1,29 @@
-package no.vaccsca.amandman.model.data.service
+package no.vaccsca.amandman.model.data.service.integration
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.JsonFactory
 import kotlinx.coroutines.*
-import no.vaccsca.amandman.model.data.dto.IncomingMessageJson
-import no.vaccsca.amandman.model.data.dto.MessageToServer
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.ArrivalJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.ArrivalsUpdateJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.DeparturesUpdateJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.IncomingMessageJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.MessageToServer
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.RegisterFixInboundsMessage
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusesUpdateJson
+import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
+import no.vaccsca.amandman.model.domain.valueobjects.LatLng
+import no.vaccsca.amandman.model.domain.valueobjects.RoutePoint
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySelectionData
 import java.io.*
 import java.net.Socket
 import java.net.SocketTimeoutException
 
-class AmanDataClientEuroScope(
+class AtcClientEuroScope(
     private val host: String,
     private val port: Int,
-) : AmanDataClient() {
+) : AtcClient {
     private var socket: Socket? = null
     private var writer: OutputStreamWriter? = null
     private var reader: InputStreamReader? = null
@@ -23,6 +34,13 @@ class AmanDataClientEuroScope(
     }
     private var isConnected = false
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var nextRequestId = 0
+        get() {
+            return field++
+        }
+
+    private val arrivalCallbacks = mutableMapOf<Int, (List<AtcClientArrivalData>) -> Unit>()
+    private val runwayStatusCallbacks = mutableMapOf<String, (List<AtcClientRunwaySelectionData>) -> Unit>()
 
     init {
         startConnectionLoop()
@@ -58,7 +76,25 @@ class AmanDataClientEuroScope(
         }
     }
 
-    override fun sendMessage(message: MessageToServer) {
+    override fun collectMovementsFor(
+        airportIcao: String,
+        onDataReceived: (List<AtcClientArrivalData>) -> Unit,
+        onRunwaySelectionChanged: (List<AtcClientRunwaySelectionData>) -> Unit
+    ) {
+        val timelineId = nextRequestId
+        arrivalCallbacks[timelineId] = onDataReceived
+        runwayStatusCallbacks[airportIcao] = onRunwaySelectionChanged
+        sendMessage(
+            RegisterFixInboundsMessage(
+                requestId = timelineId,
+                targetFixes = emptyList(),
+                viaFixes = emptyList(), // TODO
+                destinationAirports = listOf(airportIcao)
+            )
+        )
+    }
+
+    private fun sendMessage(message: MessageToServer) {
         try {
             val jsonMessage = objectMapper.writeValueAsString(message)
             writer?.write(jsonMessage + "\n")
@@ -93,7 +129,7 @@ class AmanDataClientEuroScope(
 
                     try {
                         val dataPackage = objectMapper.readValue(message, IncomingMessageJson::class.java)
-                        super.handleMessage(dataPackage)
+                        handleMessage(dataPackage)
                     } catch (e: Exception) {
                         println("Error parsing JSON message #$messageCount (length: ${message.length}): ${e.message}")
                         println("Message start: ${message.take(100)}")
@@ -130,6 +166,59 @@ class AmanDataClientEuroScope(
             isConnected = false
         }
     }
+
+    private fun handleMessage(incomingMessageJson: IncomingMessageJson) {
+        when (incomingMessageJson) {
+            is ArrivalsUpdateJson -> {
+                arrivalCallbacks[incomingMessageJson.requestId]?.invoke(incomingMessageJson.inbounds.map { it.toArrival() })
+            }
+            is DeparturesUpdateJson -> {
+                TODO("Departures not yet implemented")
+            }
+            is RunwayStatusesUpdateJson -> {
+                incomingMessageJson.airports.forEach { (airportIcao, statusesJson) ->
+                    val statuses = statusesJson.map { (name, statusJson) -> statusJson.toRunwayStatus(name) }
+                    runwayStatusCallbacks[airportIcao]?.invoke(statuses)
+                }
+            }
+        }
+    }
+
+    private fun ArrivalJson.toArrival() =
+        AtcClientArrivalData(
+            callsign = this.callsign,
+            icaoType = this.icaoType,
+            position = AircraftPosition(
+                position = LatLng(this.latitude, this.longitude),
+                altitudeFt = this.pressureAltitude,
+                flightLevel = this.flightLevel,
+                groundspeedKts = this.groundSpeed,
+                trackDeg = this.track,
+            ),
+            assignedRunway = this.assignedRunway,
+            assignedStar = this.assignedStar,
+            assignedDirect = this.assignedDirect,
+            scratchPad = this.scratchPad,
+            track = this.track,
+            route = this.route.map {
+                RoutePoint(
+                    id = it.name,
+                    position = LatLng(it.latitude, it.longitude),
+                    isOnStar = it.isOnStar,
+                    isPassed = it.isPassed
+                )
+            },
+            arrivalAirportIcao = this.arrivalAirportIcao,
+            flightPlanTas = this.flightPlanTas,
+            trackingController = this.trackingController
+        )
+
+    private fun RunwayStatusJson.toRunwayStatus(name: String) =
+        AtcClientRunwaySelectionData(
+            runway = name,
+            allowArrivals = this.departures,
+            allowDepartures = this.arrivals,
+        )
 
     fun close() {
         try {

@@ -6,7 +6,7 @@ import no.vaccsca.amandman.common.TimelineGroup
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.data.dto.TabData
-import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.tabpage.TimeRangeScrollBarVertical
 import no.vaccsca.amandman.view.tabpage.TimelineScrollPane

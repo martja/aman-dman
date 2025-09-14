@@ -8,7 +8,7 @@ interface PresenterInterface {
     fun onReloadSettingsRequested()
     fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto)
     fun onOpenMetWindowClicked()
-    fun refreshWeatherData(lat: Double, lon: Double)
+    fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double)
     fun onOpenVerticalProfileWindowClicked()
     fun onAircraftSelected(callsign: String)
     fun onEditTimelineRequested(groupId: String, timelineTitle: String)

@@ -2,11 +2,13 @@ package no.vaccsca.amandman
 
 import com.jtattoo.plaf.hifi.HiFiLookAndFeel
 import no.vaccsca.amandman.presenter.Presenter
-import no.vaccsca.amandman.model.AmanModel
-import no.vaccsca.amandman.model.data.service.AmanDataClientEuroScope
 import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.ApplicationMode
-import no.vaccsca.amandman.model.data.service.AmanPlannerService
+import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
+import no.vaccsca.amandman.model.data.service.integration.AtcClientEuroScope
+import no.vaccsca.amandman.model.data.service.PlannerServiceMaster
+import no.vaccsca.amandman.model.data.service.PlannerServiceSlave
+import no.vaccsca.amandman.model.data.service.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
 import no.vaccsca.amandman.model.domain.service.GuiDataHandler
 import no.vaccsca.amandman.view.AmanDmanMainFrame
@@ -40,48 +42,47 @@ fun main() {
 
     fun initializeApplication() {
         // First, determine the application mode
-        val applicationMode = ApplicationMode.MASTER
-
-        // --- Model ---
-        val navdataRepository = NavdataRepository()
-        val model = AmanModel()
+        val applicationMode = ApplicationMode.LOCAL
 
         // --- View ---
         val view = AmanDmanMainFrame()
 
-        // --- Integration ---
-        val atcClient = AmanDataClientEuroScope(
-            host = System.getenv("ATC_HOST") ?: "127.0.0.1",
-            port = System.getenv("ATC_PORT")?.toIntOrNull() ?: 12345,
-        )
+        val host = System.getenv("ATC_HOST") ?: "127.0.0.1"
+        val port = System.getenv("ATC_PORT")?.toIntOrNull() ?: 12345
 
         // --- Service ---
         val guiUpdater = GuiDataHandler()
         val plannerService = when(applicationMode) {
             ApplicationMode.MASTER ->
-                AmanPlannerService(
-                    amanDataClient = atcClient,
-                    amanModel = model,
+                PlannerServiceMaster(
+                    weatherDataRepository = WeatherDataRepository(),
+                    atcClient = AtcClientEuroScope(host, port),
+                    navdataRepository = NavdataRepository(),
                     dataUpdateListeners = arrayOf(guiUpdater, DataUpdatesServerSender()),
                 )
             ApplicationMode.LOCAL ->
-                AmanPlannerService(
-                    amanDataClient = atcClient,
-                    amanModel = model,
+                PlannerServiceMaster(
+                    weatherDataRepository = WeatherDataRepository(),
+                    atcClient = AtcClientEuroScope(host, port),
+                    navdataRepository = NavdataRepository(),
                     dataUpdateListeners = arrayOf(guiUpdater),
                 )
-            ApplicationMode.SLAVE -> null
+            ApplicationMode.SLAVE ->
+                PlannerServiceSlave(
+                    sharedStateHttpClient = SharedStateHttpClient(),
+                    dataUpdateListener = guiUpdater,
+                )
         }
 
         // --- Controller ---
-        val presenter = Presenter(plannerService, view, model, applicationMode)
+        val presenter = Presenter(plannerService, view, applicationMode)
         guiUpdater.presenter = presenter
 
         // Update window title to show network mode
         view.setWindowTitle("AMAN-DMAN - ${applicationMode.name} Mode")
         view.openWindow()
 
-        presenter.refreshWeatherData(60.0, 11.0)
+        presenter.refreshWeatherData("ENGM", 60.0, 11.0)
     }
 
     // Create a new JFrame

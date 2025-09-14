@@ -2,28 +2,29 @@ package no.vaccsca.amandman.model.data.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.AmanModel
 import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
-import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
-import no.vaccsca.amandman.model.data.dto.ArrivalJson
-import no.vaccsca.amandman.model.domain.valueobjects.LatLng
-import no.vaccsca.amandman.model.domain.valueobjects.RoutePoint
 import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
 import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
-import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.data.repository.NavdataRepository
+import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
+import no.vaccsca.amandman.model.data.service.integration.AtcClient
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import kotlin.collections.plus
 
 /**
  * This is only used in the Master and Local instances of the application
  */
-class AmanPlannerService(
-    private val amanDataClient: AmanDataClient,
-    private val amanModel: AmanModel,
+class PlannerServiceMaster(
+    private val weatherDataRepository: WeatherDataRepository,
+    private val navdataRepository: NavdataRepository,
+    private val atcClient: AtcClient,
     private vararg val dataUpdateListeners: DataUpdateListener,
-)  {
+) : PlannerService {
     private var weatherData: VerticalWeatherProfile? = null
 
     // ID of the sequence, typically the airport ICAO code
@@ -33,24 +34,28 @@ class AmanPlannerService(
 
     private val descentTrajectoryCache = mutableMapOf<String, List<TrajectoryPoint>>()
 
-    fun subscribeForInbounds(icao: String) {
-        sequences.computeIfAbsent(icao) { Sequence(emptyList()) }
-        arrivalsCache.computeIfAbsent(icao) { emptyList() }
-
-        amanDataClient.collectArrivalsFor(
-            airportIcao =  icao,
-            onRunwayModesChanged = { runwayStatuses ->
-                runwayStatuses.forEach { (airportIcao, statuses) ->
-                    dataUpdateListeners.forEach { listener ->
-                        listener.onRunwayModesUpdated(airportIcao, statuses)
-                    }
-                }
+    override fun planArrivalsFor(
+        airportIcao: String,
+    ) {
+        if (!sequences.containsKey(airportIcao)) {
+            sequences[airportIcao] = Sequence(mutableListOf())
+        }
+        atcClient.collectMovementsFor(airportIcao,
+            onDataReceived = { arrivals ->
+                handleUpdateFromAtcClient(airportIcao, arrivals)
             },
-            onDataReceived = { arrivals -> handleArrivalsUpdate(icao, arrivals) }
+            onRunwaySelectionChanged = { runways ->
+                val map = runways.associate {
+                    it.runway to RunwayStatus(it.allowArrivals,it.allowDepartures)
+                }
+                dataUpdateListeners.forEach {
+                    it.onRunwayModesUpdated(airportIcao, map)
+                }
+            }
         )
     }
 
-    private fun handleArrivalsUpdate(icao: String, arrivals: List<ArrivalJson>) {
+    private fun handleUpdateFromAtcClient(icao: String, arrivals: List<AtcClientArrivalData>) {
         val runwayArrivalEvents = arrivals.mapNotNull { arrival -> createRunwayArrivalEvent(arrival) }
         val sequenceItems = runwayArrivalEvents.map {
             AircraftSequenceCandidate(
@@ -74,62 +79,46 @@ class AmanPlannerService(
         onSequenceUpdated(icao)
     }
 
-    private fun createRunwayArrivalEvent(arrivalJson: ArrivalJson): RunwayArrivalEvent? {
+    private fun createRunwayArrivalEvent(arrival: AtcClientArrivalData): RunwayArrivalEvent? {
         val aircraftPerformance = try {
-            AircraftPerformanceData.get(arrivalJson.icaoType)
+            AircraftPerformanceData.get(arrival.icaoType)
         } catch (e: Exception) {
-            println("Error fetching performance data for ${arrivalJson.icaoType}: ${e.message}")
+            println("Error fetching performance data for ${arrival.icaoType}: ${e.message}")
             return null
         }
 
-        val position =
-            AircraftPosition(
-                position = LatLng(arrivalJson.latitude, arrivalJson.longitude),
-                altitudeFt = arrivalJson.flightLevel,
-                groundspeedKts = arrivalJson.groundSpeed,
-                trackDeg = arrivalJson.track
-            )
-
-        val route = arrivalJson.route.map {
-            RoutePoint(
-                it.name,
-                LatLng(it.latitude, it.longitude),
-                it.isPassed,
-                it.isOnStar
-            )
-        }
-        val star = amanModel.getStars().find { it.id == arrivalJson.assignedStar && it.runway == arrivalJson.assignedRunway }
+        val star = navdataRepository.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway }
 
         val trajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            route = route,
-            aircraftPosition = position,
+            route = arrival.route,
+            aircraftPosition = arrival.position,
             verticalWeatherProfile = weatherData,
             star = star,
             aircraftPerformance = aircraftPerformance,
-            flightPlanTas = arrivalJson.flightPlanTas,
+            flightPlanTas = arrival.flightPlanTas,
         )
 
-        descentTrajectoryCache[arrivalJson.callsign] = trajectory
+        descentTrajectoryCache[arrival.callsign] = trajectory
 
-        if (arrivalJson.assignedRunway == null) {
+        if (arrival.assignedRunway == null) {
             return null
         }
 
         val estimatedTime = Clock.System.now() + trajectory.first().remainingTime
 
         return RunwayArrivalEvent(
-            callsign = arrivalJson.callsign,
-            icaoType = arrivalJson.icaoType,
-            flightLevel = arrivalJson.flightLevel,
-            groundSpeed = arrivalJson.groundSpeed,
+            callsign = arrival.callsign,
+            icaoType = arrival.icaoType,
+            flightLevel = arrival.position.flightLevel,
+            groundSpeed = arrival.position.groundspeedKts,
             wakeCategory = aircraftPerformance.takeOffWTC,
-            assignedStar = arrivalJson.assignedStar,
-            trackingController = arrivalJson.trackingController,
-            runway = arrivalJson.assignedRunway!!,
+            assignedStar = arrival.assignedStar,
+            trackingController = arrival.trackingController,
+            runway = arrival.assignedRunway,
             estimatedTime = estimatedTime,
             scheduledTime = estimatedTime,
-            pressureAltitude = arrivalJson.pressureAltitude,
-            airportIcao = arrivalJson.arrivalAirportIcao,
+            pressureAltitude = arrival.position.altitudeFt,
+            airportIcao = arrival.arrivalAirportIcao,
             remainingDistance = trajectory.first().remainingDistance,
             timelineId = 0,
             assignedStarOk = star != null,
@@ -139,29 +128,29 @@ class AmanPlannerService(
         )
     }
 
-    fun setMinimumSpacing(minimumSpacingDistanceNm: Double) {
+    override fun setMinimumSpacing(minimumSpacingDistanceNm: Double) {
         this.minimumSpacingNm = minimumSpacingDistanceNm
         sequences.forEach { (sequenceId, sequence) ->
             sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequence)
             onSequenceUpdated(sequenceId)
-        }
-        // Notify listeners of the spacing change
-        dataUpdateListeners.forEach { listener ->
-            listener.onMinimumSpacingUpdated(minimumSpacingDistanceNm)
+            // Notify listeners of the spacing change
+            dataUpdateListeners.forEach { listener ->
+                listener.onMinimumSpacingUpdated(sequenceId, minimumSpacingDistanceNm)
+            }
         }
     }
 
-    fun refreshWeatherData(lat: Double, lon: Double) {
+    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double) {
         Thread {
-            val weather = amanModel.getWeatherData(lat, lon)
+            val weather = weatherDataRepository.getWindData(lat, lon)
             weatherData = weather
             dataUpdateListeners.forEach { listener ->
-                listener.onWeatherDataUpdated(weather)
+                listener.onWeatherDataUpdated(airportIcao, weather)
             }
         }.start()
     }
 
-    fun suggestScheduledTime(sequenceId: String, callsign: String, scheduledTime: Instant) {
+    override fun suggestScheduledTime(sequenceId: String, callsign: String, scheduledTime: Instant) {
         if (isTimeSlotAvailable(sequenceId, callsign, scheduledTime)) {
             sequences[sequenceId] = AmanDmanSequenceService.suggestScheduledTime(sequences[sequenceId]!!, callsign, scheduledTime, minimumSpacingNm)
             onSequenceUpdated(sequenceId)
@@ -170,7 +159,7 @@ class AmanPlannerService(
         }
     }
 
-    fun reSchedule(sequenceId: String, callSign: String?) {
+    override fun reSchedule(sequenceId: String, callSign: String?) {
         if (callSign == null) {
             sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequences[sequenceId]!!)
         } else {
@@ -179,7 +168,7 @@ class AmanPlannerService(
         onSequenceUpdated(sequenceId)
     }
 
-    fun isTimeSlotAvailable(
+    override fun isTimeSlotAvailable(
         sequenceId: String,
         callsign: String,
         scheduledTime: Instant
@@ -211,7 +200,7 @@ class AmanPlannerService(
 
         arrivalsCache[sequenceId] = sequencedArrivals
         dataUpdateListeners.forEach { listener ->
-            listener.onLiveData(sequencedArrivals)
+            listener.onLiveData(sequenceId, sequencedArrivals)
         }
     }
 
@@ -241,7 +230,7 @@ class AmanPlannerService(
         return this.copy(distanceToPreceding = distanceToPreceding)
     }
 
-    fun getDescentProfileForCallsign(callsign: String): List<TrajectoryPoint>? {
+    override  fun getDescentProfileForCallsign(callsign: String): List<TrajectoryPoint>? {
         return descentTrajectoryCache[callsign]
     }
 }

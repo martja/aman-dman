@@ -1,8 +1,8 @@
 package no.vaccsca.amandman.view.windows
 
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
-import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.data.dto.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import java.awt.BorderLayout
 import javax.swing.*
 import javax.swing.border.TitledBorder

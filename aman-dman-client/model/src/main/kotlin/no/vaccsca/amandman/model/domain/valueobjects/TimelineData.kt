@@ -1,6 +1,6 @@
 package no.vaccsca.amandman.model.domain.valueobjects
 
-import no.vaccsca.amandman.model.data.dto.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 
 
 data class TimelineData(

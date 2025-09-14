@@ -2,25 +2,24 @@ package no.vaccsca.amandman.presenter
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.common.TimelineGroup
-import no.vaccsca.amandman.model.AmanModel
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.ApplicationMode
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.data.repository.SettingsRepository
+import no.vaccsca.amandman.model.data.service.PlannerService
+import no.vaccsca.amandman.model.domain.service.DataUpdateListener
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
-import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.data.dto.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
-import no.vaccsca.amandman.model.data.service.AmanPlannerService
 import kotlin.time.Duration.Companion.seconds
 
 class Presenter(
-    private val plannerService: AmanPlannerService?,
+    private val plannerService: PlannerService,
     private val view: ViewInterface,
-    private val model: AmanModel,
     override val applicationMode: ApplicationMode,
 ) : ModeAwarePresenterInterface, DataUpdateListener {
 
@@ -53,7 +52,7 @@ class Presenter(
     }
 
     private fun loadSettingsAndOpenTabs() {
-        model.getSettings(reload = true).timelines.forEach { timelineJson ->
+        SettingsRepository.getSettings(reload = true).timelines.forEach { timelineJson ->
             val newTimelineConfig = TimelineConfig(
                 title = timelineJson.title,
                 runwaysLeft = timelineJson.runwaysLeft,
@@ -77,8 +76,8 @@ class Presenter(
         view.openMetWindow()
     }
 
-    override fun refreshWeatherData(lat: Double, lon: Double) {
-        plannerService?.refreshWeatherData(lat, lon)
+    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double) {
+        plannerService?.refreshWeatherData(airportIcao, lat, lon)
     }
 
     override fun onOpenVerticalProfileWindowClicked() {
@@ -93,7 +92,7 @@ class Presenter(
         selectedCallsign = callsign
     }
 
-    override fun onLiveData(timelineEvents: List<TimelineEvent>) {
+    override fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>) {
         synchronized(lock) {
             timelineEvents.filterIsInstance<RunwayArrivalEvent>().forEach {
                 cachedAmanData[it.callsign] = CachedEvent(
@@ -118,13 +117,13 @@ class Presenter(
         runwayModeStateManager.updateRunwayStatuses(airportIcao, runwayStatuses, minimumSpacingNm)
     }
 
-    override fun onMinimumSpacingUpdated(minimumSpacingNm: Double) {
+    override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {
         this.minimumSpacingNm = minimumSpacingNm
         runwayModeStateManager.updateMinimumSpacing(this.minimumSpacingNm)
     }
 
-    override fun onWeatherDataUpdated(data: VerticalWeatherProfile?) {
-        view.updateWeatherData(data)
+    override fun onWeatherDataUpdated(airportIcao: String, data: VerticalWeatherProfile?) {
+        view.updateWeatherData(airportIcao, data)
     }
 
     private fun updateViewFromCachedData() {
@@ -200,27 +199,15 @@ class Presenter(
     }
 
     override fun move(sequenceId: String, callsign: String, newScheduledTime: Instant) {
-        if (!isFeatureAvailable(Feature.MANUAL_AIRCRAFT_MOVEMENT)) {
-            view.showErrorMessage("Manual aircraft movement not available in slave mode")
-            return
-        }
-        plannerService?.suggestScheduledTime(sequenceId, callsign, newScheduledTime)
+        plannerService.suggestScheduledTime(sequenceId, callsign, newScheduledTime)
     }
 
     override fun onRecalculateSequenceClicked(sequenceId: String, callSign: String?) {
-        if (!isFeatureAvailable(Feature.RECALCULATE_SEQUENCE)) {
-            view.showErrorMessage("Sequence recalculation not available in slave mode")
-            return
-        }
-        plannerService?.reSchedule(sequenceId, callSign)
+        plannerService.reSchedule(sequenceId, callSign)
     }
 
     override fun setMinimumSpacingDistance(minimumSpacingDistanceNm: Double) {
-        if (!isFeatureAvailable(Feature.SET_MINIMUM_SPACING)) {
-            view.showErrorMessage("Minimum spacing adjustment not available in slave mode")
-            return
-        }
-        plannerService?.setMinimumSpacing(minimumSpacingDistanceNm)
+        plannerService.setMinimumSpacing(minimumSpacingDistanceNm)
     }
 
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
@@ -280,7 +267,7 @@ class Presenter(
             view.updateTimelineGroups(timelineGroups)
             view.closeTimelineForm()
         }
-        plannerService?.subscribeForInbounds(timelineConfig.airportIcao)
+        plannerService.planArrivalsFor(timelineConfig.airportIcao)
     }
 
     override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {

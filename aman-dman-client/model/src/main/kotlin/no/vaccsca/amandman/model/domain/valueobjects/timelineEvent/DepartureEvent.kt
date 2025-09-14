@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.dto.timelineEvent
+package no.vaccsca.amandman.model.domain.valueobjects.timelineEvent
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.Flight

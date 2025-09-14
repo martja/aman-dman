@@ -6,11 +6,11 @@ import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.common.*
 import no.vaccsca.amandman.model.domain.valueobjects.Flight
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
-import no.vaccsca.amandman.model.data.dto.timelineEvent.DepartureEvent
-import no.vaccsca.amandman.model.data.dto.timelineEvent.FixInboundEvent
-import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayDelayEvent
-import no.vaccsca.amandman.model.data.dto.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.FixInboundEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.tabpage.timeline.labels.ArrivalLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.DepartureLabel

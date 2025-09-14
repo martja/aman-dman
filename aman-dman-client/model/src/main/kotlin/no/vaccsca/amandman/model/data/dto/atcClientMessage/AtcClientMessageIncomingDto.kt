@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.dto
+package no.vaccsca.amandman.model.data.dto.atcClientMessage
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo

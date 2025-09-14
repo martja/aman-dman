@@ -3,8 +3,8 @@ package no.vaccsca.amandman.view.tabpage.timeline
 import no.vaccsca.amandman.presenter.PresenterInterface
 import kotlinx.datetime.*
 import no.vaccsca.amandman.common.util.NumberUtils.format
-import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayDelayEvent
-import no.vaccsca.amandman.model.data.dto.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue

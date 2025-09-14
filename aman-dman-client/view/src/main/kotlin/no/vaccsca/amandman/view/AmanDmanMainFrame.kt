@@ -218,7 +218,8 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         }
     }
 
-    override fun updateWeatherData(weather: VerticalWeatherProfile?) {
+    override fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?) {
+        windDialog?.title = "Weather for $airportIcao"
         verticalWindView.update(weather)
     }
 

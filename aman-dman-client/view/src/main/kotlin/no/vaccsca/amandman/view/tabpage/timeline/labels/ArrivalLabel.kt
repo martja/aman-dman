@@ -2,7 +2,7 @@ package no.vaccsca.amandman.view.tabpage.timeline.labels
 
 import no.vaccsca.amandman.presenter.PresenterInterface
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.data.dto.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent

@@ -2,8 +2,8 @@ import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.distanceTo
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
-import no.vaccsca.amandman.model.data.dto.ArrivalJson
-import no.vaccsca.amandman.model.data.dto.FixPointJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.ArrivalJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.FixPointJson
 import no.vaccsca.amandman.service.EstimationService.toRunwayArrivalEvent
 import kotlin.math.abs
 import kotlin.test.Test

@@ -14,7 +14,7 @@ interface ViewInterface {
     fun openMetWindow()
     fun openLandingRatesWindow()
     fun openNonSequencedWindow()
-    fun updateWeatherData(weather: VerticalWeatherProfile?)
+    fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?)
     fun openDescentProfileWindow()
     fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig? = null)
     fun closeTimelineForm()

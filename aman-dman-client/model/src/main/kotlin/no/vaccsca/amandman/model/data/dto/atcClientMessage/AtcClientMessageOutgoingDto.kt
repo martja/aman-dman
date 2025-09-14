@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.dto
+package no.vaccsca.amandman.model.data.dto.atcClientMessage
 
 sealed class MessageToServer(
     val type: String
