@@ -15,6 +15,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateEventJson
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateJson
+import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
@@ -36,8 +37,8 @@ class SharedStateHttpClient {
         findAndRegisterModules()
     }
 
-    val BASE_URL = "https://aman-dman-api.fly.dev"
     val JSON = "application/json".toMediaType()
+    val BASE_URL: String = SettingsRepository.getSettings(reload = true).connectionConfig.api.host
 
     fun sendTimelineEvents(airportIcao: String, timelineEvents: List<TimelineEvent>) {
         val events = timelineEvents.map { event ->

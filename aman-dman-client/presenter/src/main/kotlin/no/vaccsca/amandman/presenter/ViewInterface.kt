@@ -2,7 +2,7 @@ package no.vaccsca.amandman.presenter
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.common.TimelineGroup
+import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.data.dto.TabData

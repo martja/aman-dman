@@ -2,7 +2,7 @@ package no.vaccsca.amandman.view
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.common.TimelineGroup
+import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.presenter.ViewInterface
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
@@ -90,7 +90,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
             availableTimelines.sortedBy { it.title }.forEach { timeline ->
                 val item = JMenuItem(timeline.title)
                 item.addActionListener {
-                    presenterInterface!!.onAddTimelineButtonClicked(tab.airportIcao, timeline)
+                    presenterInterface.onAddTimelineButtonClicked(tab.airportIcao, timeline)
                 }
                 loadTimelineMenu.add(item)
             }
@@ -255,7 +255,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         for (group in timelineGroups) {
             if (tabPane.components.none { (it as TabView).airportIcao == group.airportIcao }) {
                 val tabView = TabView(presenterInterface!!, group.airportIcao)
-                tabPane.addTab(group.name, tabView)
+                tabPane.addTab(group.name + " " + group.userRole, tabView)
             }
         }
 

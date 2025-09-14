@@ -1,4 +1,14 @@
 {
+  "airports": {
+    "ENGM": {
+      "latitude": 60.19347236391319,
+      "longitude": 11.107551731434853
+    },
+    "ENBR": {
+      "latitude": 60.29283190267194,
+      "longitude": 5.220433085568767
+    }
+  },
   "timelines": [
     {
       "airportIcao": "ENGM",
@@ -32,5 +42,14 @@
       "targetFixesLeft": [ "OBW10" ],
       "targetFixesRight": [ "ONE10" ]
     }
-  ]
+  ],
+  "connectionConfig": {
+    "atcClient": {
+      "host": "localhost",
+      "port": 12345
+    },
+    "api": {
+      "host": "https://aman-dman-api.fly.dev"
+    }
+  }
 }

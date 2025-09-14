@@ -3,7 +3,7 @@ package no.vaccsca.amandman.model
 /**
  * Defines the operating modes for the AMAN/DMAN application
  */
-enum class ApplicationMode {
+enum class UserRole {
     /**
      * Local mode: No network connectivity, operates independently
      */

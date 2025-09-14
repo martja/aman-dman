@@ -3,26 +3,33 @@ package no.vaccsca.amandman.presenter
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.common.TimelineGroup
-import no.vaccsca.amandman.model.ApplicationMode
+import no.vaccsca.amandman.model.domain.TimelineGroup
+import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
-import no.vaccsca.amandman.model.data.service.PlannerService
+import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
+import no.vaccsca.amandman.model.data.service.PlannerManager
+import no.vaccsca.amandman.model.data.service.PlannerServiceMaster
+import no.vaccsca.amandman.model.data.service.PlannerServiceSlave
+import no.vaccsca.amandman.model.data.service.integration.AtcClientEuroScope
+import no.vaccsca.amandman.model.data.service.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.service.DataUpdateListener
+import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import kotlin.time.Duration.Companion.seconds
 
 class Presenter(
-    private val plannerService: PlannerService,
+    private val plannerManager: PlannerManager,
     private val view: ViewInterface,
-    override val applicationMode: ApplicationMode,
-) : ModeAwarePresenterInterface, DataUpdateListener {
+    private val guiUpdater: DataUpdateListener,
+) : PresenterInterface, DataUpdateListener {
 
     private val timelineGroups = mutableListOf<TimelineGroup>()
     private var selectedCallsign: String? = null
@@ -62,13 +69,6 @@ class Presenter(
                 targetFixesRight = timelineJson.targetFixesRight,
                 airportIcao = timelineJson.airportIcao
             )
-            registerNewTimelineGroup(
-                TimelineGroup(
-                    airportIcao = timelineJson.airportIcao,
-                    name = timelineJson.airportIcao,
-                    timelines = mutableListOf()
-                )
-            )
             timelineConfigs[timelineJson.title] = newTimelineConfig
         }
     }
@@ -77,8 +77,8 @@ class Presenter(
         view.openMetWindow()
     }
 
-    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double) {
-        plannerService.refreshWeatherData(airportIcao, lat, lon)
+    override fun refreshWeatherData(airportIcao: String) {
+        plannerManager.getServiceForAirport(airportIcao).refreshWeatherData()
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
@@ -88,10 +88,6 @@ class Presenter(
     }
 
     override fun onOpenVerticalProfileWindowClicked() {
-        if (!isFeatureAvailable(Feature.VIEW_DESCENT_PROFILE)) {
-            view.showErrorMessage("Descent profile view not available in slave mode")
-            return
-        }
         view.openDescentProfileWindow()
     }
 
@@ -156,8 +152,7 @@ class Presenter(
         }
 
         selectedCallsign?.let { callsign ->
-            if (applicationMode == ApplicationMode.SLAVE) return
-            plannerService.getDescentProfileForCallsign(callsign)
+           /* plannerManager.getAllServices().getDescentProfileForCallsign(callsign)
                 .onSuccess { selectedDescentProfile ->
                     if (selectedDescentProfile != null)
                         view.updateDescentTrajectory(callsign, selectedDescentProfile)
@@ -167,7 +162,7 @@ class Presenter(
                         is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
                         else -> view.showErrorMessage("Failed to fetch descent profile")
                     }
-                }
+                }*/
         }
     }
 
@@ -181,12 +176,13 @@ class Presenter(
         view.showTabContextMenu(tabIndex, availableTimelinesForIcao)
     }
 
-    override fun onNewTimelineGroup(airportIcao: String) =
+    override fun onNewTimelineGroup(airportIcao: String, userRole: UserRole) =
         registerNewTimelineGroup(
             TimelineGroup(
                 airportIcao = airportIcao,
                 name = airportIcao,
-                timelines = mutableListOf()
+                timelines = mutableListOf(),
+                userRole = userRole
             )
         ).also {
             view.closeTimelineForm()
@@ -212,8 +208,8 @@ class Presenter(
         view.openNonSequencedWindow()
     }
 
-    override fun move(sequenceId: String, callsign: String, newScheduledTime: Instant) {
-        plannerService.suggestScheduledTime(sequenceId, callsign, newScheduledTime)
+    override fun move(airportIcao: String, callsign: String, newScheduledTime: Instant) {
+        plannerManager.getServiceForAirport(airportIcao).suggestScheduledTime(callsign, newScheduledTime)
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
@@ -222,8 +218,8 @@ class Presenter(
             }
     }
 
-    override fun onRecalculateSequenceClicked(sequenceId: String, callSign: String?) {
-        plannerService.reSchedule(sequenceId, callSign)
+    override fun onRecalculateSequenceClicked(airportIcao: String, callSign: String?) {
+        plannerManager.getServiceForAirport(airportIcao).reSchedule(callSign)
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
@@ -233,7 +229,7 @@ class Presenter(
     }
 
     override fun setMinimumSpacingDistance(airportIcao: String, minimumSpacingDistanceNm: Double) {
-        plannerService.setMinimumSpacing(airportIcao, minimumSpacingDistanceNm)
+        plannerManager.getServiceForAirport(airportIcao).setMinimumSpacing(minimumSpacingDistanceNm)
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> {
@@ -244,8 +240,8 @@ class Presenter(
             }
     }
 
-    override fun onLabelDragged(sequenceId: String, callsign: String, newInstant: Instant) {
-        plannerService.isTimeSlotAvailable(sequenceId, callsign, newInstant)
+    override fun onLabelDragged(airportIcao: String, callsign: String, newInstant: Instant) {
+        plannerManager.getServiceForAirport(airportIcao).isTimeSlotAvailable(callsign, newInstant)
             .onSuccess { view.updateDraggedLabel(callsign, newInstant, it) }
             .onFailure {
                 when (it) {
@@ -257,7 +253,7 @@ class Presenter(
 
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
         registerTimeline(
-            config.groupId,
+            config.airportIcao,
             TimelineConfig(
                 title = config.title,
                 runwaysLeft = config.left.targetRunways,
@@ -270,10 +266,6 @@ class Presenter(
     }
 
     override fun onRemoveTimelineClicked(timelineConfig: TimelineConfig) {
-        if (!isFeatureAvailable(Feature.DELETE_TIMELINE)) {
-            view.showErrorMessage("Timeline deletion not available in slave mode")
-            return
-        }
         timelineGroups.forEach { group ->
             group.timelines.removeIf { it.title == timelineConfig.title }
         }
@@ -288,18 +280,44 @@ class Presenter(
             return // Group already exists
         }
 
+        val plannerService = when(timelineGroup.userRole) {
+            UserRole.MASTER ->
+                PlannerServiceMaster(
+                    airportIcao = timelineGroup.airportIcao,
+                    weatherDataRepository = WeatherDataRepository(),
+                    atcClient = AtcClientEuroScope(),
+                    navdataRepository = NavdataRepository(),
+                    dataUpdateListeners = arrayOf(guiUpdater, DataUpdatesServerSender()),
+                )
+            UserRole.LOCAL ->
+                PlannerServiceMaster(
+                    airportIcao = timelineGroup.airportIcao,
+                    weatherDataRepository = WeatherDataRepository(),
+                    atcClient = AtcClientEuroScope(),
+                    navdataRepository = NavdataRepository(),
+                    dataUpdateListeners = arrayOf(guiUpdater),
+                )
+            UserRole.SLAVE ->
+                PlannerServiceSlave(
+                    airportIcao = timelineGroup.airportIcao,
+                    sharedStateHttpClient = SharedStateHttpClient(),
+                    dataUpdateListener = guiUpdater,
+                )
+        }
+
+        plannerManager.registerService(plannerService)
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
     }
 
-    private fun registerTimeline(groupId: String, timelineConfig: TimelineConfig) {
-        val group = timelineGroups.find { it.airportIcao == groupId }
+    private fun registerTimeline(airportIcao: String, timelineConfig: TimelineConfig) {
+        val group = timelineGroups.find { it.airportIcao == airportIcao }
         if (group != null) {
             group.timelines += timelineConfig
             view.updateTimelineGroups(timelineGroups)
             view.closeTimelineForm()
         }
-        plannerService.planArrivalsFor(timelineConfig.airportIcao)
+        plannerManager.getServiceForAirport(airportIcao).planArrivals()
     }
 
     override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {

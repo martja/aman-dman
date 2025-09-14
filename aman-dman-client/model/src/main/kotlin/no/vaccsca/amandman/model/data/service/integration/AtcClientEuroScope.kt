@@ -11,6 +11,7 @@ import no.vaccsca.amandman.model.data.dto.atcClientMessage.MessageToServer
 import no.vaccsca.amandman.model.data.dto.atcClientMessage.RegisterFixInboundsMessage
 import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusJson
 import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusesUpdateJson
+import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
@@ -21,8 +22,8 @@ import java.net.Socket
 import java.net.SocketTimeoutException
 
 class AtcClientEuroScope(
-    private val host: String,
-    private val port: Int,
+    private val host: String = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.host,
+    private val port: Int = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.port ?: 12345,
 ) : AtcClient {
     private var socket: Socket? = null
     private var writer: OutputStreamWriter? = null

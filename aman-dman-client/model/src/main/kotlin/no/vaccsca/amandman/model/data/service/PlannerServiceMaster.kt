@@ -9,8 +9,10 @@ import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
 import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.data.repository.NavdataRepository
+import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.data.service.integration.AtcClient
+import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
@@ -20,33 +22,36 @@ import kotlin.collections.plus
  * This is only used in the Master and Local instances of the application
  */
 class PlannerServiceMaster(
+    airportIcao: String,
     private val weatherDataRepository: WeatherDataRepository,
     private val navdataRepository: NavdataRepository,
     private val atcClient: AtcClient,
     private vararg val dataUpdateListeners: DataUpdateListener,
-) : PlannerService {
+) : PlannerService(airportIcao) {
     private var weatherData: VerticalWeatherProfile? = null
 
     // ID of the sequence, typically the airport ICAO code
-    private val arrivalsCache: MutableMap<String, List<RunwayArrivalEvent>> = mutableMapOf()
-    private val sequences: MutableMap<String, Sequence> = mutableMapOf()
+    private var arrivalsCache: List<RunwayArrivalEvent> = emptyList()
+    private var sequence: Sequence = Sequence(emptyList())
     private var minimumSpacingNm = 3.0 // Minimum spacing in nautical miles
 
     private val descentTrajectoryCache = mutableMapOf<String, List<TrajectoryPoint>>()
 
+    private val airportPosition: LatLng
+
     init {
-        refreshWeatherData("ENGM", 60.186122, 11.098964)
+        val airportDetails = SettingsRepository.getSettings(reload = true).airports[airportIcao]
+            ?: throw IllegalArgumentException("Airport $airportIcao is not configured in settings")
+
+        airportPosition = LatLng(airportDetails.latitude, airportDetails.longitude)
+
+        refreshWeatherData()
     }
 
-    override fun planArrivalsFor(
-        airportIcao: String,
-    ) {
-        if (!sequences.containsKey(airportIcao)) {
-            sequences[airportIcao] = Sequence(mutableListOf())
-        }
+    override fun planArrivals() {
         atcClient.collectMovementsFor(airportIcao,
             onDataReceived = { arrivals ->
-                handleUpdateFromAtcClient(airportIcao, arrivals)
+                handleUpdateFromAtcClient(arrivals)
             },
             onRunwaySelectionChanged = { runways ->
                 val map = runways.associate {
@@ -59,7 +64,7 @@ class PlannerServiceMaster(
         )
     }
 
-    private fun handleUpdateFromAtcClient(icao: String, arrivals: List<AtcClientArrivalData>) {
+    private fun handleUpdateFromAtcClient(arrivals: List<AtcClientArrivalData>) {
         val runwayArrivalEvents = arrivals.mapNotNull { arrival -> createRunwayArrivalEvent(arrival) }
         val sequenceItems = runwayArrivalEvents.map {
             AircraftSequenceCandidate(
@@ -70,17 +75,17 @@ class PlannerServiceMaster(
             )
         }
 
-        val aircraftToRemove = sequences[icao]!!.sequecencePlaces.map { it.item.id }.filter { it !in runwayArrivalEvents.map { it.callsign } }
-        val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequences[icao]!!, *aircraftToRemove.toTypedArray())
-        sequences[icao] = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm)
-        arrivalsCache[icao] = runwayArrivalEvents.map { arrivalEvent ->
-            val sequenceSchedule = sequences[icao]!!.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
+        val aircraftToRemove = sequence.sequecencePlaces.map { it.item.id }.filter { it !in runwayArrivalEvents.map { it.callsign } }
+        val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequence, *aircraftToRemove.toTypedArray())
+        sequence = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm)
+        arrivalsCache = runwayArrivalEvents.map { arrivalEvent ->
+            val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
             arrivalEvent.copy(
                 scheduledTime = sequenceSchedule ?: arrivalEvent.scheduledTime,
                 sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
             )
         }
-        onSequenceUpdated(icao)
+        onSequenceUpdated()
     }
 
     private fun createRunwayArrivalEvent(arrival: AtcClientArrivalData): RunwayArrivalEvent? {
@@ -132,24 +137,22 @@ class PlannerServiceMaster(
         )
     }
 
-    override fun setMinimumSpacing(airportIcao: String, minimumSpacingDistanceNm: Double): Result<Unit> =
+    override fun setMinimumSpacing(minimumSpacingDistanceNm: Double): Result<Unit> =
         runCatching {
             // TODO: use airportIcao
             this.minimumSpacingNm = minimumSpacingDistanceNm
-            sequences.forEach { (sequenceId, sequence) ->
-                sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequence)
-                onSequenceUpdated(sequenceId)
-                // Notify listeners of the spacing change
-                dataUpdateListeners.forEach { listener ->
-                    listener.onMinimumSpacingUpdated(sequenceId, minimumSpacingDistanceNm)
-                }
+            sequence = AmanDmanSequenceService.reSchedule(sequence)
+            onSequenceUpdated()
+            // Notify listeners of the spacing change
+            dataUpdateListeners.forEach { listener ->
+                listener.onMinimumSpacingUpdated(airportIcao, minimumSpacingDistanceNm)
             }
         }
 
-    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double): Result<Unit> =
+    override fun refreshWeatherData(): Result<Unit> =
         runCatching {
             Thread {
-                val weather = weatherDataRepository.getWindData(lat, lon)
+                val weather = weatherDataRepository.getWindData(airportPosition.lat, airportPosition.lon)
                 weatherData = weather
                 dataUpdateListeners.forEach { listener ->
                     listener.onWeatherDataUpdated(airportIcao, weather)
@@ -157,41 +160,39 @@ class PlannerServiceMaster(
             }.start()
         }
 
-    override fun suggestScheduledTime(sequenceId: String, callsign: String, scheduledTime: Instant): Result<Unit> =
+    override fun suggestScheduledTime(callsign: String, scheduledTime: Instant): Result<Unit> =
         runCatching {
-            if (checkTimeSlotAvailable(sequenceId, callsign, scheduledTime)) {
-                sequences[sequenceId] = AmanDmanSequenceService.suggestScheduledTime(sequences[sequenceId]!!, callsign, scheduledTime, minimumSpacingNm)
-                onSequenceUpdated(sequenceId)
+            if (checkTimeSlotAvailable(callsign, scheduledTime)) {
+                sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, callsign, scheduledTime, minimumSpacingNm)
+                onSequenceUpdated()
             } else {
                 println("Time slot is not available for $callsign at $scheduledTime")
             }
         }
 
-    override fun reSchedule(sequenceId: String, callSign: String?): Result<Unit> =
+    override fun reSchedule(callSign: String?): Result<Unit> =
         runCatching {
             if (callSign == null) {
-                sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequences[sequenceId]!!)
+                sequence = AmanDmanSequenceService.reSchedule(sequence)
             } else {
-                sequences[sequenceId] = AmanDmanSequenceService.removeFromSequence(sequences[sequenceId]!!, callSign)
+                sequence = AmanDmanSequenceService.removeFromSequence(sequence, callSign)
             }
-            onSequenceUpdated(sequenceId)
+            onSequenceUpdated()
         }
 
     override fun isTimeSlotAvailable(
-        sequenceId: String,
         callsign: String,
         scheduledTime: Instant
     ): Result<Boolean> =
         runCatching {
-            checkTimeSlotAvailable(sequenceId, callsign, scheduledTime)
+            checkTimeSlotAvailable(callsign, scheduledTime)
         }
 
     private fun checkTimeSlotAvailable(
-        sequenceId: String,
         callsign: String,
         scheduledTime: Instant
     ): Boolean {
-        return AmanDmanSequenceService.isTimeSlotAvailable(sequences[sequenceId]!!, callsign, scheduledTime)
+        return AmanDmanSequenceService.isTimeSlotAvailable(sequence, callsign, scheduledTime)
     }
 
     override  fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =
@@ -203,11 +204,8 @@ class PlannerServiceMaster(
      * Refreshes the UI with the current sequence data by updating the latest arrivals
      * with the current sequence information and notifying the UI through the live data interface
      */
-    private fun onSequenceUpdated(sequenceId: String) {
-        val sequence = sequences[sequenceId] ?: return
-        val latestArrivals = arrivalsCache[sequenceId] ?: return
-
-        val updatedArrivals = latestArrivals
+    private fun onSequenceUpdated() {
+        val updatedArrivals = arrivalsCache
             .map { arrivalEvent -> arrivalEvent.updateScheduledTime(sequence) }
             .sortedByDescending { it.scheduledTime }
 
@@ -221,9 +219,9 @@ class PlannerServiceMaster(
             (pairedArrivals + lastArrival).reversed()
         }
 
-        arrivalsCache[sequenceId] = sequencedArrivals
+        arrivalsCache = sequencedArrivals
         dataUpdateListeners.forEach { listener ->
-            listener.onLiveData(sequenceId, sequencedArrivals)
+            listener.onLiveData(airportIcao, sequencedArrivals)
         }
     }
 

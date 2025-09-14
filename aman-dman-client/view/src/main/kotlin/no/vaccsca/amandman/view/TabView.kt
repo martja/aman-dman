@@ -2,7 +2,7 @@ package no.vaccsca.amandman.view
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.TimelineGroup
+import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.data.dto.TabData

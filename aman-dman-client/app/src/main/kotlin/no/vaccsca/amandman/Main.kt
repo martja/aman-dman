@@ -2,14 +2,8 @@ package no.vaccsca.amandman
 
 import com.jtattoo.plaf.hifi.HiFiLookAndFeel
 import no.vaccsca.amandman.presenter.Presenter
-import no.vaccsca.amandman.model.data.repository.NavdataRepository
-import no.vaccsca.amandman.model.ApplicationMode
-import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
-import no.vaccsca.amandman.model.data.service.integration.AtcClientEuroScope
-import no.vaccsca.amandman.model.data.service.PlannerServiceMaster
-import no.vaccsca.amandman.model.data.service.PlannerServiceSlave
-import no.vaccsca.amandman.model.data.service.integration.SharedStateHttpClient
-import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
+import no.vaccsca.amandman.model.UserRole
+import no.vaccsca.amandman.model.data.service.PlannerManager
 import no.vaccsca.amandman.model.domain.service.GuiDataHandler
 import no.vaccsca.amandman.view.AmanDmanMainFrame
 import java.util.*
@@ -41,45 +35,18 @@ fun main() {
     }
 
     fun initializeApplication() {
-        // First, determine the application mode
-        val applicationMode = ApplicationMode.LOCAL
-
         // --- View ---
         val view = AmanDmanMainFrame()
 
-        val host = System.getenv("ATC_HOST") ?: "127.0.0.1"
-        val port = System.getenv("ATC_PORT")?.toIntOrNull() ?: 12345
-
         // --- Service ---
         val guiUpdater = GuiDataHandler()
-        val plannerService = when(applicationMode) {
-            ApplicationMode.MASTER ->
-                PlannerServiceMaster(
-                    weatherDataRepository = WeatherDataRepository(),
-                    atcClient = AtcClientEuroScope(host, port),
-                    navdataRepository = NavdataRepository(),
-                    dataUpdateListeners = arrayOf(guiUpdater, DataUpdatesServerSender()),
-                )
-            ApplicationMode.LOCAL ->
-                PlannerServiceMaster(
-                    weatherDataRepository = WeatherDataRepository(),
-                    atcClient = AtcClientEuroScope(host, port),
-                    navdataRepository = NavdataRepository(),
-                    dataUpdateListeners = arrayOf(guiUpdater),
-                )
-            ApplicationMode.SLAVE ->
-                PlannerServiceSlave(
-                    sharedStateHttpClient = SharedStateHttpClient(),
-                    dataUpdateListener = guiUpdater,
-                )
-        }
 
         // --- Controller ---
-        val presenter = Presenter(plannerService, view, applicationMode)
+        val presenter = Presenter(PlannerManager(), view, guiUpdater)
         guiUpdater.presenter = presenter
 
         // Update window title to show network mode
-        view.setWindowTitle("AMAN-DMAN - ${applicationMode.name} Mode")
+        view.setWindowTitle("AMAN-DMAN")
         view.openWindow()
     }
 

@@ -8,9 +8,10 @@ import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import java.util.*
 
 class PlannerServiceSlave(
+    airportIcao: String,
     private val sharedStateHttpClient: SharedStateHttpClient,
     private val dataUpdateListener: DataUpdateListener
-) : PlannerService {
+) : PlannerService(airportIcao) {
     val timer = Timer()
     val arrivalAirportsToFetch = mutableSetOf<String>()
 
@@ -29,38 +30,53 @@ class PlannerServiceSlave(
     }
 
     private fun fetchAmanData(airportIcao: String) {
-        val data = sharedStateHttpClient.getTimelineEvents(airportIcao)
-        dataUpdateListener.onLiveData(airportIcao, data)
+        try {
+            val data = sharedStateHttpClient.getTimelineEvents(airportIcao)
+            dataUpdateListener.onLiveData(airportIcao, data)
+        } catch (e: Exception) {
+            println("Failed to fetch timeline events for $airportIcao: ${e.message}")
+        }
 
-        val runwayStatuses = sharedStateHttpClient.getRunwayStatuses(airportIcao)
-        dataUpdateListener.onRunwayModesUpdated(airportIcao, runwayStatuses)
+        try {
+            val runwayStatuses = sharedStateHttpClient.getRunwayStatuses(airportIcao)
+            dataUpdateListener.onRunwayModesUpdated(airportIcao, runwayStatuses)
+        } catch (e: Exception) {
+            println("Failed to fetch runway statuses for $airportIcao: ${e.message}")
+        }
 
-        val weatherData = sharedStateHttpClient.getWeatherData(airportIcao)
-        dataUpdateListener.onWeatherDataUpdated(airportIcao, weatherData)
+        try {
+            val weatherData = sharedStateHttpClient.getWeatherData(airportIcao)
+            dataUpdateListener.onWeatherDataUpdated(airportIcao, weatherData)
+        } catch (e: Exception) {
+            println("Failed to fetch weather data for $airportIcao: ${e.message}")
+        }
 
-        val minimumSpacingNm = sharedStateHttpClient.getMinimumSpacing(airportIcao)
-        dataUpdateListener.onMinimumSpacingUpdated(airportIcao, minimumSpacingNm)
+        try {
+            val minimumSpacingNm = sharedStateHttpClient.getMinimumSpacing(airportIcao)
+            dataUpdateListener.onMinimumSpacingUpdated(airportIcao, minimumSpacingNm)
+        } catch (e: Exception) {
+            println("Failed to fetch minimum spacing data for $airportIcao: ${e.message}")
+        }
     }
 
-    override fun planArrivalsFor(airportIcao: String) {
+    override fun planArrivals() {
         if (!arrivalAirportsToFetch.contains(airportIcao)) {
             arrivalAirportsToFetch.add(airportIcao)
         }
         fetchAll()
     }
 
-    override fun setMinimumSpacing(airportIcao: String, minimumSpacingDistanceNm: Double): Result<Unit> =
+    override fun setMinimumSpacing(minimumSpacingDistanceNm: Double): Result<Unit> =
         runCatching {
             throw UnsupportedInSlaveModeException("Minimum spacing cannot be changed in slave mode")
         }
 
-    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double): Result<Unit> =
+    override fun refreshWeatherData(): Result<Unit> =
         runCatching {
              throw UnsupportedInSlaveModeException("Weather data update cannot be triggered in slave mode")
         }
 
     override fun suggestScheduledTime(
-        sequenceId: String,
         callsign: String,
         scheduledTime: Instant
     ): Result<Unit> =
@@ -68,13 +84,12 @@ class PlannerServiceSlave(
             throw UnsupportedInSlaveModeException("Sequence cannot be changed in slave mode")
         }
 
-    override fun reSchedule(sequenceId: String, callSign: String?): Result<Unit> =
+    override fun reSchedule(callSign: String?): Result<Unit> =
         runCatching {
             throw UnsupportedInSlaveModeException("Sequence cannot be changed in slave mode")
         }
 
     override fun isTimeSlotAvailable(
-        sequenceId: String,
         callsign: String,
         scheduledTime: Instant
     ): Result<Boolean> =
