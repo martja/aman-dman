@@ -75,6 +75,10 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         //isAlwaysOnTop = true
     }
 
+    override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
+        footer?.updateMinimumSpacingSelector(minimumSpacingNm)
+    }
+
     override fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>) {
         val popup = JPopupMenu()
         val tab = tabPane.getComponentAt(tabIndex) as TabView

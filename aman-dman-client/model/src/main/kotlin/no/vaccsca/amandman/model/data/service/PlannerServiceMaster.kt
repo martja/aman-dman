@@ -34,6 +34,10 @@ class PlannerServiceMaster(
 
     private val descentTrajectoryCache = mutableMapOf<String, List<TrajectoryPoint>>()
 
+    init {
+        refreshWeatherData("ENGM", 60.186122, 11.098964)
+    }
+
     override fun planArrivalsFor(
         airportIcao: String,
     ) {
@@ -128,53 +132,72 @@ class PlannerServiceMaster(
         )
     }
 
-    override fun setMinimumSpacing(minimumSpacingDistanceNm: Double) {
-        this.minimumSpacingNm = minimumSpacingDistanceNm
-        sequences.forEach { (sequenceId, sequence) ->
-            sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequence)
-            onSequenceUpdated(sequenceId)
-            // Notify listeners of the spacing change
-            dataUpdateListeners.forEach { listener ->
-                listener.onMinimumSpacingUpdated(sequenceId, minimumSpacingDistanceNm)
+    override fun setMinimumSpacing(airportIcao: String, minimumSpacingDistanceNm: Double): Result<Unit> =
+        runCatching {
+            // TODO: use airportIcao
+            this.minimumSpacingNm = minimumSpacingDistanceNm
+            sequences.forEach { (sequenceId, sequence) ->
+                sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequence)
+                onSequenceUpdated(sequenceId)
+                // Notify listeners of the spacing change
+                dataUpdateListeners.forEach { listener ->
+                    listener.onMinimumSpacingUpdated(sequenceId, minimumSpacingDistanceNm)
+                }
             }
         }
-    }
 
-    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double) {
-        Thread {
-            val weather = weatherDataRepository.getWindData(lat, lon)
-            weatherData = weather
-            dataUpdateListeners.forEach { listener ->
-                listener.onWeatherDataUpdated(airportIcao, weather)
+    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double): Result<Unit> =
+        runCatching {
+            Thread {
+                val weather = weatherDataRepository.getWindData(lat, lon)
+                weatherData = weather
+                dataUpdateListeners.forEach { listener ->
+                    listener.onWeatherDataUpdated(airportIcao, weather)
+                }
+            }.start()
+        }
+
+    override fun suggestScheduledTime(sequenceId: String, callsign: String, scheduledTime: Instant): Result<Unit> =
+        runCatching {
+            if (checkTimeSlotAvailable(sequenceId, callsign, scheduledTime)) {
+                sequences[sequenceId] = AmanDmanSequenceService.suggestScheduledTime(sequences[sequenceId]!!, callsign, scheduledTime, minimumSpacingNm)
+                onSequenceUpdated(sequenceId)
+            } else {
+                println("Time slot is not available for $callsign at $scheduledTime")
             }
-        }.start()
-    }
+        }
 
-    override fun suggestScheduledTime(sequenceId: String, callsign: String, scheduledTime: Instant) {
-        if (isTimeSlotAvailable(sequenceId, callsign, scheduledTime)) {
-            sequences[sequenceId] = AmanDmanSequenceService.suggestScheduledTime(sequences[sequenceId]!!, callsign, scheduledTime, minimumSpacingNm)
+    override fun reSchedule(sequenceId: String, callSign: String?): Result<Unit> =
+        runCatching {
+            if (callSign == null) {
+                sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequences[sequenceId]!!)
+            } else {
+                sequences[sequenceId] = AmanDmanSequenceService.removeFromSequence(sequences[sequenceId]!!, callSign)
+            }
             onSequenceUpdated(sequenceId)
-        } else {
-            println("Time slot is not available for $callsign at $scheduledTime")
         }
-    }
-
-    override fun reSchedule(sequenceId: String, callSign: String?) {
-        if (callSign == null) {
-            sequences[sequenceId] = AmanDmanSequenceService.reSchedule(sequences[sequenceId]!!)
-        } else {
-            sequences[sequenceId] = AmanDmanSequenceService.removeFromSequence(sequences[sequenceId]!!, callSign)
-        }
-        onSequenceUpdated(sequenceId)
-    }
 
     override fun isTimeSlotAvailable(
+        sequenceId: String,
+        callsign: String,
+        scheduledTime: Instant
+    ): Result<Boolean> =
+        runCatching {
+            checkTimeSlotAvailable(sequenceId, callsign, scheduledTime)
+        }
+
+    private fun checkTimeSlotAvailable(
         sequenceId: String,
         callsign: String,
         scheduledTime: Instant
     ): Boolean {
         return AmanDmanSequenceService.isTimeSlotAvailable(sequences[sequenceId]!!, callsign, scheduledTime)
     }
+
+    override  fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =
+        runCatching {
+            descentTrajectoryCache[callsign]
+        }
 
     /**
      * Refreshes the UI with the current sequence data by updating the latest arrivals
@@ -230,7 +253,4 @@ class PlannerServiceMaster(
         return this.copy(distanceToPreceding = distanceToPreceding)
     }
 
-    override  fun getDescentProfileForCallsign(callsign: String): List<TrajectoryPoint>? {
-        return descentTrajectoryCache[callsign]
-    }
 }

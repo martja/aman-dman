@@ -27,4 +27,5 @@ interface ViewInterface {
     fun updateRunwayModes(airportIcao: String, runwayModes: List<Pair<String, Boolean>>)
     fun showErrorMessage(message: String)
     fun openWindow()
+    fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double)
 }

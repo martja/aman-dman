@@ -11,6 +11,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrival
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.service.PlannerService
+import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
@@ -77,7 +78,13 @@ class Presenter(
     }
 
     override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double) {
-        plannerService?.refreshWeatherData(airportIcao, lat, lon)
+        plannerService.refreshWeatherData(airportIcao, lat, lon)
+            .onFailure {
+                when (it) {
+                    is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
+                    else -> view.showErrorMessage("Failed to refresh weather data")
+                }
+            }
     }
 
     override fun onOpenVerticalProfileWindowClicked() {
@@ -120,6 +127,7 @@ class Presenter(
     override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {
         this.minimumSpacingNm = minimumSpacingNm
         runwayModeStateManager.updateMinimumSpacing(this.minimumSpacingNm)
+        view.updateMinimumSpacing(airportIcao, minimumSpacingNm)
     }
 
     override fun onWeatherDataUpdated(airportIcao: String, data: VerticalWeatherProfile?) {
@@ -147,13 +155,18 @@ class Presenter(
             ))
         }
 
-        if (plannerService != null) {
-            selectedCallsign?.let { callsign ->
-                val selectedDescentProfile = plannerService.getDescentProfileForCallsign(callsign)
-                selectedDescentProfile?.let {
-                    view.updateDescentTrajectory(callsign, selectedDescentProfile)
+        selectedCallsign?.let { callsign ->
+            plannerService.getDescentProfileForCallsign(callsign)
+                .onSuccess { selectedDescentProfile ->
+                    if (selectedDescentProfile != null)
+                        view.updateDescentTrajectory(callsign, selectedDescentProfile)
                 }
-            }
+                .onFailure {
+                    when (it) {
+                        is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
+                        else -> view.showErrorMessage("Failed to fetch descent profile")
+                    }
+                }
         }
     }
 
@@ -200,14 +213,45 @@ class Presenter(
 
     override fun move(sequenceId: String, callsign: String, newScheduledTime: Instant) {
         plannerService.suggestScheduledTime(sequenceId, callsign, newScheduledTime)
+            .onFailure {
+                when (it) {
+                    is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
+                    else -> view.showErrorMessage("Failed to move aircraft")
+                }
+            }
     }
 
     override fun onRecalculateSequenceClicked(sequenceId: String, callSign: String?) {
         plannerService.reSchedule(sequenceId, callSign)
+            .onFailure {
+                when (it) {
+                    is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
+                    else -> view.showErrorMessage("Failed to re-schedule")
+                }
+            }
     }
 
-    override fun setMinimumSpacingDistance(minimumSpacingDistanceNm: Double) {
-        plannerService.setMinimumSpacing(minimumSpacingDistanceNm)
+    override fun setMinimumSpacingDistance(airportIcao: String, minimumSpacingDistanceNm: Double) {
+        plannerService.setMinimumSpacing(airportIcao, minimumSpacingDistanceNm)
+            .onFailure {
+                when (it) {
+                    is UnsupportedInSlaveModeException -> {
+                        view.showErrorMessage(it.msg)
+                    }
+                    else -> view.showErrorMessage("Failed to set minimum spacing")
+                }
+            }
+    }
+
+    override fun onLabelDragged(sequenceId: String, callsign: String, newInstant: Instant) {
+        plannerService.isTimeSlotAvailable(sequenceId, callsign, newInstant)
+            .onSuccess { view.updateDraggedLabel(callsign, newInstant, it) }
+            .onFailure {
+                when (it) {
+                    is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
+                    else -> view.showErrorMessage("Failed to check time slot availability")
+                }
+            }
     }
 
     override fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto) {
@@ -234,19 +278,6 @@ class Presenter(
         }
         view.updateTimelineGroups(timelineGroups)
         // TODO: unsubscribe from inbounds if no timelines left
-    }
-
-    override fun onLabelDragged(sequenceId: String, callsign: String, newInstant: Instant) {
-        if (!isFeatureAvailable(Feature.MANUAL_AIRCRAFT_MOVEMENT)) {
-            view.showErrorMessage("Manual aircraft movement not available in slave mode")
-            return
-        }
-        // Check if the new scheduled time is available
-        if (plannerService == null) {
-            return
-        }
-        val isAvailable = plannerService.isTimeSlotAvailable(sequenceId, callsign, newInstant)
-        view.updateDraggedLabel(callsign, newInstant, isAvailable)
     }
 
     // Remove the old withModeCheck helper function as it's no longer needed

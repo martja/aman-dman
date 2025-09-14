@@ -23,5 +23,5 @@ interface PresenterInterface {
     fun onRecalculateSequenceClicked(sequenceId: String, callSign: String? = null)
     fun onRemoveTimelineClicked(timelineConfig: TimelineConfig)
     fun onLabelDragged(sequenceId: String, callsign: String, newInstant: Instant)
-    fun setMinimumSpacingDistance(minimumSpacingDistanceNm: Double)
+    fun setMinimumSpacingDistance(airportIcao: String, minimumSpacingDistanceNm: Double)
 }

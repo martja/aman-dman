@@ -81,8 +81,6 @@ fun main() {
         // Update window title to show network mode
         view.setWindowTitle("AMAN-DMAN - ${applicationMode.name} Mode")
         view.openWindow()
-
-        presenter.refreshWeatherData("ENGM", 60.0, 11.0)
     }
 
     // Create a new JFrame

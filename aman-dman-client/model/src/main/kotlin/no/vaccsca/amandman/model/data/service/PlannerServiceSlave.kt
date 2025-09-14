@@ -2,6 +2,7 @@ package no.vaccsca.amandman.model.data.service
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.data.service.integration.SharedStateHttpClient
+import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import java.util.*
@@ -48,35 +49,41 @@ class PlannerServiceSlave(
         fetchAll()
     }
 
-    override fun setMinimumSpacing(minimumSpacingDistanceNm: Double) {
-        TODO("Not yet implemented")
-    }
+    override fun setMinimumSpacing(airportIcao: String, minimumSpacingDistanceNm: Double): Result<Unit> =
+        runCatching {
+            throw UnsupportedInSlaveModeException("Minimum spacing cannot be changed in slave mode")
+        }
 
-    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double) {
-        TODO("Not yet implemented")
-    }
+    override fun refreshWeatherData(airportIcao: String, lat: Double, lon: Double): Result<Unit> =
+        runCatching {
+             throw UnsupportedInSlaveModeException("Weather data update cannot be triggered in slave mode")
+        }
 
     override fun suggestScheduledTime(
         sequenceId: String,
         callsign: String,
         scheduledTime: Instant
-    ) {
-        TODO("Not yet implemented")
-    }
+    ): Result<Unit> =
+        runCatching {
+            throw UnsupportedInSlaveModeException("Sequence cannot be changed in slave mode")
+        }
 
-    override fun reSchedule(sequenceId: String, callSign: String?) {
-        TODO("Not yet implemented")
-    }
+    override fun reSchedule(sequenceId: String, callSign: String?): Result<Unit> =
+        runCatching {
+            throw UnsupportedInSlaveModeException("Sequence cannot be changed in slave mode")
+        }
 
     override fun isTimeSlotAvailable(
         sequenceId: String,
         callsign: String,
         scheduledTime: Instant
-    ): Boolean {
-        TODO("Not yet implemented")
-    }
+    ): Result<Boolean> =
+        runCatching {
+            throw UnsupportedInSlaveModeException("Sequence cannot be changed in slave mode")
+        }
 
-    override fun getDescentProfileForCallsign(callsign: String): List<TrajectoryPoint>? {
-        TODO("Not yet implemented")
-    }
+    override fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =
+        runCatching {
+            throw UnsupportedInSlaveModeException("Descent profile cannot be viewed in slave mode")
+        }
 }
