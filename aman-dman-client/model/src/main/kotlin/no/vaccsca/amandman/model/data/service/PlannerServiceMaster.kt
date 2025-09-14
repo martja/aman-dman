@@ -215,12 +215,13 @@ class PlannerServiceMaster(
 
         val sequencedArrivals = if (updatedArrivals.size <= 1) {
             // Handle single or empty list - no zipWithNext needed
-            updatedArrivals.map { it.withDistanceToPreceding(null) }
+            updatedArrivals
         } else {
             // Process pairs and add the last element
-            val pairedArrivals = updatedArrivals.zipWithNext { a, b -> a.withDistanceToPreceding(b) }
-            val lastArrival = updatedArrivals.last().withDistanceToPreceding(null)
-            (pairedArrivals + lastArrival).reversed()
+            val pairedArrivals = updatedArrivals.zipWithNext { a, b ->
+                a.copy(distanceToPreceding = a.remainingDistance - b.remainingDistance)
+            }
+            (pairedArrivals + updatedArrivals.last()).reversed()
         }
 
         arrivalsCache = sequencedArrivals
@@ -241,18 +242,4 @@ class PlannerServiceMaster(
             sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
         )
     }
-
-    /**
-     * Calculates the distance to the preceding aircraft based on the
-     * descent trajectory which included the remaining track miles
-     */
-    private fun RunwayArrivalEvent.withDistanceToPreceding(next: RunwayArrivalEvent?): RunwayArrivalEvent {
-        val distanceToPreceding = if (next != null) {
-            this.remainingDistance - next.remainingDistance
-        } else {
-            this.remainingDistance
-        }
-        return this.copy(distanceToPreceding = distanceToPreceding)
-    }
-
 }
