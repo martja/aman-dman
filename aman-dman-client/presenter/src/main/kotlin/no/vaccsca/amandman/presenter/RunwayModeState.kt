@@ -21,24 +21,28 @@ data class RunwayModeState(
         val airportLabel = Pair("[$airportIcao]", true)
         val modeLabel =
             when (activeArrivalRunways.size) {
-                0 -> Pair("No active runway", false)
-                1 -> Pair("S${activeArrivalRunways.first()}", true)
-                else -> Pair("M${activeArrivalRunways.joinToString("/")}", true)
+                0 -> Pair("NO ACT RWY", false)
+                1 -> Pair("S${activeArrivalRunways.first()}", true) // Single mode
+                else -> Pair("M${activeArrivalRunways.joinToString("/")}", true) // Mixed mode (multiple runways)
             }
 
+        val runwayModeLabels = runwayModes.map { mode -> formatLabel(mode, activeArrivalRunways) }
+            .sortedBy { it.first }
 
-        return listOf(airportLabel, modeLabel) + runwayModes.map { modeString ->
-            val isActive = activeArrivalRunways.any { runway ->
-                modeString.contains(runway)
-            }
+        return listOf(airportLabel, modeLabel) + runwayModeLabels
+    }
 
-            val displayLabel =
-                if (modeString.startsWith("S"))
-                    modeString
-                else
-                    "$modeString:$minimumSpacingNm"
-
-            Pair(displayLabel, isActive)
+    private fun formatLabel(modeString: String, activeArrivalRunways: List<String>): Pair<String, Boolean> {
+        val isActive = activeArrivalRunways.any { runway ->
+            modeString.contains(runway)
         }
+
+        val displayLabel =
+            if (modeString.startsWith("S"))
+                modeString
+            else
+                "$modeString:$minimumSpacingNm"
+
+        return Pair(displayLabel, isActive)
     }
 }

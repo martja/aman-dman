@@ -51,9 +51,12 @@ class RunwayModeStateManager(private val view: ViewInterface) {
 
     private fun inferPossibleRunwayModes(runwayStatuses: Map<String, RunwayStatus>): List<String> {
         val runwayNames = runwayStatuses.keys
-        val groupedByDirection = runwayNames.groupBy { it.take(2) }
-        return groupedByDirection.flatMap { (direction, runways) ->
-            runways + if (runways.size > 1) listOf(runways.sorted().joinToString("/")) else emptyList()
-        }
+        val groupedByDirection = runwayNames.groupBy { it.take(2) } // Assumes first two characters denote direction
+        return groupedByDirection.values
+            .flatMap { runways ->
+                if (runways.size == 1) return@flatMap runways
+                if (runways.size == 2) return@flatMap listOf(runways.sorted().joinToString("/"))
+                else emptyList()
+            }
     }
 }

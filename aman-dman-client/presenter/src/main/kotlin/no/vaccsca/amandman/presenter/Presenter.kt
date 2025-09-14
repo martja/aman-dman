@@ -43,6 +43,11 @@ class Presenter(
     private val runwayModeStateManager = RunwayModeStateManager(view)
     private var minimumSpacingNm: Double = 0.0
 
+    // Create or return existing AtcClientEuroScope instance
+    private val euroScopeClient: AtcClientEuroScope by lazy {
+        AtcClientEuroScope()
+    }
+
     init {
         view.presenterInterface = this
 
@@ -273,8 +278,6 @@ class Presenter(
         // TODO: unsubscribe from inbounds if no timelines left
     }
 
-    // Remove the old withModeCheck helper function as it's no longer needed
-
     private fun registerNewTimelineGroup(timelineGroup: TimelineGroup) {
         if (timelineGroups.any { it.airportIcao == timelineGroup.airportIcao }) {
             return // Group already exists
@@ -285,7 +288,7 @@ class Presenter(
                 PlannerServiceMaster(
                     airportIcao = timelineGroup.airportIcao,
                     weatherDataRepository = WeatherDataRepository(),
-                    atcClient = AtcClientEuroScope(),
+                    atcClient = euroScopeClient,
                     navdataRepository = NavdataRepository(),
                     dataUpdateListeners = arrayOf(guiUpdater, DataUpdatesServerSender()),
                 )
@@ -293,7 +296,7 @@ class Presenter(
                 PlannerServiceMaster(
                     airportIcao = timelineGroup.airportIcao,
                     weatherDataRepository = WeatherDataRepository(),
-                    atcClient = AtcClientEuroScope(),
+                    atcClient = euroScopeClient,
                     navdataRepository = NavdataRepository(),
                     dataUpdateListeners = arrayOf(guiUpdater),
                 )
