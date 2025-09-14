@@ -7,12 +7,10 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":controller"))
+    implementation(project(":presenter"))
     implementation(project(":view"))
     implementation(project(":model"))
-    implementation(project(":service"))
     implementation(project(":common"))
-    implementation(project(":integration"))
 
     implementation("com.jtattoo:JTattoo:1.6.13")
 }

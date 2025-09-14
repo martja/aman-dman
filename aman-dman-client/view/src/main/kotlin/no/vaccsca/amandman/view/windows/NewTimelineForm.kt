@@ -1,40 +1,30 @@
 package no.vaccsca.amandman.view.windows
 
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.controller.ControllerInterface
-import no.vaccsca.amandman.model.dto.CreateOrUpdateTimelineDto
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.view.util.Form.enforceUppercase
 import java.awt.*
 import javax.swing.*
 
-class NewTimelineForm(val controllerInterface: ControllerInterface, groupId: String, existingConfig: TimelineConfig?) : JPanel() {
-    private val icaoField = JTextField(4)
-
-    private val radioButtonRunway = JRadioButton("Runway")
-    private val radioButtonAcc = JRadioButton("ACC")
-
-    private val modeGroup: ButtonGroup = ButtonGroup().apply {
-        add(radioButtonRunway)
-        add(radioButtonAcc)
-    }
-
+class NewTimelineForm(
+    val presenterInterface: PresenterInterface,
+    airportIcao: String,
+    existingConfig: TimelineConfig?
+) : JPanel() {
     // Store references to input fields and checkboxes for data access
     private lateinit var leftFixesInput: JTextField
     private lateinit var leftRunwaysInput: JTextField
     private lateinit var leftEnabledCheckbox: JCheckBox
+    private lateinit var leftLabelInput: JTextField
 
     private lateinit var rightFixesInput: JTextField
     private lateinit var rightRunwaysInput: JTextField
     private lateinit var rightEnabledCheckbox: JCheckBox
+    private lateinit var rightLabelInput: JTextField
 
     init {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
-        add(formRow("Airport ICAO:", icaoField))
-
-        add(formRow("Mode:", JPanel().apply {
-            add(radioButtonRunway)
-            add(radioButtonAcc)
-        }))
 
         val fixListsPanel = JPanel(GridLayout(1, 2, 10, 10))
         fixListsPanel.add(createFixPanel("Left", true))
@@ -43,7 +33,6 @@ class NewTimelineForm(val controllerInterface: ControllerInterface, groupId: Str
         add(fixListsPanel)
 
         existingConfig?.let { config ->
-            icaoField.text = config.airportIcao
             leftFixesInput.text = config.targetFixesLeft.joinToString(",")
             leftRunwaysInput.text = config.runwaysLeft.joinToString(",")
             rightFixesInput.text = config.targetFixesRight.joinToString(",")
@@ -53,11 +42,10 @@ class NewTimelineForm(val controllerInterface: ControllerInterface, groupId: Str
         val submitButton = JButton("Submit")
         submitButton.alignmentX = CENTER_ALIGNMENT
         submitButton.addActionListener {
-            controllerInterface.onCreateNewTimeline(
+            presenterInterface.onCreateNewTimeline(
                 CreateOrUpdateTimelineDto(
-                    groupId = groupId,
-                    title = "${icaoField.text} Timeline",
-                    airportIcao = icaoField.text.trim().uppercase(),
+                    airportIcao = airportIcao,
+                    title = leftLabelInput.text + " | " + rightLabelInput.text,
                     left = CreateOrUpdateTimelineDto.TimeLineSide(
                         targetFixes = leftFixesInput.text.split(",").map { it.trim().uppercase() }
                             .filter { it.isNotEmpty() },
@@ -119,10 +107,12 @@ class NewTimelineForm(val controllerInterface: ControllerInterface, groupId: Str
             leftEnabledCheckbox = enabledCheckBox
             leftFixesInput = fixesInput
             leftRunwaysInput = runwayInput
+            leftLabelInput = idInput
         } else {
             rightEnabledCheckbox = enabledCheckBox
             rightFixesInput = fixesInput
             rightRunwaysInput = runwayInput
+            rightLabelInput = idInput
         }
 
         panel.add(inputPanel, BorderLayout.CENTER)

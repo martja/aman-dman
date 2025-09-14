@@ -2,12 +2,11 @@ package no.vaccsca.amandman.view
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.common.TimelineGroup
-import no.vaccsca.amandman.controller.ControllerInterface
-import no.vaccsca.amandman.controller.ViewInterface
-import no.vaccsca.amandman.model.TrajectoryPoint
-import no.vaccsca.amandman.model.dto.TabData
-import no.vaccsca.amandman.model.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.model.domain.TimelineGroup
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.presenter.ViewInterface
+import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
+import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.view.tabpage.Footer
 import no.vaccsca.amandman.view.windows.LandingRatesGraph
 import no.vaccsca.amandman.view.windows.NewTimelineForm
@@ -17,10 +16,11 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.*
 import kotlin.math.roundToInt
+import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 
 class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
-    override lateinit var controllerInterface: ControllerInterface
+    override lateinit var presenterInterface: PresenterInterface
 
     private val tabPane = JTabbedPane()
 
@@ -41,10 +41,10 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         layout = BorderLayout()
     }
 
-    fun openWindow() {
+    override fun openWindow() {
 
-        controllerInterface.onReloadSettingsRequested()
-        footer = Footer(controllerInterface)
+        presenterInterface.onReloadSettingsRequested()
+        footer = Footer(presenterInterface)
 
         setSize(1000, 800)
         setLocationRelativeTo(null) // Center the window
@@ -67,12 +67,16 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
                     val tabIndex = tabPane.indexAtLocation(e.x, e.y)
                     if (tabIndex >= 0) {
                         val airportIcao = (tabPane.getComponentAt(tabIndex) as TabView).airportIcao
-                        controllerInterface.onTabMenu(tabIndex, airportIcao)
+                        presenterInterface.onTabMenu(tabIndex, airportIcao)
                     }
                 }
             }
         })
         //isAlwaysOnTop = true
+    }
+
+    override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
+        footer?.updateMinimumSpacingSelector(minimumSpacingNm)
     }
 
     override fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>) {
@@ -86,7 +90,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
             availableTimelines.sortedBy { it.title }.forEach { timeline ->
                 val item = JMenuItem(timeline.title)
                 item.addActionListener {
-                    controllerInterface!!.onAddTimelineButtonClicked(tab.airportIcao, timeline)
+                    presenterInterface.onAddTimelineButtonClicked(tab.airportIcao, timeline)
                 }
                 loadTimelineMenu.add(item)
             }
@@ -94,12 +98,12 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
         val addTimelineItem = JMenuItem("Create timeline ...")
         addTimelineItem.addActionListener {
-            controllerInterface!!.onCreateNewTimelineClicked(tab.airportIcao)
+            presenterInterface.onCreateNewTimelineClicked(tab.airportIcao)
         }
 
         val removeItem = JMenuItem("Remove tab")
         removeItem.addActionListener {
-            controllerInterface!!.onRemoveTab(tab.airportIcao)
+            presenterInterface.onRemoveTab(tab.airportIcao)
         }
 
         popup.add(loadTimelineMenu)
@@ -147,7 +151,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         } else {
             newTimelineForm = JDialog(this, "New timeline for $groupId").apply {
                 defaultCloseOperation = DISPOSE_ON_CLOSE
-                contentPane = NewTimelineForm(controllerInterface!!, groupId, existingConfig)
+                contentPane = NewTimelineForm(presenterInterface, groupId, existingConfig)
                 pack()
                 setLocationRelativeTo(null)
                 isVisible = true
@@ -169,7 +173,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
 
     override fun showTabContextMenu(tabIndex: Int, airportIcao: String) {
         val tab = tabPane.getComponentAt(tabIndex) as TabView
-        controllerInterface?.onTabMenu(tabIndex, airportIcao)
+        presenterInterface.onTabMenu(tabIndex, airportIcao)
     }
 
     override fun openMetWindow() {
@@ -218,7 +222,8 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         }
     }
 
-    override fun updateWeatherData(weather: VerticalWeatherProfile?) {
+    override fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?) {
+        windDialog?.title = "Weather for $airportIcao"
         verticalWindView.update(weather)
     }
 
@@ -249,8 +254,8 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         // Add new tabs for groups that are not already present
         for (group in timelineGroups) {
             if (tabPane.components.none { (it as TabView).airportIcao == group.airportIcao }) {
-                val tabView = TabView(controllerInterface!!, group.airportIcao)
-                tabPane.addTab(group.name, tabView)
+                val tabView = TabView(presenterInterface, group.airportIcao)
+                tabPane.addTab(group.name + " " + group.userRole, tabView)
             }
         }
 
@@ -262,5 +267,18 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
                 tab.updateTimelines(group)
             }
         }
+    }
+
+    override fun showErrorMessage(message: String) {
+        JOptionPane.showMessageDialog(
+            this,
+            message,
+            "Error",
+            JOptionPane.ERROR_MESSAGE
+        )
+    }
+
+    fun setWindowTitle(title: String) {
+        this.title = title
     }
 }

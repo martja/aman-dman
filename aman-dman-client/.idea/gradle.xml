@@ -12,10 +12,8 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/common" />
-            <option value="$PROJECT_DIR$/controller" />
-            <option value="$PROJECT_DIR$/integration" />
             <option value="$PROJECT_DIR$/model" />
-            <option value="$PROJECT_DIR$/service" />
+            <option value="$PROJECT_DIR$/presenter" />
             <option value="$PROJECT_DIR$/view" />
           </set>
         </option>

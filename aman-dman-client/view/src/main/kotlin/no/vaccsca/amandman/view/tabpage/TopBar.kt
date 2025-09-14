@@ -1,12 +1,11 @@
 package no.vaccsca.amandman.view.tabpage
 
-import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.presenter.PresenterInterface
 import java.awt.*
-import java.awt.event.*
 import javax.swing.*
 
 class TopBar(
-    private val controller: ControllerInterface
+    private val presenter: PresenterInterface
 ) : JPanel() {
     private val nonSequencedButton = JButton("NonSeq")
     private val landingRatesButton = JButton("Landing Rates")
@@ -16,11 +15,11 @@ class TopBar(
         layout = BorderLayout()
 
         landingRatesButton.addActionListener {
-            controller.onOpenLandingRatesWindow()
+            presenter.onOpenLandingRatesWindow()
         }
 
         nonSequencedButton.addActionListener {
-            controller.onOpenNonSequencedWindow()
+            presenter.onOpenNonSequencedWindow()
         }
 
         // Right-aligned controls

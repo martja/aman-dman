@@ -1,11 +1,11 @@
 package no.vaccsca.amandman.view.tabpage.timeline
 
-import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.presenter.PresenterInterface
 import kotlinx.datetime.*
 import no.vaccsca.amandman.common.util.NumberUtils.format
-import no.vaccsca.amandman.model.dto.TimelineData
-import no.vaccsca.amandman.model.timelineEvent.RunwayDelayEvent
-import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.*
@@ -17,7 +17,7 @@ class TimeScale(
     private val timelineView: TimelineView,
     private val selectedRange: SharedValue<TimeRange>,
     private val scaleOnRightSideOnly: Boolean,
-    private val controllerInterface: ControllerInterface
+    private val presenterInterface: PresenterInterface
 ) : JPanel(null) {
     private val TICK_WIDTH_1_MIN = 5
     private val TICK_WIDTH_5_MIN = 10
@@ -119,13 +119,13 @@ class TimeScale(
         val popup = JPopupMenu()
         popup.add("Re-calculate full sequence").apply {
             addActionListener {
-                controllerInterface.onRecalculateSequenceClicked(timelineView.timelineConfig.airportIcao)
+                presenterInterface.onRecalculateSequenceClicked(timelineView.timelineConfig.airportIcao)
             }
         }
 
         popup.add("Remove timeline").apply {
             addActionListener {
-                controllerInterface.onRemoveTimelineClicked(
+                presenterInterface.onRemoveTimelineClicked(
                     timelineView.timelineConfig,
                 )
             }

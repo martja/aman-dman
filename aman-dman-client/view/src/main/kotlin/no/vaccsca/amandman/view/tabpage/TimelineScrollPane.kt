@@ -1,8 +1,8 @@
 package no.vaccsca.amandman.view.tabpage
 
-import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.model.dto.TimelineData
+import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.tabpage.timeline.TimelineView
 import no.vaccsca.amandman.view.util.SharedValue
@@ -19,7 +19,7 @@ import kotlin.time.Duration.Companion.seconds
 class TimelineScrollPane(
     val selectedTimeRange: SharedValue<TimeRange>,
     val availableTimeRange: SharedValue<TimeRange>,
-    val controllerInterface: ControllerInterface
+    val presenterInterface: PresenterInterface
 ) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
     init {
         val items = JPanel(GridBagLayout())
@@ -32,7 +32,7 @@ class TimelineScrollPane(
     }
 
     fun insertTimeline(timelineConfig: TimelineConfig) {
-        val tl = TimelineView(timelineConfig, selectedTimeRange, controllerInterface)
+        val tl = TimelineView(timelineConfig, selectedTimeRange, presenterInterface)
         val items = viewport.view as JPanel
 
         // Remove the previous glue (assumes it’s always the last component and a JLabel)

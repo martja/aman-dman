@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.view.tabpage
 
-import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.model.UserRole
+import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.util.Form
 import java.awt.Dimension
 import java.awt.FlowLayout
@@ -10,22 +11,15 @@ import java.time.Instant
 import javax.swing.*
 
 class Footer(
-    private val controllerInterface: ControllerInterface
+    private val presenterInterface: PresenterInterface
 ) : JPanel(FlowLayout(FlowLayout.RIGHT)) {
     private val timeLabel = JLabel("10:00:22")
     private val metButton = JButton("MET")
     private val profileButton = JButton("Profile")
     private val reloadButton = JButton("Reload settings")
     private val newTabButton = JButton("New tab")
-    private val spacingSelector = JSpinner(
-        SpinnerNumberModel(3.0, 0.0, 20.0, 1)
-    ).apply {
-        toolTipText = "Minimum spacing on final"
-        addChangeListener {
-            val value = value as Double
-            controllerInterface.setMinimumSpacingDistance(value)
-        }
-    }
+    private val spacingSelector = JSpinner(SpinnerNumberModel(0.0, 0.0, 20.0, 1))
+    private var spacingChangeListener: javax.swing.event.ChangeListener? = null
 
     init {
         add(spacingSelector)
@@ -46,46 +40,80 @@ class Footer(
         metButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                controllerInterface.onOpenMetWindowClicked()
+                presenterInterface.onOpenMetWindowClicked()
             }
         })
 
         reloadButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                controllerInterface.onReloadSettingsRequested()
+                presenterInterface.onReloadSettingsRequested()
             }
         })
 
         profileButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                controllerInterface.onOpenVerticalProfileWindowClicked()
+                presenterInterface.onOpenVerticalProfileWindowClicked()
             }
         })
 
         newTabButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
-                val textField = JTextField()
-                Form.enforceUppercase(textField, 4)
+
+                val icaoField = JTextField()
+                Form.enforceUppercase(icaoField, 4)
+
+                val roles = UserRole.entries.toTypedArray()
+                val roleComboBox = JComboBox(roles)
+
+                val panel = JPanel().apply {
+                    layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                    add(JLabel("Airport ICAO"))
+                    add(icaoField)
+                    add(Box.createVerticalStrut(5))
+                    add(JLabel("User Role"))
+                    add(roleComboBox)
+                }
 
                 val result = JOptionPane.showConfirmDialog(
                     null,
-                    textField,
-                    "Airport ICAO",
+                    panel,
+                    "New Timeline Group",
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE
                 )
 
                 if (result == JOptionPane.OK_OPTION) {
-                    val name = textField.text
-                    if (name.isNotBlank()) {
-                        controllerInterface.onNewTimelineGroup(name)
+                    val icao = icaoField.text.trim()
+                    val role = roleComboBox.selectedItem as? UserRole
+                    if (icao.isNotBlank() && role != null) {
+                        presenterInterface.onNewTimelineGroup(icao, role)
                     }
                 }
             }
         })
+
+
+        spacingSelector.apply {
+            toolTipText = "Minimum spacing on final"
+            (editor as JSpinner.NumberEditor).textField.apply {
+                isEditable = false
+                isFocusable = false
+            }
+            spacingChangeListener = javax.swing.event.ChangeListener {
+                presenterInterface.setMinimumSpacingDistance("ENGM", value as Double)
+            }
+            addChangeListener(spacingChangeListener)
+        }
+    }
+
+    fun updateMinimumSpacingSelector(value: Double) {
+        // Temporarily remove listener to avoid feedback loop
+        spacingChangeListener?.let { spacingSelector.removeChangeListener(it) }
+        spacingSelector.value = value
+        spacingChangeListener?.let { spacingSelector.addChangeListener(it) }
     }
 
     override fun paintComponent(g: Graphics?) {

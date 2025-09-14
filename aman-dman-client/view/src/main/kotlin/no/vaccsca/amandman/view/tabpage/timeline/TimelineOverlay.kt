@@ -2,16 +2,16 @@ package no.vaccsca.amandman.view.tabpage.timeline
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.controller.ControllerInterface
+import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.common.*
-import no.vaccsca.amandman.model.Flight
-import no.vaccsca.amandman.model.SequenceStatus
-import no.vaccsca.amandman.model.dto.TimelineData
-import no.vaccsca.amandman.model.timelineEvent.DepartureEvent
-import no.vaccsca.amandman.model.timelineEvent.FixInboundEvent
-import no.vaccsca.amandman.model.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.timelineEvent.RunwayDelayEvent
-import no.vaccsca.amandman.model.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.Flight
+import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.FixInboundEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.tabpage.timeline.labels.ArrivalLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.DepartureLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.TimelineLabel
@@ -32,7 +32,7 @@ import kotlin.math.min
 class TimelineOverlay(
     val timelineConfig: TimelineConfig,
     val timelineView: TimelineView,
-    val controllerInterface: ControllerInterface
+    val presenterInterface: PresenterInterface
 ) : JPanel(null) {
     private val pointDiameter = 6
     private val scaleMargin = 30
@@ -202,7 +202,7 @@ class TimelineOverlay(
                             proposedTime = null // Reset proposed time after dragging
                             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                             val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
-                            controllerInterface.move(timelineConfig.airportIcao, flight.callsign, newInstant)
+                            presenterInterface.move(timelineConfig.airportIcao, flight.callsign, newInstant)
                         }
                     })
                     newLabel.addMouseMotionListener(object : MouseMotionAdapter() {
@@ -210,7 +210,7 @@ class TimelineOverlay(
                             isDraggingLabel = true
                             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                             val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
-                            controllerInterface.onLabelDragged(timelineConfig.airportIcao, flight.callsign, newInstant)
+                            presenterInterface.onLabelDragged(timelineConfig.airportIcao, flight.callsign, newInstant)
                         }
                     })
                     currentLabels[flight.callsign] = newLabel
@@ -234,7 +234,7 @@ class TimelineOverlay(
     private fun handleLabelClick(label: TimelineLabel) {
         val flight = label.timelineEvent.getFlight()
         if (flight != null) {
-            controllerInterface.onAircraftSelected(flight.callsign)
+            presenterInterface.onAircraftSelected(flight.callsign)
         }
     }
 
@@ -251,7 +251,7 @@ class TimelineOverlay(
         return when (this) {
             //is FixInboundEvent -> ArrivalLabel(this)
             is DepartureEvent -> DepartureLabel(this)
-            is RunwayArrivalEvent -> ArrivalLabel(this, controllerInterface)
+            is RunwayArrivalEvent -> ArrivalLabel(this, presenterInterface)
             else -> throw IllegalArgumentException("Unsupported occurrence type")
         }
     }

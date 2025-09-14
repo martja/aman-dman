@@ -1,6 +1,6 @@
 package no.vaccsca.amandman.view
 
-import no.vaccsca.amandman.model.TrajectoryPoint
+import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.view.util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color
@@ -106,7 +106,7 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
 
             if (distFromPreviousBarb > BARB_SPACING) {
                 distFromPreviousBarb = 0
-                WindBarbs.drawWindBarb(g, x, 40, it.wind.directionDeg, it.wind.speedKts, relativeToHeading = it.heading + 90 )
+                WindBarbs.drawWindBarb(g, x, 40, it.windVector.directionDeg, it.windVector.speedKts, relativeToHeading = it.heading + 90 )
             } else {
                 distFromPreviousBarb += (x - prevX)
             }

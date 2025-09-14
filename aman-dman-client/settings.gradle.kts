@@ -6,10 +6,7 @@ rootProject.name = "aman-dman"
 include(
     ":app",
     ":view",
-    ":controller",
+    ":presenter",
     ":model",
-    ":service",
     ":common",
-    ":integration"
 )
-findProject(":model:integration")?.name = "integration"

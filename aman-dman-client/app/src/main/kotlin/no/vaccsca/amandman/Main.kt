@@ -1,11 +1,10 @@
 package no.vaccsca.amandman
 
 import com.jtattoo.plaf.hifi.HiFiLookAndFeel
-import no.vaccsca.amandman.controller.Controller
-import no.vaccsca.amandman.integration.atcClient.AtcClientEuroScope
-import no.vaccsca.amandman.integration.NavdataRepository
-import no.vaccsca.amandman.integration.weather.WeatherDataRepository
-import no.vaccsca.amandman.service.AmanDataService
+import no.vaccsca.amandman.presenter.Presenter
+import no.vaccsca.amandman.model.UserRole
+import no.vaccsca.amandman.model.data.service.PlannerManager
+import no.vaccsca.amandman.model.domain.service.GuiDataHandler
 import no.vaccsca.amandman.view.AmanDmanMainFrame
 import java.util.*
 import javax.swing.SwingUtilities
@@ -36,28 +35,19 @@ fun main() {
     }
 
     fun initializeApplication() {
-        // --- Model ---
-        val navdataRepository = NavdataRepository()
-        val weatherDataRepository = WeatherDataRepository()
-
         // --- View ---
         val view = AmanDmanMainFrame()
 
-        // --- Integration ---
-        val atcClient = AtcClientEuroScope(
-            host = System.getenv("ATC_HOST") ?: "127.0.0.1",
-            port = System.getenv("ATC_PORT")?.toIntOrNull() ?: 12345,
-        )
-
         // --- Service ---
-        val service = AmanDataService(navdataRepository, atcClient)
+        val guiUpdater = GuiDataHandler()
 
         // --- Controller ---
-        val controller = Controller(service, view, weatherDataRepository)
+        val presenter = Presenter(PlannerManager(), view, guiUpdater)
+        guiUpdater.presenter = presenter
 
+        // Update window title to show network mode
+        view.setWindowTitle("AMAN-DMAN")
         view.openWindow()
-
-        controller.refreshWeatherData(60.0, 11.0)
     }
 
     // Create a new JFrame
