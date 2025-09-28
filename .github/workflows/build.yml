@@ -58,6 +58,7 @@ jobs:
           tag_name: ${{ env.VERSION }}
           name: Release ${{ env.VERSION }}
           files: aman-dman-${{ env.VERSION }}.zip
+          draft: true       # <-- create a draft instead of publishing immediately
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
