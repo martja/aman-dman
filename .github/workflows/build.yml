@@ -44,6 +44,17 @@ jobs:
           cp euroscope-bridge/Release/*.dll artifacts/
           cp aman-dman-client/build/libs/*.jar artifacts/
           cp aman-dman-client/config/* artifacts/config/
+
+      - name: Upload to GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          files: |
+            artifacts/*.dll
+            artifacts/*.jar
+            artifacts/config/*
       
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
