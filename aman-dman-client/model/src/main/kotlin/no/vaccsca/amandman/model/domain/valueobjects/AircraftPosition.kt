@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.model.domain.valueobjects
 
 data class AircraftPosition(
-    val position: LatLng,
+    val latLng: LatLng,
     val altitudeFt: Int,
     val flightLevel: Int,
     val groundspeedKts: Int,

@@ -1,5 +1,9 @@
 package no.vaccsca.amandman.model.data.repository
 
+import no.vaccsca.amandman.model.data.dto.AirportJson
+import no.vaccsca.amandman.model.domain.valueobjects.Airport
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
+import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
 import java.io.File
@@ -7,10 +11,10 @@ import java.io.FileNotFoundException
 
 class NavdataRepository {
 
-    val stars: List<Star>
+    val airports: List<Airport>
 
     init {
-        stars = parseStars(readTextFile("config/stars.txt"))
+        airports = SettingsRepository.getAirportData().airports.map { (icao, vl) -> vl.toAirport(icao) }
     }
 
     fun readTextFile(filePath: String): String {
@@ -21,6 +25,28 @@ class NavdataRepository {
         } else {
             throw FileNotFoundException("Resource file not found: $filePath")
         }
+    }
+
+    fun AirportJson.toAirport(icao: String): Airport {
+        return Airport(
+            icao = icao,
+            location = LatLng(
+                lat = this.location.latitude,
+                lon = this.location.longitude,
+            ),
+            runways = this.runways.map { (rwId, rwData) ->
+                RunwayInfo(
+                    id = rwId,
+                    latLng = LatLng(
+                        lat = rwData.location.latitude,
+                        lon = rwData.location.longitude,
+                    ),
+                    elevation = rwData.elevation,
+                    trueHeading = rwData.trueHeading
+                )
+            },
+            stars = parseStars(readTextFile("config/stars.txt"))
+        )
     }
 
     fun parseStars(input: String): List<Star> {
@@ -37,7 +63,10 @@ class NavdataRepository {
 
         fun flushCurrentStar() {
             if (currentId != null && currentAirport != null && currentRunway != null) {
-                stars.add(Star(currentId!!, currentAirport!!, currentRunway!!, currentFixes))
+                val rwy = airports.find { it.icao == currentAirport }?.runways?.find { it.id == currentRunway }
+                    ?: throw IllegalArgumentException("Runway $currentRunway not found for airport $currentAirport")
+
+                stars.add(Star(currentId!!, currentAirport!!, rwy, currentFixes))
             }
             currentId = null
             currentAirport = null

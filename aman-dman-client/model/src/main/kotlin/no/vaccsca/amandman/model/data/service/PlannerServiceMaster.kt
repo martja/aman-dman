@@ -8,11 +8,9 @@ import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
 import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.data.repository.NavdataRepository
-import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.data.service.integration.AtcClient
-import no.vaccsca.amandman.model.domain.valueobjects.LatLng
+import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
@@ -22,12 +20,11 @@ import kotlin.collections.plus
  * This is only used in the Master and Local instances of the application
  */
 class PlannerServiceMaster(
-    airportIcao: String,
+    private val airport: Airport,
     private val weatherDataRepository: WeatherDataRepository,
-    private val navdataRepository: NavdataRepository,
     private val atcClient: AtcClient,
     private vararg val dataUpdateListeners: DataUpdateListener,
-) : PlannerService(airportIcao) {
+) : PlannerService(airport.icao) {
     private var weatherData: VerticalWeatherProfile? = null
 
     // ID of the sequence, typically the airport ICAO code
@@ -37,14 +34,7 @@ class PlannerServiceMaster(
 
     private val descentTrajectoryCache = mutableMapOf<String, List<TrajectoryPoint>>()
 
-    private val airportPosition: LatLng
-
     init {
-        val airportDetails = SettingsRepository.getSettings(reload = true).airports[airportIcao]
-            ?: throw IllegalArgumentException("Airport $airportIcao is not configured in settings")
-
-        airportPosition = LatLng(airportDetails.latitude, airportDetails.longitude)
-
         refreshWeatherData()
     }
 
@@ -96,11 +86,15 @@ class PlannerServiceMaster(
             return null
         }
 
-        val star = navdataRepository.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway }
+        if (arrival.assignedRunway == null) {
+            println("No runway assigned for ${arrival.callsign}, skipping arrival event creation.")
+            return null
+        }
+
+        val star = airport.stars.find { it.id == arrival.assignedStar }
 
         val trajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            route = arrival.route,
-            aircraftPosition = arrival.position,
+            state = arrival.currentState,
             verticalWeatherProfile = weatherData,
             star = star,
             aircraftPerformance = aircraftPerformance,
@@ -109,24 +103,20 @@ class PlannerServiceMaster(
 
         descentTrajectoryCache[arrival.callsign] = trajectory
 
-        if (arrival.assignedRunway == null) {
-            return null
-        }
-
         val estimatedTime = Clock.System.now() + trajectory.first().remainingTime
 
         return RunwayArrivalEvent(
             callsign = arrival.callsign,
             icaoType = arrival.icaoType,
-            flightLevel = arrival.position.flightLevel,
-            groundSpeed = arrival.position.groundspeedKts,
+            flightLevel = arrival.currentState.currentPosition.flightLevel,
+            groundSpeed = arrival.currentState.currentPosition.groundspeedKts,
             wakeCategory = aircraftPerformance.takeOffWTC,
             assignedStar = arrival.assignedStar,
             trackingController = arrival.trackingController,
             runway = arrival.assignedRunway,
             estimatedTime = estimatedTime,
             scheduledTime = estimatedTime,
-            pressureAltitude = arrival.position.altitudeFt,
+            pressureAltitude = arrival.currentState.currentPosition.altitudeFt,
             airportIcao = arrival.arrivalAirportIcao,
             remainingDistance = trajectory.first().remainingDistance,
             timelineId = 0,
@@ -152,7 +142,7 @@ class PlannerServiceMaster(
     override fun refreshWeatherData(): Result<Unit> =
         runCatching {
             Thread {
-                val weather = weatherDataRepository.getWindData(airportPosition.lat, airportPosition.lon)
+                val weather = weatherDataRepository.getWindData(airport.location.lat, airport.location.lon)
                 weatherData = weather
                 dataUpdateListeners.forEach { listener ->
                     listener.onWeatherDataUpdated(airportIcao, weather)

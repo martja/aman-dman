@@ -4,19 +4,21 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.JsonFactory
 import kotlinx.coroutines.*
 import no.vaccsca.amandman.model.data.dto.atcClientMessage.ArrivalJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.ArrivalsUpdateJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.DeparturesUpdateJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.IncomingMessageJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.MessageToServer
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.RegisterFixInboundsMessage
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.ArrivalsUpdateFromServerJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.DeparturesUpdateFromServerJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.MessageFromServerJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.MessageToServerJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.RegisterFixInboundsMessageJson
 import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusesUpdateJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.UnregisterTimelineMessage
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusesUpdateFromServerJson
+import no.vaccsca.amandman.model.data.dto.atcClientMessage.UnregisterTimelineMessageJson
+import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
-import no.vaccsca.amandman.model.domain.valueobjects.RoutePoint
+import no.vaccsca.amandman.model.domain.valueobjects.ArrivalState
+import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySelectionData
 import java.io.*
 import java.net.Socket
@@ -94,7 +96,7 @@ class AtcClientEuroScope(
         requestIdToAirportMap[theRequestId] = airportIcao
 
         sendMessage(
-            RegisterFixInboundsMessage(
+            RegisterFixInboundsMessageJson(
                 requestId = theRequestId,
                 targetFixes = emptyList(),
                 viaFixes = emptyList(), // TODO
@@ -107,7 +109,7 @@ class AtcClientEuroScope(
         // Send unregister message to the server
         requestIdToAirportMap.filterValues { it == airportIcao }.keys.forEach { requestId ->
             sendMessage(
-                UnregisterTimelineMessage(requestId)
+                UnregisterTimelineMessageJson(requestId)
             )
         }
 
@@ -116,7 +118,7 @@ class AtcClientEuroScope(
         arrivalCallbacks.remove(airportIcao)
     }
 
-    private fun sendMessage(message: MessageToServer) {
+    private fun sendMessage(message: MessageToServerJson) {
         try {
             val jsonMessage = objectMapper.writeValueAsString(message)
             writer?.write(jsonMessage + "\n")
@@ -150,7 +152,7 @@ class AtcClientEuroScope(
                     lastMessageTime = System.currentTimeMillis()
 
                     try {
-                        val dataPackage = objectMapper.readValue(message, IncomingMessageJson::class.java)
+                        val dataPackage = objectMapper.readValue(message, MessageFromServerJson::class.java)
                         handleMessage(dataPackage)
                     } catch (e: Exception) {
                         println("Error parsing JSON message #$messageCount (length: ${message.length}): ${e.message}")
@@ -189,17 +191,17 @@ class AtcClientEuroScope(
         }
     }
 
-    private fun handleMessage(incomingMessageJson: IncomingMessageJson) {
-        when (incomingMessageJson) {
-            is ArrivalsUpdateJson -> {
-                val airportIcao = requestIdToAirportMap[incomingMessageJson.requestId]
-                arrivalCallbacks[airportIcao]?.invoke(incomingMessageJson.inbounds.map { it.toArrival() })
+    private fun handleMessage(messageFromServerJson: MessageFromServerJson) {
+        when (messageFromServerJson) {
+            is ArrivalsUpdateFromServerJson -> {
+                val airportIcao = requestIdToAirportMap[messageFromServerJson.requestId]
+                arrivalCallbacks[airportIcao]?.invoke(messageFromServerJson.inbounds.map { it.toArrival() })
             }
-            is DeparturesUpdateJson -> {
+            is DeparturesUpdateFromServerJson -> {
                 TODO("Departures not yet implemented")
             }
-            is RunwayStatusesUpdateJson -> {
-                incomingMessageJson.airports.forEach { (airportIcao, statusesJson) ->
+            is RunwayStatusesUpdateFromServerJson -> {
+                messageFromServerJson.airports.forEach { (airportIcao, statusesJson) ->
                     val statuses = statusesJson.map { (name, statusJson) -> statusJson.toRunwayStatus(name) }
                     runwayStatusCallbacks[airportIcao]?.invoke(statuses)
                 }
@@ -207,34 +209,36 @@ class AtcClientEuroScope(
         }
     }
 
-    private fun ArrivalJson.toArrival() =
-        AtcClientArrivalData(
-            callsign = this.callsign,
-            icaoType = this.icaoType,
-            position = AircraftPosition(
-                position = LatLng(this.latitude, this.longitude),
+    private fun ArrivalJson.toArrival(): AtcClientArrivalData {
+        val waypoints = this.route.filter { it.isPassed }.map {
+            Waypoint(id = it.name, latLng = LatLng(it.latitude, it.longitude))
+        }
+
+        val arrivalState = ArrivalState(
+            remainingWaypoints = waypoints,
+            currentPosition = AircraftPosition(
+                latLng = LatLng(this.latitude, this.longitude),
                 altitudeFt = this.pressureAltitude,
                 flightLevel = this.flightLevel,
                 groundspeedKts = this.groundSpeed,
                 trackDeg = this.track,
             ),
-            assignedRunway = this.assignedRunway,
+            assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }!!
+        )
+
+        return AtcClientArrivalData(
+            callsign = this.callsign,
+            icaoType = this.icaoType,
+            assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway },
             assignedStar = this.assignedStar,
             assignedDirect = this.assignedDirect,
             scratchPad = this.scratchPad,
-            track = this.track,
-            route = this.route.map {
-                RoutePoint(
-                    id = it.name,
-                    position = LatLng(it.latitude, it.longitude),
-                    isOnStar = it.isOnStar,
-                    isPassed = it.isPassed
-                )
-            },
+            currentState = arrivalState,
             arrivalAirportIcao = this.arrivalAirportIcao,
             flightPlanTas = this.flightPlanTas,
             trackingController = this.trackingController
         )
+    }
 
     private fun RunwayStatusJson.toRunwayStatus(name: String) =
         AtcClientRunwaySelectionData(

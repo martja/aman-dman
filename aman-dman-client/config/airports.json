@@ -1,0 +1,30 @@
+{
+  "ENGM": {
+    "location": {
+      "latitude": 60.19250943987119,
+      "longitude": 11.096549971455543
+    },
+    "runwayThresholds": {
+      "01L": {
+        "latitude": 60.18501045995491,
+        "longitude": 11.073783755507158,
+        "elevation": 681
+      },
+      "01R": {
+        "latitude": 60.17580319639779,
+        "longitude": 11.107782247775026,
+        "elevation": 681
+      },
+      "19L": {
+        "latitude": 60.20116653568569,
+        "longitude": 11.12244616482607,
+        "elevation": 681
+      },
+      "19R": {
+        "latitude": 60.21601904982423,
+        "longitude": 11.091636783048877,
+        "elevation": 681
+      }
+    }
+  }
+}

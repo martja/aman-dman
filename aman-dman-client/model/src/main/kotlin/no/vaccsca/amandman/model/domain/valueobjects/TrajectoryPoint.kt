@@ -5,7 +5,7 @@ import kotlin.time.Duration
 
 data class TrajectoryPoint(
     val fixId: String?,
-    val position: LatLng,
+    val latLng: LatLng,
     val altitude: Int,
     val remainingDistance: Float,
     val remainingTime: Duration,

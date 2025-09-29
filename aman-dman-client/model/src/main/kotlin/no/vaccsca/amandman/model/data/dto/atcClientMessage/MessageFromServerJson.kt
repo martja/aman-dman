@@ -5,28 +5,28 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = ArrivalsUpdateJson::class, name = "arrivals"),
-    JsonSubTypes.Type(value = DeparturesUpdateJson::class, name = "departures"),
-    JsonSubTypes.Type(value = RunwayStatusesUpdateJson::class, name = "runwayStatuses")
+    JsonSubTypes.Type(value = ArrivalsUpdateFromServerJson::class, name = "arrivals"),
+    JsonSubTypes.Type(value = DeparturesUpdateFromServerJson::class, name = "departures"),
+    JsonSubTypes.Type(value = RunwayStatusesUpdateFromServerJson::class, name = "runwayStatuses")
 )
-sealed class IncomingMessageJson(
+sealed class MessageFromServerJson(
     open val requestId: Int,
 )
 
-data class DeparturesUpdateJson(
+data class DeparturesUpdateFromServerJson(
     override val requestId: Int,
     val outbounds: List<DepartureJson>
-) : IncomingMessageJson(requestId)
+) : MessageFromServerJson(requestId)
 
-data class ArrivalsUpdateJson(
+data class ArrivalsUpdateFromServerJson(
     override val requestId: Int,
     val inbounds: List<ArrivalJson>
-) : IncomingMessageJson(requestId)
+) : MessageFromServerJson(requestId)
 
-data class RunwayStatusesUpdateJson(
+data class RunwayStatusesUpdateFromServerJson(
     override val requestId: Int,
     val airports: Map<String, Map<String, RunwayStatusJson>>
-) : IncomingMessageJson(requestId)
+) : MessageFromServerJson(requestId)
 
 data class RunwayStatusJson(
     val arrivals: Boolean,
@@ -64,7 +64,6 @@ data class ArrivalJson(
 
 data class FixPointJson(
     val name: String,
-    val isOnStar: Boolean,
     val latitude: Double,
     val longitude: Double,
     val isPassed: Boolean,

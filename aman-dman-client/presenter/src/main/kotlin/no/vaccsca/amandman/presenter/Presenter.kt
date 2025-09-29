@@ -334,21 +334,21 @@ class Presenter(
             return // Group already exists
         }
 
+        val airport = NavdataRepository().airports
+
         val plannerService = when(timelineGroup.userRole) {
             UserRole.MASTER ->
                 PlannerServiceMaster(
-                    airportIcao = timelineGroup.airportIcao,
+                    airport = airport,
                     weatherDataRepository = WeatherDataRepository(),
                     atcClient = getOrCreateAtcClient(),
-                    navdataRepository = NavdataRepository(),
                     dataUpdateListeners = arrayOf(guiUpdater, dataUpdatesServerSender),
                 )
             UserRole.LOCAL ->
                 PlannerServiceMaster(
-                    airportIcao = timelineGroup.airportIcao,
+                    airport = airport,
                     weatherDataRepository = WeatherDataRepository(),
                     atcClient = getOrCreateAtcClient(),
-                    navdataRepository = NavdataRepository(),
                     dataUpdateListeners = arrayOf(guiUpdater),
                 )
             UserRole.SLAVE ->

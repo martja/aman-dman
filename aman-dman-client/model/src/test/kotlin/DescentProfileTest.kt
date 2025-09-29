@@ -1,6 +1,5 @@
 import kotlinx.datetime.Clock
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
-import no.vaccsca.amandman.model.domain.valueobjects.RoutePoint
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
@@ -14,77 +13,84 @@ import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService.calcula
 import no.vaccsca.amandman.model.domain.util.NavigationUtils.dmsToDecimal
 import no.vaccsca.amandman.model.domain.util.NavigationUtils.interpolatePositionAlongPath
 import no.vaccsca.amandman.model.domain.util.SpeedConversionUtils
+import no.vaccsca.amandman.model.domain.valueobjects.ArrivalState
+import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import org.junit.jupiter.api.Test
+import kotlin.collections.listOf
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-fun starFix(id: String, block: StarFix.StarFixBuilder.() -> Unit): StarFix {
-    return StarFix.StarFixBuilder(id).apply(block).build()
-}
 
-val lunip4l = Star(
-    id = "LUNIP4L",
-    airport = "ENGM",
-    runway = "01L",
-    fixes = listOf(
-        starFix("LUNIP") {
-            speed(250)
-        },
-        starFix("GM416") {
-            altitude(11000)
-            speed(220)
-        },
-        starFix("INSUV") {
-            altitude(5000)
-            speed(200)
-        },
-        starFix("NOSLA") {
-            altitude(4000)
-            speed(180)
-        },
-        starFix("XEMEN") {
-            altitude(3500)
-            speed(170)
-        },
-        starFix("ENGM") {
-            altitude(700)
-        }
-    )
-)
 
 class DescentProfileTest {
-    val currentPosition = AircraftPosition(
-        dmsToDecimal("""58°50'25.3"N  011°20'7.2"E"""),
-        22000,
-        250,
-        180,
+    val rwy01L = RunwayInfo("01L", latLng = LatLng(60.18501045995491,11.073783755507158), elevation = 681f, trueHeading = 014f)
+
+    val lunip4l = Star(
+        id = "LUNIP4L",
+        airport = "ENGM",
+        runway = rwy01L,
+        fixes = listOf(
+            starFix("LUNIP") {
+                speed(250)
+            },
+            starFix("GM416") {
+                altitude(11000)
+                speed(220)
+            },
+            starFix("INSUV") {
+                altitude(5000)
+                speed(200)
+            },
+            starFix("NOSLA") {
+                altitude(4000)
+                speed(180)
+            },
+            starFix("XEMEN") {
+                altitude(3500)
+                speed(170)
+            },
+            starFix("ENGM") {
+                altitude(700)
+            }
+        )
     )
 
-    val testRoute = listOf(
-        RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("NOSLA", dmsToDecimal("""59°59'1.2"N  010°59'51.2"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("XEMEN", dmsToDecimal("""60°2'10.4"N  011°1'39.4"E"""), isPassed = false, isOnStar = true),
-        RoutePoint("ONE", dmsToDecimal("""60°10'40.6"N  011°6'41.0"E"""), isPassed = false, isOnStar = true),
+    val testArrivalState = ArrivalState(
+        currentPosition = AircraftPosition(
+            dmsToDecimal("""58°50'25.3"N  011°20'7.2"E"""),
+            22000,
+            250,
+            180,
+            trackDeg = 0
+        ),
+        remainingWaypoints = listOf(
+            Waypoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E""")),
+            Waypoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E""")),
+            Waypoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
+            Waypoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E""")),
+            Waypoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E""")),
+            Waypoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E""")),
+            Waypoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E""")),
+            Waypoint("NOSLA", dmsToDecimal("""59°59'1.2"N  010°59'51.2"E""")),
+            Waypoint("XEMEN", dmsToDecimal("""60°2'10.4"N  011°1'39.4"E""")),
+            Waypoint("ONE", dmsToDecimal("""60°10'40.6"N  011°6'41.0"E""")),
+        ),
+        assignedRunway = rwy01L,
     )
 
     @Test
     fun `STAR length matches AIRAC spec`() {
         val lunip4lRoute = listOf(
-            RoutePoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E"""), isPassed = false, isOnStar = true),
-            RoutePoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E"""), isPassed = false, isOnStar = true),
-            RoutePoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E"""), isPassed = false, isOnStar = true),
-            RoutePoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E"""), isPassed = false, isOnStar = true),
-            RoutePoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E"""), isPassed = false, isOnStar = true),
-            RoutePoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E"""), isPassed = false, isOnStar = true),
-            RoutePoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E"""), isPassed = false, isOnStar = true),
+            Waypoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E""")),
+            Waypoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E""")),
+            Waypoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
+            Waypoint("GM417", dmsToDecimal("""59°39'55.7"N  011°24'37.9"E""")),
+            Waypoint("GM415", dmsToDecimal("""59°43'57.3"N  011°34'9.0"E""")),
+            Waypoint("GM414", dmsToDecimal("""59°49'18.7"N  011°40'29.1"E""")),
+            Waypoint("INSUV", dmsToDecimal("""59°55'32.2"N  011°6'50.6"E""")),
         )
 
         assertEquals(64, lunip4lRoute.getRouteDistance().roundToInt())
@@ -92,28 +98,17 @@ class DescentProfileTest {
 
     @Test
     fun `When aircraft is heading away from the first waypoint, the turn radius will be taken into account`() {
-        val descentSegmentsOriginalRoute = calculateTestDescent(testRoute)
-
-        val testRouteWithInitialHeading = testRoute.mapIndexed { index, routePoint ->
-            if (index == 0) {
-                routePoint.copy(
-                    position = routePoint.position.interpolatePositionAlongPath(
-                        LatLng(60.0, 11.0),
-                        0.5
-                    )
-                )
-            } else {
-                routePoint
-            }
-        }
+        // TODO: not implemented yet
     }
 
     @Test
     fun `Removing a fix that causes a shorter flight path should reduce time`() {
-        val descentSegmentsOriginalRoute = calculateTestDescent(testRoute)
+        val descentSegmentsOriginalRoute = calculateTestDescent(testArrivalState)
         val remainingTimeOriginalRoute = descentSegmentsOriginalRoute.first().remainingTime
 
-        val testRouteB = testRoute.filter { it.id != "GM415" && it.id != "GM414" }
+        val testRouteB = testArrivalState.copy(
+            remainingWaypoints = testArrivalState.remainingWaypoints.filter { it.id != "GM415" && it.id != "GM414" }
+        )
         val descentSegmentsModifiedRoute = calculateTestDescent(testRouteB)
 
         val remainingTimeModifiedRoute = descentSegmentsModifiedRoute.first().remainingTime
@@ -123,9 +118,9 @@ class DescentProfileTest {
 
     @Test
     fun `Descent path adheres to altitude restrictions`() {
-        val descentSegments = calculateTestDescent(testRoute)
+        val descentSegments = calculateTestDescent(testArrivalState)
         val altitudeViolations = descentSegments.filter { descentSegment ->
-            val passingWp = testRoute.find { wp -> wp.position == descentSegment.position }
+            val passingWp = testArrivalState.remainingWaypoints.find { wp -> wp.latLng == descentSegment.latLng }
             val altitudeConstraint = lunip4l.fixes.find { wp -> wp.id == passingWp?.id }?.typicalAltitude
 
             if (altitudeConstraint == null) {
@@ -146,8 +141,8 @@ class DescentProfileTest {
 
     @Test
     fun `Descent segments should not contain duplicates`() {
-        val descentSegments = calculateTestDescent(testRoute)
-        val nDistinctPoints = descentSegments.map { it.position.lat to it.position.lon }.distinct().size
+        val descentSegments = calculateTestDescent(testArrivalState)
+        val nDistinctPoints = descentSegments.map { it.latLng.lat to it.latLng.lon }.distinct().size
         val latLngDuplicates = nDistinctPoints - descentSegments.size
 
         assertEquals(0, latLngDuplicates)
@@ -155,12 +150,24 @@ class DescentProfileTest {
 
     @Test
     fun `Descent segments should include all waypoints`() {
-        val descentSegments = calculateTestDescent(testRoute)
-        val waypointsNotInDescentSegments = testRoute
-            .filter { waypoint -> descentSegments.none { it.position == waypoint.position } }
+        val descentSegments = calculateTestDescent(testArrivalState)
+        val waypointsNotInDescentSegments = testArrivalState
+            .remainingWaypoints
+            .filter { waypoint -> descentSegments.none { it.latLng == waypoint.latLng } }
             .map { it.id }
 
         assertEquals(emptyList(), waypointsNotInDescentSegments)
+    }
+
+    @Test
+    fun `Descent path should start at current aircraft position and end at runway`() {
+        val descentSegments = calculateTestDescent(testArrivalState)
+        val firstPoint = descentSegments.first()
+        val lastPoint = descentSegments.last()
+
+        assertEquals(testArrivalState.currentPosition.latLng, firstPoint.latLng)
+        assertEquals(testArrivalState.assignedRunway.latLng, lastPoint.latLng)
+        assertEquals(testArrivalState.assignedRunway.id, lastPoint.fixId)
     }
 
     @Test
@@ -248,7 +255,7 @@ class DescentProfileTest {
         assertEquals(221, gsWithCrosswind)
     }
 
-    private fun calculateTestDescent(remainingRoute: List<RoutePoint>): List<TrajectoryPoint> {
+    private fun calculateTestDescent(arrivalState: ArrivalState): List<TrajectoryPoint> {
         val weatherData = listOf(
             WeatherLayer(0, 0, windVector = WindVector(180, 0)),
             WeatherLayer(10000, -10, windVector = WindVector(180, 10)),
@@ -258,27 +265,30 @@ class DescentProfileTest {
 
         val weatherProfile = VerticalWeatherProfile(
             Clock.System.now(),
-            currentPosition.position,
+            testArrivalState.currentPosition.latLng,
             weatherData.toMutableList()
         )
 
-        val descentSegments = remainingRoute.calculateDescentTrajectory(
-            currentPosition,
-            weatherProfile,
-            lunip4l,
-            b738performance,
-            "ENGM",
-            450
+        val descentTrajectoryPoint = calculateDescentTrajectory(
+            state = arrivalState,
+            star = lunip4l,
+            verticalWeatherProfile = weatherProfile,
+            aircraftPerformance = b738performance,
+            flightPlanTas = 450,
         )
 
         println("Descent segments for route:")
-        descentSegments.forEach { println(it) }
+        descentTrajectoryPoint.forEach { println(it) }
 
-        return descentSegments
+        return descentTrajectoryPoint
+    }
+
+    private fun List<Waypoint>.getRouteDistance() =
+        this.zipWithNext().sumOf { (from, to) ->
+            from.latLng.distanceTo(to.latLng)
+        }
+
+    private fun starFix(id: String, block: StarFix.StarFixBuilder.() -> Unit): StarFix {
+        return StarFix.StarFixBuilder(id).apply(block).build()
     }
 }
-
-fun List<RoutePoint>.getRouteDistance() =
-    this.zipWithNext().sumOf { (from, to) ->
-        from.position.distanceTo(to.position)
-    }
