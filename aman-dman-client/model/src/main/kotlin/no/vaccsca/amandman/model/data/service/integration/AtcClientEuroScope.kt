@@ -210,7 +210,7 @@ class AtcClientEuroScope(
     }
 
     private fun ArrivalJson.toArrival(): AtcClientArrivalData {
-        val waypoints = this.route.filter { it.isPassed }.map {
+        val waypoints = this.route.filter { !it.isPassed }.map {
             Waypoint(id = it.name, latLng = LatLng(it.latitude, it.longitude))
         }
 

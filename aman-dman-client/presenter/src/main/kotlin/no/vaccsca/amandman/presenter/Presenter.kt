@@ -162,8 +162,8 @@ class Presenter(
                 timelinesData = group.timelines.map { timeline ->
                     TimelineData(
                         timelineId = timeline.title,
-                        left = relevantDataForTab.filter { it is RunwayArrivalEvent && timeline.runwaysLeft.contains(it.runway) },
-                        right = relevantDataForTab.filter { it is RunwayArrivalEvent && timeline.runwaysRight.contains(it.runway) }
+                        left = relevantDataForTab.filter { it is RunwayArrivalEvent && timeline.runwaysLeft.contains(it.runway.id) },
+                        right = relevantDataForTab.filter { it is RunwayArrivalEvent && timeline.runwaysRight.contains(it.runway.id) }
                     )
                 }
             ))
@@ -334,7 +334,12 @@ class Presenter(
             return // Group already exists
         }
 
-        val airport = NavdataRepository().airports
+        val airport = NavdataRepository().airports.find { it.icao == timelineGroup.airportIcao }
+
+        if (airport == null) {
+            view.showErrorMessage("Airport ${timelineGroup.airportIcao} not found in navdata")
+            return
+        }
 
         val plannerService = when(timelineGroup.userRole) {
             UserRole.MASTER ->

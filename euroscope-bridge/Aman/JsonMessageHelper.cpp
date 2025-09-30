@@ -52,7 +52,6 @@ const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std
         for (auto& point : inbound.remainingRoute) {
             Value pointObject(kObjectType);
             pointObject.AddMember("name", point.name, allocator);
-            pointObject.AddMember("isOnStar", point.isOnStar, allocator);
             pointObject.AddMember("latitude", point.latitude, allocator);
             pointObject.AddMember("longitude", point.longitude, allocator);
             pointObject.AddMember("isPassed", point.isPassed, allocator);

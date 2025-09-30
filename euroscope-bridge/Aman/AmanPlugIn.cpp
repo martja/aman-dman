@@ -98,8 +98,6 @@ std::vector<RouteFix> AmanPlugIn::findExtractedRoutePoints(CRadarTarget radarTar
     int assignedDirectFixIndex = extractedRoute.GetPointsAssignedIndex();
     int routeLength = extractedRoute.GetPointsNumber();
 
-    auto assignedStar = radarTarget.GetCorrelatedFlightPlan().GetFlightPlanData().GetStarName();
-
     int nextFixIndex = assignedDirectFixIndex > -1 ? assignedDirectFixIndex : closestFixIndex;
 
     std::vector<RouteFix> route;
@@ -109,7 +107,6 @@ std::vector<RouteFix> AmanPlugIn::findExtractedRoutePoints(CRadarTarget radarTar
         RouteFix fix;
         auto airwayName = extractedRoute.GetPointAirwayName(i);
         fix.name = extractedRoute.GetPointName(i);
-        fix.isOnStar = strcmp(airwayName, assignedStar) == 0;
         fix.latitude = extractedRoute.GetPointPosition(i).m_Latitude;
         fix.longitude = extractedRoute.GetPointPosition(i).m_Longitude;
         fix.isPassed = i < nextFixIndex;

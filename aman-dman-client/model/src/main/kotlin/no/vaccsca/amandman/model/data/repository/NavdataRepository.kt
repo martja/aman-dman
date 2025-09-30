@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.model.data.repository
 
 import no.vaccsca.amandman.model.data.dto.AirportJson
+import no.vaccsca.amandman.model.data.dto.RunwayThresholdJson
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
@@ -14,7 +15,8 @@ class NavdataRepository {
     val airports: List<Airport>
 
     init {
-        airports = SettingsRepository.getAirportData().airports.map { (icao, vl) -> vl.toAirport(icao) }
+        val airportJsons = SettingsRepository.getAirportData().airports
+        airports = airportJsons.map { (icao, vl) -> vl.toAirport(icao) }
     }
 
     fun readTextFile(filePath: String): String {
@@ -28,28 +30,30 @@ class NavdataRepository {
     }
 
     fun AirportJson.toAirport(icao: String): Airport {
+        val runways =  this.runwayThresholds.map { (rwId, rwData) ->
+            RunwayInfo(
+                id = rwId,
+                latLng = LatLng(
+                    lat = rwData.location.latitude,
+                    lon = rwData.location.longitude,
+                ),
+                elevation = rwData.elevation,
+                trueHeading = rwData.trueHeading
+            )
+        }
+
         return Airport(
             icao = icao,
             location = LatLng(
                 lat = this.location.latitude,
                 lon = this.location.longitude,
             ),
-            runways = this.runways.map { (rwId, rwData) ->
-                RunwayInfo(
-                    id = rwId,
-                    latLng = LatLng(
-                        lat = rwData.location.latitude,
-                        lon = rwData.location.longitude,
-                    ),
-                    elevation = rwData.elevation,
-                    trueHeading = rwData.trueHeading
-                )
-            },
-            stars = parseStars(readTextFile("config/stars.txt"))
+            runways = runways,
+            stars = parseStars(runways, readTextFile("config/stars.txt"))
         )
     }
 
-    fun parseStars(input: String): List<Star> {
+    fun parseStars(runways: List<RunwayInfo>, input: String): List<Star> {
         val lines = input.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("[") }
 
         val starHeaderRegex = Regex("STAR:(\\S+):(\\S+):(\\S+)")
@@ -63,7 +67,7 @@ class NavdataRepository {
 
         fun flushCurrentStar() {
             if (currentId != null && currentAirport != null && currentRunway != null) {
-                val rwy = airports.find { it.icao == currentAirport }?.runways?.find { it.id == currentRunway }
+                val rwy = runways.find { it.id == currentRunway }
                     ?: throw IllegalArgumentException("Runway $currentRunway not found for airport $currentAirport")
 
                 stars.add(Star(currentId!!, currentAirport!!, rwy, currentFixes))

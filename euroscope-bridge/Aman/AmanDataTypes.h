@@ -13,7 +13,6 @@ struct VerticalProfileSection {
 
 struct RouteFix {
     std::string name;
-    bool isOnStar;
     double latitude;
     double longitude;
     bool isPassed;
