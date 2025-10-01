@@ -91,7 +91,9 @@ class PlannerServiceMaster(
         val star = airport.stars.find { it.id == arrival.assignedStar }
 
         val trajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            state = arrival.currentState,
+            currentPosition = arrival.currentPosition,
+            assignedRunway = arrival.assignedRunway,
+            remainingWaypoints = arrival.remainingWaypoints,
             verticalWeatherProfile = weatherData,
             star = star,
             aircraftPerformance = aircraftPerformance,
@@ -106,15 +108,15 @@ class PlannerServiceMaster(
         return RunwayArrivalEvent(
             callsign = arrival.callsign,
             icaoType = arrival.icaoType,
-            flightLevel = arrival.currentState.currentPosition.flightLevel,
-            groundSpeed = arrival.currentState.currentPosition.groundspeedKts,
+            flightLevel = arrival.currentPosition.flightLevel,
+            groundSpeed = arrival.currentPosition.groundspeedKts,
             wakeCategory = aircraftPerformance.takeOffWTC,
             assignedStar = arrival.assignedStar,
             trackingController = arrival.trackingController,
             runway = arrival.assignedRunway,
             estimatedTime = estimatedTime,
             scheduledTime = estimatedTime,
-            pressureAltitude = arrival.currentState.currentPosition.altitudeFt,
+            pressureAltitude = arrival.currentPosition.altitudeFt,
             airportIcao = arrival.arrivalAirportIcao,
             remainingDistance = trajectory.first().remainingDistance,
             timelineId = 0,

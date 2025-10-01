@@ -226,7 +226,13 @@ class AtcClientEuroScope(
             Waypoint(id = it.name, latLng = LatLng(it.latitude, it.longitude))
         }
 
-        val arrivalState = ArrivalState(
+        return AtcClientArrivalData(
+            callsign = this.callsign,
+            icaoType = this.icaoType,
+            assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }!!,
+            assignedStar = this.assignedStar,
+            assignedDirect = this.assignedDirect,
+            scratchPad = this.scratchPad,
             remainingWaypoints = waypoints,
             currentPosition = AircraftPosition(
                 latLng = LatLng(this.latitude, this.longitude),
@@ -235,17 +241,6 @@ class AtcClientEuroScope(
                 groundspeedKts = this.groundSpeed,
                 trackDeg = this.track,
             ),
-            assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }!!
-        )
-
-        return AtcClientArrivalData(
-            callsign = this.callsign,
-            icaoType = this.icaoType,
-            assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway },
-            assignedStar = this.assignedStar,
-            assignedDirect = this.assignedDirect,
-            scratchPad = this.scratchPad,
-            currentState = arrivalState,
             arrivalAirportIcao = this.arrivalAirportIcao,
             flightPlanTas = this.flightPlanTas,
             trackingController = this.trackingController

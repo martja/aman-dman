@@ -13,7 +13,6 @@ import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService.calcula
 import no.vaccsca.amandman.model.domain.util.NavigationUtils.dmsToDecimal
 import no.vaccsca.amandman.model.domain.util.NavigationUtils.interpolatePositionAlongPath
 import no.vaccsca.amandman.model.domain.util.SpeedConversionUtils
-import no.vaccsca.amandman.model.domain.valueobjects.ArrivalState
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import org.junit.jupiter.api.Test
@@ -26,39 +25,45 @@ import kotlin.test.assertTrue
 
 
 class DescentProfileTest {
-    val rwy01L = RunwayInfo("01L", latLng = LatLng(60.18501045995491,11.073783755507158), elevation = 681f, trueHeading = 014f)
 
-    val lunip4l = Star(
-        id = "LUNIP4L",
-        airport = "ENGM",
-        runway = rwy01L,
-        fixes = listOf(
-            starFix("LUNIP") {
-                speed(250)
-            },
-            starFix("GM416") {
-                altitude(11000)
-                speed(220)
-            },
-            starFix("INSUV") {
-                altitude(5000)
-                speed(200)
-            },
-            starFix("NOSLA") {
-                altitude(4000)
-                speed(180)
-            },
-            starFix("XEMEN") {
-                altitude(3500)
-                speed(170)
-            },
-            starFix("ENGM") {
-                altitude(700)
-            }
-        )
+    data class TestFlight(
+        val assignedRunway: RunwayInfo,
+        val assignedStar: Star,
+        val currentPosition: AircraftPosition,
+        val remainingRoute: List<Waypoint>,
     )
 
-    val testArrivalState = ArrivalState(
+    val testFlight = TestFlight(
+        assignedRunway = RunwayInfo("01L", latLng = LatLng(60.18501045995491,11.073783755507158), elevation = 681f, trueHeading = 014f),
+        assignedStar = Star(
+            id = "LUNIP4L",
+            airport = "ENGM",
+            runway = RunwayInfo("01L", latLng = LatLng(60.18501045995491,11.073783755507158), elevation = 681f, trueHeading = 014f),
+            fixes = listOf(
+                starFix("LUNIP") {
+                    speed(250)
+                },
+                starFix("GM416") {
+                    altitude(11000)
+                    speed(220)
+                },
+                starFix("INSUV") {
+                    altitude(5000)
+                    speed(200)
+                },
+                starFix("NOSLA") {
+                    altitude(4000)
+                    speed(180)
+                },
+                starFix("XEMEN") {
+                    altitude(3500)
+                    speed(170)
+                },
+                starFix("ENGM") {
+                    altitude(700)
+                }
+            )
+        ),
         currentPosition = AircraftPosition(
             dmsToDecimal("""58°50'25.3"N  011°20'7.2"E"""),
             22000,
@@ -66,7 +71,7 @@ class DescentProfileTest {
             180,
             trackDeg = 0
         ),
-        remainingWaypoints = listOf(
+        remainingRoute = listOf(
             Waypoint("LUNIP", dmsToDecimal("""59°10'60.0"N  011°18'55.0"E""")),
             Waypoint("DEVKU", dmsToDecimal("""59°27'7.9"N  011°15'34.4"E""")),
             Waypoint("GM416", dmsToDecimal("""59°37'49.7"N  011°13'1.2"E""")),
@@ -77,9 +82,10 @@ class DescentProfileTest {
             Waypoint("NOSLA", dmsToDecimal("""59°59'1.2"N  010°59'51.2"E""")),
             Waypoint("XEMEN", dmsToDecimal("""60°2'10.4"N  011°1'39.4"E""")),
             Waypoint("ONE", dmsToDecimal("""60°10'40.6"N  011°6'41.0"E""")),
-        ),
-        assignedRunway = rwy01L,
+        )
     )
+
+    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `STAR length matches AIRAC spec`() {
@@ -103,13 +109,13 @@ class DescentProfileTest {
 
     @Test
     fun `Removing a fix that causes a shorter flight path should reduce time`() {
-        val descentSegmentsOriginalRoute = calculateTestDescent(testArrivalState)
+        val descentSegmentsOriginalRoute = calculateTestDescent(testFlight)
         val remainingTimeOriginalRoute = descentSegmentsOriginalRoute.first().remainingTime
 
-        val testRouteB = testArrivalState.copy(
-            remainingWaypoints = testArrivalState.remainingWaypoints.filter { it.id != "GM415" && it.id != "GM414" }
+        val testAircraftB = testFlight.copy(
+            remainingRoute = testFlight.remainingRoute.filter { it.id != "GM415" && it.id != "GM414" }
         )
-        val descentSegmentsModifiedRoute = calculateTestDescent(testRouteB)
+        val descentSegmentsModifiedRoute = calculateTestDescent(testAircraftB)
 
         val remainingTimeModifiedRoute = descentSegmentsModifiedRoute.first().remainingTime
 
@@ -118,10 +124,10 @@ class DescentProfileTest {
 
     @Test
     fun `Descent path adheres to altitude restrictions`() {
-        val descentSegments = calculateTestDescent(testArrivalState)
+        val descentSegments = calculateTestDescent(testFlight)
         val altitudeViolations = descentSegments.filter { descentSegment ->
-            val passingWp = testArrivalState.remainingWaypoints.find { wp -> wp.latLng == descentSegment.latLng }
-            val altitudeConstraint = lunip4l.fixes.find { wp -> wp.id == passingWp?.id }?.typicalAltitude
+            val passingWp = testFlight.remainingRoute.find { wp -> wp.latLng == descentSegment.latLng }
+            val altitudeConstraint = testFlight.assignedStar.fixes.find { wp -> wp.id == passingWp?.id }?.typicalAltitude
 
             if (altitudeConstraint == null) {
                 return@filter false
@@ -141,7 +147,7 @@ class DescentProfileTest {
 
     @Test
     fun `Descent segments should not contain duplicates`() {
-        val descentSegments = calculateTestDescent(testArrivalState)
+        val descentSegments = calculateTestDescent(testFlight)
         val nDistinctPoints = descentSegments.map { it.latLng.lat to it.latLng.lon }.distinct().size
         val latLngDuplicates = nDistinctPoints - descentSegments.size
 
@@ -150,9 +156,8 @@ class DescentProfileTest {
 
     @Test
     fun `Descent segments should include all waypoints`() {
-        val descentSegments = calculateTestDescent(testArrivalState)
-        val waypointsNotInDescentSegments = testArrivalState
-            .remainingWaypoints
+        val descentSegments = calculateTestDescent(testFlight)
+        val waypointsNotInDescentSegments = testFlight.remainingRoute
             .filter { waypoint -> descentSegments.none { it.latLng == waypoint.latLng } }
             .map { it.id }
 
@@ -161,13 +166,13 @@ class DescentProfileTest {
 
     @Test
     fun `Descent path should start at current aircraft position and end at runway`() {
-        val descentSegments = calculateTestDescent(testArrivalState)
+        val descentSegments = calculateTestDescent(testFlight)
         val firstPoint = descentSegments.first()
         val lastPoint = descentSegments.last()
 
-        assertEquals(testArrivalState.currentPosition.latLng, firstPoint.latLng)
-        assertEquals(testArrivalState.assignedRunway.latLng, lastPoint.latLng)
-        assertEquals(testArrivalState.assignedRunway.id, lastPoint.fixId)
+        assertEquals(testFlight.currentPosition.latLng, firstPoint.latLng)
+        assertEquals(testFlight.assignedRunway.latLng, lastPoint.latLng)
+        assertEquals(testFlight.assignedRunway.id, lastPoint.fixId)
     }
 
     @Test
@@ -255,7 +260,7 @@ class DescentProfileTest {
         assertEquals(221, gsWithCrosswind)
     }
 
-    private fun calculateTestDescent(arrivalState: ArrivalState): List<TrajectoryPoint> {
+    private fun calculateTestDescent(testFlight: TestFlight): List<TrajectoryPoint> {
         val weatherData = listOf(
             WeatherLayer(0, 0, windVector = WindVector(180, 0)),
             WeatherLayer(10000, -10, windVector = WindVector(180, 10)),
@@ -265,13 +270,15 @@ class DescentProfileTest {
 
         val weatherProfile = VerticalWeatherProfile(
             Clock.System.now(),
-            testArrivalState.currentPosition.latLng,
+            testFlight.currentPosition.latLng,
             weatherData.toMutableList()
         )
 
         val descentTrajectoryPoint = calculateDescentTrajectory(
-            state = arrivalState,
-            star = lunip4l,
+            currentPosition = testFlight.currentPosition,
+            remainingWaypoints = testFlight.remainingRoute,
+            assignedRunway = testFlight.assignedRunway,
+            star = testFlight.assignedStar,
             verticalWeatherProfile = weatherProfile,
             aircraftPerformance = b738performance,
             flightPlanTas = 450,

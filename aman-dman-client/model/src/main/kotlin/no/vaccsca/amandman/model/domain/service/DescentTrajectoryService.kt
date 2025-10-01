@@ -11,6 +11,7 @@ import no.vaccsca.amandman.model.domain.util.WeatherUtils.interpolateWeatherAtAl
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.ArrivalState
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
@@ -19,6 +20,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.distanceTo
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.domain.valueobjects.weather.WindVector
 import kotlin.collections.plusAssign
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
@@ -40,7 +42,9 @@ object DescentTrajectoryService {
      * @return A list of TrajectoryPoint objects representing the descent trajectory.
      */
     fun calculateDescentTrajectory(
-        state: ArrivalState,
+        currentPosition: AircraftPosition,
+        assignedRunway: RunwayInfo,
+        remainingWaypoints: List<Waypoint>,
         verticalWeatherProfile: VerticalWeatherProfile?,
         star: Star?,
         aircraftPerformance: AircraftPerformance,
@@ -51,8 +55,8 @@ object DescentTrajectoryService {
         val trajectoryPoints = mutableListOf<TrajectoryPoint>()
 
         // Starts at the airports and works backwards
-        var probePosition = state.assignedRunway.latLng
-        var probeAltitude = state.assignedRunway.elevation.roundToInt()
+        var probePosition = assignedRunway.latLng
+        var probeAltitude = assignedRunway.elevation.roundToInt()
         var probingDistance = 0f
         var accumulatedTimeFromDestination = 0.seconds
 
@@ -60,16 +64,16 @@ object DescentTrajectoryService {
             listOf(
                 Waypoint(
                     id = CURRENT_ID,
-                    latLng = state.currentPosition.latLng,
+                    latLng = currentPosition.latLng,
                 )
-            ) + state.remainingWaypoints.filter { it.id != arrivalAirportIcao } + listOf(
+            ) + remainingWaypoints.filter { it.id != arrivalAirportIcao } + listOf(
                 Waypoint(
-                    id = state.assignedRunway.id,
-                    latLng = state.assignedRunway.latLng,
+                    id = assignedRunway.id,
+                    latLng = assignedRunway.latLng,
                 )
             )
 
-        val isAtEndOfRoute = remainingRoute.size == 2 && state.currentPosition.latLng.bearingTo(remainingRoute.last().latLng) > 90
+        val isAtEndOfRoute = remainingRoute.size == 2 && remainingRoute.last().latLng.isBehind(currentPosition)
         if (isAtEndOfRoute) {
             return emptyList()
         }
@@ -77,7 +81,7 @@ object DescentTrajectoryService {
         // Add the last point (the airport) to the profile
         trajectoryPoints +=
                 TrajectoryPoint(
-                    fixId = state.assignedRunway.id,
+                    fixId = assignedRunway.id,
                     latLng = probePosition,
                     altitude = probeAltitude,
                     remainingDistance = probingDistance,
@@ -86,7 +90,7 @@ object DescentTrajectoryService {
                     tas = aircraftPerformance.landingVat,
                     windVector = calmWindVector, // TODO: use wind from METAR
                     ias = aircraftPerformance.landingVat,
-                    heading = state.assignedRunway.trueHeading.roundToInt(),
+                    heading = assignedRunway.trueHeading.roundToInt(),
                 )
 
         // Start from the last waypoint (the airport) and work backward
@@ -97,11 +101,11 @@ object DescentTrajectoryService {
 
             val nextAltitudeExpectation = star?.nextAltitudeExpectation(remainingRouteReversed)
                 ?.let { starMap?.get(it.id)?.typicalAltitude }
-                ?: state.currentPosition.altitudeFt
+                ?: currentPosition.altitudeFt
 
             val earlierSpeedExpectation =
                 if (star != null) {
-                    state.remainingWaypoints.getInterpolatedSpeedExpectation(star = star.fixes, atWaypoint = earlierPoint)
+                    remainingWaypoints.getInterpolatedSpeedExpectation(star = star.fixes, atWaypoint = earlierPoint)
                 } else {
                     aircraftPerformance.getPreferredIas(
                         altitudeFt = nextAltitudeExpectation,
@@ -321,5 +325,11 @@ object DescentTrajectoryService {
 
     private fun Star.nextAltitudeExpectation(route: List<Waypoint>): Waypoint? =
         route.routeToNextAltitudeExpectation(fixes).lastOrNull()
+
+    private fun LatLng.isBehind(currentPosition: AircraftPosition): Boolean {
+        val bearingToPoint = currentPosition.latLng.bearingTo(this)
+        val angleDifference = ((bearingToPoint - currentPosition.trackDeg + 540) % 360) - 180
+        return angleDifference.absoluteValue > 90
+    }
 
 }
