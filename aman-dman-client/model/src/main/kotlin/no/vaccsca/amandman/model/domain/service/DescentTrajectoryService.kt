@@ -8,6 +8,7 @@ import no.vaccsca.amandman.model.domain.util.NavigationUtils.interpolatePosition
 import no.vaccsca.amandman.model.domain.util.SpeedConversionUtils
 import no.vaccsca.amandman.model.domain.util.WeatherUtils
 import no.vaccsca.amandman.model.domain.util.WeatherUtils.interpolateWeatherAtAltitude
+import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.ArrivalState
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
@@ -44,6 +45,7 @@ object DescentTrajectoryService {
         star: Star?,
         aircraftPerformance: AircraftPerformance,
         flightPlanTas: Int?,
+        arrivalAirportIcao: String,
     ): List<TrajectoryPoint> {
         val starMap = star?.fixes?.associateBy { it.id }
         val trajectoryPoints = mutableListOf<TrajectoryPoint>()
@@ -60,12 +62,17 @@ object DescentTrajectoryService {
                     id = CURRENT_ID,
                     latLng = state.currentPosition.latLng,
                 )
-            ) + state.remainingWaypoints + listOf(
+            ) + state.remainingWaypoints.filter { it.id != arrivalAirportIcao } + listOf(
                 Waypoint(
                     id = state.assignedRunway.id,
                     latLng = state.assignedRunway.latLng,
                 )
             )
+
+        val isAtEndOfRoute = remainingRoute.size == 2 && state.currentPosition.latLng.bearingTo(remainingRoute.last().latLng) > 90
+        if (isAtEndOfRoute) {
+            return emptyList()
+        }
 
         // Add the last point (the airport) to the profile
         trajectoryPoints +=

@@ -95,16 +95,6 @@ class Presenter(
         view.openMetWindow()
     }
 
-    override fun refreshWeatherData(airportIcao: String) {
-        plannerManager.getServiceForAirport(airportIcao).refreshWeatherData()
-            .onFailure {
-                when (it) {
-                    is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
-                    else -> view.showErrorMessage("Failed to refresh weather data")
-                }
-            }
-    }
-
     override fun onOpenVerticalProfileWindowClicked() {
         view.openDescentProfileWindow()
     }
@@ -170,17 +160,19 @@ class Presenter(
         }
 
         selectedCallsign?.let { callsign ->
-           /* plannerManager.getAllServices().getDescentProfileForCallsign(callsign)
-                .onSuccess { selectedDescentProfile ->
-                    if (selectedDescentProfile != null)
-                        view.updateDescentTrajectory(callsign, selectedDescentProfile)
-                }
-                .onFailure {
-                    when (it) {
-                        is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
-                        else -> view.showErrorMessage("Failed to fetch descent profile")
+            plannerManager.getAllServices().forEach { plannerService ->
+                plannerService.getDescentProfileForCallsign(callsign)
+                    .onSuccess { selectedDescentProfile ->
+                        if (selectedDescentProfile != null)
+                            view.updateDescentTrajectory(callsign, selectedDescentProfile)
                     }
-                }*/
+                    .onFailure {
+                        when (it) {
+                            is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
+                            else -> view.showErrorMessage("Failed to fetch descent profile")
+                        }
+                    }
+            }
         }
     }
 
@@ -264,7 +256,7 @@ class Presenter(
         view.openNonSequencedWindow()
     }
 
-    override fun move(airportIcao: String, callsign: String, newScheduledTime: Instant) {
+    override fun onLabelDragEnd(airportIcao: String, callsign: String, newScheduledTime: Instant) {
         plannerManager.getServiceForAirport(airportIcao).suggestScheduledTime(callsign, newScheduledTime)
             .onFailure {
                 when (it) {
@@ -284,7 +276,7 @@ class Presenter(
             }
     }
 
-    override fun setMinimumSpacingDistance(airportIcao: String, minimumSpacingDistanceNm: Double) {
+    override fun onMinimumSpacingDistanceSet(airportIcao: String, minimumSpacingDistanceNm: Double) {
         plannerManager.getServiceForAirport(airportIcao).setMinimumSpacing(minimumSpacingDistanceNm)
             .onFailure {
                 when (it) {
@@ -296,7 +288,7 @@ class Presenter(
             }
     }
 
-    override fun onLabelDragged(airportIcao: String, callsign: String, newInstant: Instant) {
+    override fun onLabelDrag(airportIcao: String, callsign: String, newInstant: Instant) {
         plannerManager.getServiceForAirport(airportIcao).isTimeSlotAvailable(callsign, newInstant)
             .onSuccess { view.updateDraggedLabel(callsign, newInstant, it) }
             .onFailure {

@@ -103,7 +103,7 @@ class Footer(
                 isFocusable = false
             }
             spacingChangeListener = javax.swing.event.ChangeListener {
-                presenterInterface.setMinimumSpacingDistance("ENGM", value as Double)
+                presenterInterface.onMinimumSpacingDistanceSet("ENGM", value as Double)
             }
             addChangeListener(spacingChangeListener)
         }

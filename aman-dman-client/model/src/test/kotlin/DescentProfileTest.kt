@@ -275,6 +275,7 @@ class DescentProfileTest {
             verticalWeatherProfile = weatherProfile,
             aircraftPerformance = b738performance,
             flightPlanTas = 450,
+            arrivalAirportIcao = "ENGM",
         )
 
         println("Descent segments for route:")

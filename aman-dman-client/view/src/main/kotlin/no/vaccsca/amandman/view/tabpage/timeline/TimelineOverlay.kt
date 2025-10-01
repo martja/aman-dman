@@ -202,7 +202,7 @@ class TimelineOverlay(
                             proposedTime = null // Reset proposed time after dragging
                             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                             val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
-                            presenterInterface.move(timelineConfig.airportIcao, flight.callsign, newInstant)
+                            presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, flight.callsign, newInstant)
                         }
                     })
                     newLabel.addMouseMotionListener(object : MouseMotionAdapter() {
@@ -210,7 +210,7 @@ class TimelineOverlay(
                             isDraggingLabel = true
                             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                             val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
-                            presenterInterface.onLabelDragged(timelineConfig.airportIcao, flight.callsign, newInstant)
+                            presenterInterface.onLabelDrag(timelineConfig.airportIcao, flight.callsign, newInstant)
                         }
                     })
                     currentLabels[flight.callsign] = newLabel

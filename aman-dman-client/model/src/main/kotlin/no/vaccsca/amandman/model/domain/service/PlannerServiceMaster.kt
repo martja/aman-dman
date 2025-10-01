@@ -96,6 +96,7 @@ class PlannerServiceMaster(
             star = star,
             aircraftPerformance = aircraftPerformance,
             flightPlanTas = arrival.flightPlanTas,
+            arrivalAirportIcao = arrival.arrivalAirportIcao
         )
 
         descentTrajectoryCache[arrival.callsign] = trajectory

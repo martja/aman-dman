@@ -5,11 +5,16 @@ import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 
+/**
+ * Interface defining the contract for the Presenter in the MVP architecture.
+ * It handles user interactions and communicates with the View and Model layers.
+ *
+ * View -> Presenter communication
+ */
 interface PresenterInterface {
     fun onReloadSettingsRequested()
     fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto)
     fun onOpenMetWindowClicked()
-    fun refreshWeatherData(airportIcao: String)
     fun onOpenVerticalProfileWindowClicked()
     fun onAircraftSelected(callsign: String)
     fun onEditTimelineRequested(groupId: String, timelineTitle: String)
@@ -20,9 +25,9 @@ interface PresenterInterface {
     fun onRemoveTab(airportIcao: String)
     fun onOpenLandingRatesWindow()
     fun onOpenNonSequencedWindow()
-    fun move(airportIcao: String, callsign: String, newScheduledTime: Instant)
+    fun onLabelDragEnd(airportIcao: String, callsign: String, newScheduledTime: Instant)
     fun onRecalculateSequenceClicked(airportIcao: String, callSign: String? = null)
     fun onRemoveTimelineClicked(timelineConfig: TimelineConfig)
-    fun onLabelDragged(airportIcao: String, callsign: String, newInstant: Instant)
-    fun setMinimumSpacingDistance(airportIcao: String, minimumSpacingDistanceNm: Double)
+    fun onLabelDrag(airportIcao: String, callsign: String, newInstant: Instant)
+    fun onMinimumSpacingDistanceSet(airportIcao: String, minimumSpacingDistanceNm: Double)
 }

@@ -7,6 +7,12 @@ import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.data.dto.TabData
 
+/**
+ * Interface for the View in the MVP architecture.
+ * Defines methods that the Presenter can call to update the UI.
+ *
+ * Presenter -> View communication
+ */
 interface ViewInterface {
     var presenterInterface: PresenterInterface
 

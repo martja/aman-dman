@@ -184,6 +184,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
         // Ensure that the descent trajectory does not contain the airport ICAO as a fixId
         assertTrue { arrivalWithoutAirport.currentState.remainingWaypoints.none { it.id == arrivalWithoutAirport.arrivalAirportIcao } }
@@ -204,6 +205,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
         val directRoutingIndex = descentTrajectory.indexOfFirst { it.fixId == arrivalWithDirectRouting.assignedDirect }
         val expectedSpeedAtDirectRouting = adopi3m.fixes.find { it.id == arrivalWithDirectRouting.assignedDirect }!!.typicalSpeedIas!!
@@ -221,9 +223,10 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
-        val expectedFixes = testArrival1.currentState.remainingWaypoints.map { it.id }
+        val expectedFixes = testArrival1.currentState.remainingWaypoints.map { it.id } + listOf(inrex4m.runway.id)
 
         val fixesOnDescentTrajectory = descentTrajectory.mapNotNull { it.fixId }
 
@@ -242,6 +245,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         descentTrajectory.forEach {
@@ -263,6 +267,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         val iasList = descentTrajectoryNew.map { it.ias }
@@ -278,6 +283,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         ).filter { it.fixId != null }
 
         assertEquals(descentTrajectory.size, 9)
@@ -287,7 +293,7 @@ class DescentTrajectoryServiceTest {
             .any { point ->
                 val starFix = inrex4m.fixes.find { it.id == point.fixId }
                 if (starFix?.typicalSpeedIas == null) return@any false
-                point.ias > starFix.typicalSpeedIas!!
+                point.ias > starFix.typicalSpeedIas
             }
 
         assertEquals(false, isExceeding, "IAS should not exceed typical speed on STAR point")
@@ -301,6 +307,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         ).filter { it.fixId != null }
 
         val isMatching = descentTrajectory.all { point ->
@@ -319,6 +326,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         val descentTrajectory2 = DescentTrajectoryService.calculateDescentTrajectory(
@@ -327,6 +335,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         val isExceeding = descentTrajectory.any { it.altitude < 10_000 && it.ias > 250 }
@@ -345,6 +354,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         val altitudeList = descentTrajectory.map { it.altitude }
@@ -360,6 +370,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         val modifiedRoute = testArrival2.copy(
@@ -374,6 +385,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         assertEquals(
@@ -392,6 +404,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         val modifiedRoute = testArrival2.copy(
@@ -406,6 +419,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         val timeGained = originalTrajectory.first().remainingTime - newTrajectory.first().remainingTime
@@ -428,6 +442,7 @@ class DescentTrajectoryServiceTest {
             verticalWeatherProfile = null,
             flightPlanTas = 450,
             aircraftPerformance = b738performance,
+            arrivalAirportIcao = "ENGM",
         )
 
         val descentTrajectoryLength =
