@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.service.integration
+package no.vaccsca.amandman.model.data.integration
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.JsonFactory
@@ -23,6 +23,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySe
 import java.io.*
 import java.net.Socket
 import java.net.SocketTimeoutException
+import kotlin.collections.get
 
 class AtcClientEuroScope(
     private val host: String = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.host,
@@ -72,6 +73,7 @@ class AtcClientEuroScope(
                         isConnected = true
                         println("Connected to $host:$port (buffers: recv=${socket!!.receiveBufferSize}, send=${socket!!.sendBufferSize})")
 
+                        onConnectionEstablished()
                         launch { receiveMessages() }
                     } catch (e: Exception) {
                         println("Connection failed: ${e.message}")
@@ -94,15 +96,6 @@ class AtcClientEuroScope(
 
         val theRequestId = nextRequestId
         requestIdToAirportMap[theRequestId] = airportIcao
-
-        sendMessage(
-            RegisterFixInboundsMessageJson(
-                requestId = theRequestId,
-                targetFixes = emptyList(),
-                viaFixes = emptyList(), // TODO
-                destinationAirports = listOf(airportIcao)
-            )
-        )
     }
 
     override fun stopCollectingMovementsFor(airportIcao: String) {
@@ -116,6 +109,25 @@ class AtcClientEuroScope(
         // Clean up local callbacks for this airport
         runwayStatusCallbacks.remove(airportIcao)
         arrivalCallbacks.remove(airportIcao)
+    }
+
+    private fun onConnectionEstablished() {
+        // Resubscribe to all previously registered airports
+        val currentAirports = requestIdToAirportMap.values.toSet()
+        requestIdToAirportMap.clear()
+        currentAirports.forEach { airportIcao ->
+            val theRequestId = nextRequestId
+            requestIdToAirportMap[theRequestId] = airportIcao
+
+            sendMessage(
+                RegisterFixInboundsMessageJson(
+                    requestId = theRequestId,
+                    targetFixes = emptyList(),
+                    viaFixes = emptyList(), // TODO
+                    destinationAirports = listOf(airportIcao)
+                )
+            )
+        }
     }
 
     private fun sendMessage(message: MessageToServerJson) {
@@ -250,11 +262,6 @@ class AtcClientEuroScope(
     override fun close() {
         try {
             isConnected = false
-            scope.cancel() // Cancel the coroutine scope to stop all background tasks
-
-            // Clear callback maps to prevent memory leaks
-            arrivalCallbacks.clear()
-            runwayStatusCallbacks.clear()
 
             socket?.close()
             writer?.close()

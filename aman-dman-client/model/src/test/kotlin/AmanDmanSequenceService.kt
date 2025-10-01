@@ -1,9 +1,9 @@
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.data.service.AircraftSequenceCandidate
-import no.vaccsca.amandman.model.data.service.AmanDmanSequenceService
-import no.vaccsca.amandman.model.data.service.Sequence
-import no.vaccsca.amandman.model.data.service.SequencePlace
+import no.vaccsca.amandman.model.domain.service.AircraftSequenceCandidate
+import no.vaccsca.amandman.model.domain.service.AmanDmanSequenceService
+import no.vaccsca.amandman.model.domain.service.Sequence
+import no.vaccsca.amandman.model.domain.service.SequencePlace
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

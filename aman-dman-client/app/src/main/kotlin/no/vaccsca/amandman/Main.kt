@@ -3,7 +3,7 @@ package no.vaccsca.amandman
 import com.jtattoo.plaf.hifi.HiFiLookAndFeel
 import no.vaccsca.amandman.presenter.Presenter
 import no.vaccsca.amandman.model.UserRole
-import no.vaccsca.amandman.model.data.service.PlannerManager
+import no.vaccsca.amandman.model.domain.PlannerManager
 import no.vaccsca.amandman.model.domain.service.GuiDataHandler
 import no.vaccsca.amandman.view.AmanDmanMainFrame
 import java.util.*

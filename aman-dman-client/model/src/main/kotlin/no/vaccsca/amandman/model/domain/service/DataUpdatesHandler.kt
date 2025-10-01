@@ -2,7 +2,7 @@ package no.vaccsca.amandman.model.domain.service
 
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.model.data.service.integration.SharedStateHttpClient
+import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 
 /**

@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.service
+package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint

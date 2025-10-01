@@ -1,4 +1,6 @@
-package no.vaccsca.amandman.model.data.service
+package no.vaccsca.amandman.model.domain
+
+import no.vaccsca.amandman.model.domain.service.PlannerService
 
 class PlannerManager {
     private val services: MutableList<PlannerService> = mutableListOf()

@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.service.integration
+package no.vaccsca.amandman.model.data.integration
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser

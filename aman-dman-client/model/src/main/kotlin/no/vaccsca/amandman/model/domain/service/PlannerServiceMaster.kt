@@ -1,20 +1,17 @@
-package no.vaccsca.amandman.model.data.service
+package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.domain.service.DataUpdateListener
-import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
-import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
-import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
-import no.vaccsca.amandman.model.data.service.integration.AtcClient
+import no.vaccsca.amandman.model.data.integration.AtcClient
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
+import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
+import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
-import kotlin.collections.plus
 
 /**
  * This is only used in the Master and Local instances of the application
@@ -45,7 +42,7 @@ class PlannerServiceMaster(
             },
             onRunwaySelectionChanged = { runways ->
                 val map = runways.associate {
-                    it.runway to RunwayStatus(it.allowArrivals,it.allowDepartures)
+                    it.runway to RunwayStatus(it.allowArrivals, it.allowDepartures)
                 }
                 dataUpdateListeners.forEach {
                     it.onRunwayModesUpdated(airportIcao, map)

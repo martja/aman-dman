@@ -12,11 +12,11 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrival
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
-import no.vaccsca.amandman.model.data.service.PlannerManager
-import no.vaccsca.amandman.model.data.service.PlannerServiceMaster
-import no.vaccsca.amandman.model.data.service.PlannerServiceSlave
-import no.vaccsca.amandman.model.data.service.integration.AtcClientEuroScope
-import no.vaccsca.amandman.model.data.service.integration.SharedStateHttpClient
+import no.vaccsca.amandman.model.domain.PlannerManager
+import no.vaccsca.amandman.model.domain.service.PlannerServiceMaster
+import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
+import no.vaccsca.amandman.model.data.integration.AtcClientEuroScope
+import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender

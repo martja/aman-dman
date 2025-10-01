@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.service
+package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant

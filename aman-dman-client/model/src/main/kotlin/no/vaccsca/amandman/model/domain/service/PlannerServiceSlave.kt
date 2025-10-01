@@ -1,11 +1,11 @@
-package no.vaccsca.amandman.model.data.service
+package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.data.service.integration.SharedStateHttpClient
+import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
-import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
-import java.util.*
+import java.util.Timer
+import java.util.TimerTask
 
 class PlannerServiceSlave(
     airportIcao: String,
@@ -16,7 +16,7 @@ class PlannerServiceSlave(
     val arrivalAirportsToFetch = mutableSetOf<String>()
 
     init {
-        timer.scheduleAtFixedRate(object : java.util.TimerTask() {
+        timer.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 fetchAll()
             }

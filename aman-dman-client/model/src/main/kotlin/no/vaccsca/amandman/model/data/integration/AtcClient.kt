@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.service.integration
+package no.vaccsca.amandman.model.data.integration
 
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySelectionData
