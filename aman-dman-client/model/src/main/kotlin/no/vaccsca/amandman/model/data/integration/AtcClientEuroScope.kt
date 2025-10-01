@@ -207,7 +207,7 @@ class AtcClientEuroScope(
         when (messageFromServerJson) {
             is ArrivalsUpdateFromServerJson -> {
                 val airportIcao = requestIdToAirportMap[messageFromServerJson.requestId]
-                arrivalCallbacks[airportIcao]?.invoke(messageFromServerJson.inbounds.map { it.toArrival() })
+                arrivalCallbacks[airportIcao]?.invoke(messageFromServerJson.inbounds.mapNotNull { it.toArrival() })
             }
             is DeparturesUpdateFromServerJson -> {
                 TODO("Departures not yet implemented")
@@ -221,12 +221,19 @@ class AtcClientEuroScope(
         }
     }
 
-    private fun ArrivalJson.toArrival(): AtcClientArrivalData {
+    private fun ArrivalJson.toArrival(): AtcClientArrivalData? {
+        val assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }
+
+        if (assignedRunway == null) {
+            println("Warning: Assigned runway ${this.assignedRunway} not found for airport ${this.arrivalAirportIcao} in navdata")
+            return null
+        }
+
         val waypoints = this.route.filter { !it.isPassed }.map {
             Waypoint(id = it.name, latLng = LatLng(it.latitude, it.longitude))
         }
 
-        val assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }
+        val runwayThreshold = Waypoint(assignedRunway.id, assignedRunway.latLng)
 
         return AtcClientArrivalData(
             callsign = this.callsign,
@@ -235,7 +242,7 @@ class AtcClientEuroScope(
             assignedStar = this.assignedStar,
             assignedDirect = this.assignedDirect,
             scratchPad = this.scratchPad,
-            remainingWaypoints = waypoints,
+            remainingWaypoints = waypoints + runwayThreshold,
             currentPosition = AircraftPosition(
                 latLng = LatLng(this.latitude, this.longitude),
                 altitudeFt = this.pressureAltitude,

@@ -57,6 +57,7 @@ class DescentTrajectoryServiceTest {
                 Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
                 Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
                 Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
+                Waypoint(id="19L", latLng=rwy19L.latLng),
             ),
             arrivalAirportIcao="ENGM",
             flightPlanTas=450
@@ -93,6 +94,7 @@ class DescentTrajectoryServiceTest {
                 Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
                 Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
                 Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
+                Waypoint(id="19L", latLng=rwy19L.latLng),
             ),
             arrivalAirportIcao="ENGM",
             flightPlanTas=450
@@ -142,6 +144,7 @@ class DescentTrajectoryServiceTest {
             Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
             Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
             Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
+            Waypoint(id="19L", latLng=rwy19L.latLng),
         ),
         arrivalAirportIcao="ENGM",
         flightPlanTas = 450
@@ -169,7 +172,7 @@ class DescentTrajectoryServiceTest {
         )
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = arrivalWithoutAirport.currentPosition,
-            assignedRunway = arrivalWithoutAirport.assignedRunway,
+            assignedRunway = arrivalWithoutAirport.assignedRunway!!,
             remainingWaypoints = arrivalWithoutAirport.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -192,7 +195,7 @@ class DescentTrajectoryServiceTest {
     fun `When direct routing, use preferred speed until next typical speed`() {
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = arrivalWithDirectRouting.currentPosition,
-            assignedRunway = arrivalWithDirectRouting.assignedRunway,
+            assignedRunway = arrivalWithDirectRouting.assignedRunway!!,
             remainingWaypoints = arrivalWithDirectRouting.remainingWaypoints,
             star = adopi3m,
             verticalWeatherProfile = null,
@@ -212,7 +215,7 @@ class DescentTrajectoryServiceTest {
     fun `Descent trajectory should contain all fixes in route, including runway`() {
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway,
+            assignedRunway = testArrival1.assignedRunway!!,
             remainingWaypoints = testArrival1.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -236,7 +239,7 @@ class DescentTrajectoryServiceTest {
     fun `Estimated TAS should not jump by more than 10 knots`() {
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival2.currentPosition,
-            assignedRunway = testArrival2.assignedRunway,
+            assignedRunway = testArrival2.assignedRunway!!,
             remainingWaypoints = testArrival2.remainingWaypoints,
             star = eseba4m,
             verticalWeatherProfile = null,
@@ -260,7 +263,7 @@ class DescentTrajectoryServiceTest {
     fun `Estimated IAS should not jump by more than 5 knots`() {
         val descentTrajectoryNew = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway,
+            assignedRunway = testArrival1.assignedRunway!!,
             remainingWaypoints = testArrival1.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -278,7 +281,7 @@ class DescentTrajectoryServiceTest {
     fun `Estimated IAS should never exceed typical speed on STAR point`() {
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway,
+            assignedRunway = testArrival1.assignedRunway!!,
             remainingWaypoints = testArrival1.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -287,7 +290,7 @@ class DescentTrajectoryServiceTest {
             arrivalAirportIcao = "ENGM",
         ).filter { it.fixId != null }
 
-        assertEquals(descentTrajectory.size, 9)
+        assertEquals(descentTrajectory.size, 10)
 
         val isExceeding = descentTrajectory
             .filter { it.fixId != null }
@@ -304,7 +307,7 @@ class DescentTrajectoryServiceTest {
     fun `Trajectory points that have a fix id should have the same coordinates as the corresponding fix on the aircraft's route`() {
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway,
+            assignedRunway = testArrival1.assignedRunway!!,
             remainingWaypoints = testArrival1.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -314,6 +317,8 @@ class DescentTrajectoryServiceTest {
         ).filter { it.fixId != null }
 
         val isMatching = descentTrajectory.all { point ->
+            if (point.fixId == testArrival1.assignedRunway.id) return@all true // Skip runway, as it is not part of the route waypoints
+
             val routeFix = testArrival1.remainingWaypoints.find { it.id == point.fixId || it.id == starInrex4m.runway.id }!!
             point.latLng.lat == routeFix.latLng.lat && point.latLng.lon == routeFix.latLng.lon
         }
@@ -325,7 +330,7 @@ class DescentTrajectoryServiceTest {
     fun `Estimated IAS should not be more than 250 below FL100`() {
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway,
+            assignedRunway = testArrival1.assignedRunway!!,
             remainingWaypoints = testArrival1.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -336,7 +341,7 @@ class DescentTrajectoryServiceTest {
 
         val descentTrajectory2 = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = arrivalWithDirectRouting.currentPosition,
-            assignedRunway = arrivalWithDirectRouting.assignedRunway,
+            assignedRunway = arrivalWithDirectRouting.assignedRunway!!,
             remainingWaypoints = arrivalWithDirectRouting.remainingWaypoints,
             star = adopi3m,
             verticalWeatherProfile = null,
@@ -357,7 +362,7 @@ class DescentTrajectoryServiceTest {
     fun `Altitude should never be increasing`() {
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway,
+            assignedRunway = testArrival1.assignedRunway!!,
             remainingWaypoints = testArrival1.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -375,7 +380,7 @@ class DescentTrajectoryServiceTest {
     fun `Removing waypoint along a straight line should not affect ETA`() {
         val originalTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival2.currentPosition,
-            assignedRunway = testArrival2.assignedRunway,
+            assignedRunway = testArrival2.assignedRunway!!,
             remainingWaypoints = testArrival2.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -390,7 +395,7 @@ class DescentTrajectoryServiceTest {
 
         val newTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = modifiedRoute.currentPosition,
-            assignedRunway = modifiedRoute.assignedRunway,
+            assignedRunway = modifiedRoute.assignedRunway!!,
             remainingWaypoints = modifiedRoute.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -411,7 +416,7 @@ class DescentTrajectoryServiceTest {
     fun `Removing waypoint along a curve should affect ETA`() {
         val originalTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival2.currentPosition,
-            assignedRunway = testArrival2.assignedRunway,
+            assignedRunway = testArrival2.assignedRunway!!,
             remainingWaypoints = testArrival2.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -426,7 +431,7 @@ class DescentTrajectoryServiceTest {
 
         val newTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = modifiedRoute.currentPosition,
-            assignedRunway = modifiedRoute.assignedRunway,
+            assignedRunway = modifiedRoute.assignedRunway!!,
             remainingWaypoints = modifiedRoute.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
@@ -451,7 +456,7 @@ class DescentTrajectoryServiceTest {
     fun `Descent trajectory should have same length as the remaining route`() {
         val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway,
+            assignedRunway = testArrival1.assignedRunway!!,
             remainingWaypoints = testArrival1.remainingWaypoints,
             star = starInrex4m,
             verticalWeatherProfile = null,
