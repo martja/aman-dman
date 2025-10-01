@@ -93,7 +93,7 @@ object DescentTrajectoryService {
                     heading = assignedRunway.trueHeading.roundToInt(),
                 )
 
-        // Start from the last waypoint (the airport) and work backward
+        // Start from the last waypoint (the runway threshold) and work backward
         for (i in remainingRoute.lastIndex downTo 1) {
             val laterPoint = remainingRoute[i]
             val earlierPoint = remainingRoute[i-1]

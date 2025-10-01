@@ -226,10 +226,12 @@ class AtcClientEuroScope(
             Waypoint(id = it.name, latLng = LatLng(it.latitude, it.longitude))
         }
 
+        val assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }
+
         return AtcClientArrivalData(
             callsign = this.callsign,
             icaoType = this.icaoType,
-            assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }!!,
+            assignedRunway = assignedRunway,
             assignedStar = this.assignedStar,
             assignedDirect = this.assignedDirect,
             scratchPad = this.scratchPad,

@@ -14,7 +14,7 @@ data class AtcClientArrivalData(
     val scratchPad: String?,
     val currentPosition: AircraftPosition,
     val remainingWaypoints: List<Waypoint>,
-    val assignedRunway: RunwayInfo,
+    val assignedRunway: RunwayInfo?,
     val arrivalAirportIcao: String,
     val flightPlanTas: Int?,
 )

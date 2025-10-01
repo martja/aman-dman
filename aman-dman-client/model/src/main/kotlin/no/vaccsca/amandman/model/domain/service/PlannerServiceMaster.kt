@@ -12,6 +12,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * This is only used in the Master and Local instances of the application
@@ -103,7 +104,7 @@ class PlannerServiceMaster(
 
         descentTrajectoryCache[arrival.callsign] = trajectory
 
-        val estimatedTime = Clock.System.now() + trajectory.first().remainingTime
+        val estimatedTime = Clock.System.now() + (trajectory.firstOrNull()?.remainingTime ?: 0.seconds)
 
         return RunwayArrivalEvent(
             callsign = arrival.callsign,
