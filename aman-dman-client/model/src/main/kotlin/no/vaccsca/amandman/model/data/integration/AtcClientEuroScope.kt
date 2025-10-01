@@ -259,8 +259,8 @@ class AtcClientEuroScope(
     private fun RunwayStatusJson.toRunwayStatus(name: String) =
         AtcClientRunwaySelectionData(
             runway = name,
-            allowArrivals = this.departures,
-            allowDepartures = this.arrivals,
+            allowArrivals = this.arrivals,
+            allowDepartures = this.departures,
         )
 
     override fun close() {
