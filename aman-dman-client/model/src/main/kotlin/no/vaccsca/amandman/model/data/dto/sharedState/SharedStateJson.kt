@@ -8,11 +8,19 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrival
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 
+/**
+ * Wrapper for shared state data with a timestamp of the last update.
+ * Used for sharing state between master and slave instances of the application.
+ */
 data class SharedStateJson<T>(
     val lastUpdate: Instant,
     val data: T
 )
 
+/**
+ * Wrapper for polymorphic TimelineEvent serialization/deserialization.
+ * The "type" field is used to determine the concrete subclass of Timeline
+ */
 data class SharedStateEventJson(
     val type: String,
     @param:JsonTypeInfo(

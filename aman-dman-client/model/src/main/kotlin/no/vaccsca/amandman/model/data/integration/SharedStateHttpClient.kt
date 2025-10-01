@@ -56,31 +56,14 @@ class SharedStateHttpClient {
             data = events
         )
 
-        val json = objectMapper.writeValueAsString(sharedState)
-
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/events")
-            .post(json.toRequestBody(JSON))
-            .build()
-
-        val response = httpClient.newCall(request).execute().use { it.body!!.string() }
-
-        println(response)
+        sendStateJson(airportIcao, "events", sharedState)
     }
 
     fun getTimelineEvents(airportIcao: String): List<TimelineEvent> {
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/events")
-            .get()
-            .build()
+        val typeRef = object : TypeReference<SharedStateJson<List<SharedStateEventJson>>>() {}
+        val timelineEvents = fetchStateJson(airportIcao, "events", typeRef)
 
-        val response = httpClient.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-
-        val state = objectMapper.readValue(response, object : TypeReference<SharedStateJson<List<SharedStateEventJson>>>() {})
-
-        return state.data.map {
+        return timelineEvents.data.map {
             when (it.type) {
                 "runwayArrival" -> it.event as RunwayArrivalEvent
                 "runwayDeparture" -> it.event as DepartureEvent
@@ -91,18 +74,9 @@ class SharedStateHttpClient {
     }
 
     fun getRunwayStatuses(airportIcao: String): Map<String, RunwayStatus> {
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/runway-modes")
-            .get()
-            .build()
-
-        val response = httpClient.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-
-        val state = objectMapper.readValue(response, object : TypeReference<SharedStateJson<Map<String, RunwayStatus>>>() {})
-
-        return state.data
+        val typeRef = object : TypeReference<SharedStateJson<Map<String, RunwayStatus>>>() {}
+        val runwayStatuses = fetchStateJson(airportIcao, "runway-modes", typeRef)
+        return runwayStatuses.data
     }
 
     fun sendRunwayStatuses(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>) {
@@ -110,19 +84,7 @@ class SharedStateHttpClient {
             lastUpdate = Clock.System.now(),
             data = runwayStatuses
         )
-
-        val json = objectMapper.writeValueAsString(sharedStateJson)
-
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/runway-modes")
-            .post(json.toRequestBody(JSON))
-            .build()
-
-        val response = httpClient.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-
-        println(response)
+        sendStateJson(airportIcao, "runway-modes", sharedStateJson)
     }
 
     fun sendWeatherData(airportIcao: String, weatherData: VerticalWeatherProfile?) {
@@ -130,48 +92,19 @@ class SharedStateHttpClient {
             lastUpdate = Clock.System.now(),
             data = weatherData
         )
-        val json = objectMapper.writeValueAsString(sharedStateJson)
-
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/weather")
-            .post(json.toRequestBody(JSON))
-            .build()
-
-        val response = httpClient.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-
-        println(response)
+        sendStateJson(airportIcao, "weather", sharedStateJson)
     }
 
     fun getWeatherData(airportIcao: String): VerticalWeatherProfile? {
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/weather")
-            .get()
-            .build()
-
-        val response = httpClient.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-
-        val state = objectMapper.readValue(response, object : TypeReference<SharedStateJson<VerticalWeatherProfile?>>() {})
-
-        return state.data
+        val typeRef = object : TypeReference<SharedStateJson<VerticalWeatherProfile?>>() {}
+        val weather = fetchStateJson(airportIcao, "weather", typeRef)
+        return weather.data
     }
 
     fun getMinimumSpacing(airportIcao: String): Double {
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/minimum-spacing")
-            .get()
-            .build()
-
-        val response = httpClient.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-
-        val state = objectMapper.readValue(response, object : TypeReference<SharedStateJson<Double>>() {})
-
-        return state.data
+        val typeRef = object : TypeReference<SharedStateJson<Double>>() {}
+        val minimumSpacing = fetchStateJson(airportIcao, "minimum-spacing", typeRef)
+        return minimumSpacing.data
     }
 
     fun sendMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
@@ -179,18 +112,7 @@ class SharedStateHttpClient {
             lastUpdate = Clock.System.now(),
             data = minimumSpacingNm
         )
-
-        val json = objectMapper.writeValueAsString(sharedStateJson)
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/minimum-spacing")
-            .post(json.toRequestBody(JSON))
-            .build()
-
-        val response = httpClient.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-
-        println(response)
+        sendStateJson(airportIcao, "minimum-spacing", sharedStateJson)
     }
 
     object KotlinxInstantModule : SimpleModule("KotlinxInstantModule") {
@@ -211,5 +133,40 @@ class SharedStateHttpClient {
                 ): Instant = Instant.Companion.parse(p.text)
             })
         }
+    }
+
+    // Primary fetchStateJson method that uses TypeReference for complete type safety
+    private fun <T> fetchStateJson(airportIcao: String, dataType: String, typeRef: TypeReference<SharedStateJson<T>>): SharedStateJson<T> {
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/airports/$airportIcao/$dataType")
+            .get()
+            .build()
+
+        val response = httpClient.newCall(request).execute().use { response ->
+            response.body.string()
+        }
+
+        return objectMapper.readValue(response, typeRef)
+    }
+
+    // Convenience overload for simple types (when type erasure isn't an issue)
+    private inline fun <reified T> fetchStateJson(airportIcao: String, dataType: String): SharedStateJson<T> {
+        val typeRef = object : TypeReference<SharedStateJson<T>>() {}
+        return fetchStateJson(airportIcao, dataType, typeRef)
+    }
+
+    private fun sendStateJson(airportIcao: String, dataType: String, sharedStateJson: SharedStateJson<*>) {
+        val json = objectMapper.writeValueAsString(sharedStateJson)
+
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/airports/$airportIcao/$dataType")
+            .post(json.toRequestBody(JSON))
+            .build()
+
+        val response = httpClient.newCall(request).execute().use { response ->
+            response.body.string()
+        }
+
+        println(response)
     }
 }

@@ -37,8 +37,8 @@ class PlannerServiceMaster(
     }
 
     override fun planArrivals() {
-        atcClient.collectMovementsFor(airportIcao,
-            onDataReceived = { arrivals ->
+        atcClient.collectDataFor(airportIcao,
+            onArrivalsReceived = { arrivals ->
                 handleUpdateFromAtcClient(arrivals)
             },
             onRunwaySelectionChanged = { runways ->

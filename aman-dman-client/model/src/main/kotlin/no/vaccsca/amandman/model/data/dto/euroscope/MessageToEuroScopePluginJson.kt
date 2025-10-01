@@ -1,6 +1,10 @@
-package no.vaccsca.amandman.model.data.dto.atcClientMessage
+package no.vaccsca.amandman.model.data.dto.euroscope
 
-sealed class MessageToServerJson(
+
+/**
+ * Base class for messages sent to the EuroScope bridge plugin via JSON.
+ */
+sealed class MessageToEuroScopePluginJson(
     val type: String
 )
 
@@ -9,13 +13,13 @@ data class RegisterFixInboundsMessageJson(
     val targetFixes: List<String>,
     val viaFixes: List<String>,
     val destinationAirports: List<String>,
-) : MessageToServerJson("requestInboundsForFix")
+) : MessageToEuroScopePluginJson("requestInboundsForFix")
 
 data class RegisterDeparturesMessageJson(
     val requestId: Int,
     val airportIcao: String,
-) : MessageToServerJson("requestOutbounds")
+) : MessageToEuroScopePluginJson("requestOutbounds")
 
 data class UnregisterTimelineMessageJson(
     val requestId: Int,
-) : MessageToServerJson("unregisterTimeline")
+) : MessageToEuroScopePluginJson("unregisterTimeline")

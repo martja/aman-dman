@@ -3,21 +3,20 @@ package no.vaccsca.amandman.model.data.integration
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.JsonFactory
 import kotlinx.coroutines.*
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.ArrivalJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.ArrivalsUpdateFromServerJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.DeparturesUpdateFromServerJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.MessageFromServerJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.MessageToServerJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.RegisterFixInboundsMessageJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.RunwayStatusesUpdateFromServerJson
-import no.vaccsca.amandman.model.data.dto.atcClientMessage.UnregisterTimelineMessageJson
+import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalJson
+import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalsUpdateFromServerJson
+import no.vaccsca.amandman.model.data.dto.euroscope.DeparturesUpdateFromServerJson
+import no.vaccsca.amandman.model.data.dto.euroscope.MessageFromServerJson
+import no.vaccsca.amandman.model.data.dto.euroscope.MessageToEuroScopePluginJson
+import no.vaccsca.amandman.model.data.dto.euroscope.RegisterFixInboundsMessageJson
+import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusJson
+import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusesUpdateFromServerJson
+import no.vaccsca.amandman.model.data.dto.euroscope.UnregisterTimelineMessageJson
 import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
-import no.vaccsca.amandman.model.domain.valueobjects.ArrivalState
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySelectionData
 import java.io.*
@@ -86,12 +85,12 @@ class AtcClientEuroScope(
         }
     }
 
-    override fun collectMovementsFor(
+    override fun collectDataFor(
         airportIcao: String,
-        onDataReceived: (List<AtcClientArrivalData>) -> Unit,
+        onArrivalsReceived: (List<AtcClientArrivalData>) -> Unit,
         onRunwaySelectionChanged: (List<AtcClientRunwaySelectionData>) -> Unit
     ) {
-        arrivalCallbacks[airportIcao] = onDataReceived
+        arrivalCallbacks[airportIcao] = onArrivalsReceived
         runwayStatusCallbacks[airportIcao] = onRunwaySelectionChanged
 
         val theRequestId = nextRequestId
@@ -130,7 +129,7 @@ class AtcClientEuroScope(
         }
     }
 
-    private fun sendMessage(message: MessageToServerJson) {
+    private fun sendMessage(message: MessageToEuroScopePluginJson) {
         try {
             val jsonMessage = objectMapper.writeValueAsString(message)
             writer?.write(jsonMessage + "\n")

@@ -1,8 +1,12 @@
-package no.vaccsca.amandman.model.data.dto.atcClientMessage
+package no.vaccsca.amandman.model.data.dto.euroscope
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 
+/**
+ * Base class for messages received from the EuroScope plugin.
+ * The `type` property is used to determine the specific subclass.
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = ArrivalsUpdateFromServerJson::class, name = "arrivals"),
