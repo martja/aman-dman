@@ -27,6 +27,7 @@ const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std
         arrivalObject.AddMember("longitude", inbound.longitude, allocator);
         arrivalObject.AddMember("flightLevel", inbound.flightLevel, allocator);
         arrivalObject.AddMember("pressureAltitude", inbound.pressureAltitude, allocator);
+        arrivalObject.AddMember("track", inbound.track, allocator);
         arrivalObject.AddMember("groundSpeed", inbound.groundSpeed, allocator);
         arrivalObject.AddMember("arrivalAirportIcao", inbound.arrivalAirportIcao, allocator);
 

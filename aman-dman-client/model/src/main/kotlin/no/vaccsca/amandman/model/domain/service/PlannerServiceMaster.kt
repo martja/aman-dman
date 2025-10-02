@@ -110,6 +110,11 @@ class PlannerServiceMaster(
             arrivalAirportIcao = arrival.arrivalAirportIcao
         )
 
+        if (trajectory.isEmpty()) {
+            println("No trajectory for ${arrival.callsign}, skipping arrival event creation.")
+            return null
+        }
+
         descentTrajectoryCache[arrival.callsign] = trajectory
 
         val estimatedTime = Clock.System.now() + (trajectory.firstOrNull()?.remainingTime ?: 0.seconds)

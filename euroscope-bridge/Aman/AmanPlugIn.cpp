@@ -263,6 +263,7 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& a
         ac.groundSpeed = rt.GetPosition().GetReportedGS();
         ac.pressureAltitude = rt.GetPosition().GetPressureAltitude();
         ac.flightLevel = rt.GetPosition().GetFlightLevel();
+        ac.track = rt.GetTrackHeading();
         ac.remainingRoute = findExtractedRoutePoints(rt);
         ac.arrivalAirportIcao = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetDestination();
         ac.latitude = rt.GetPosition().GetPosition().m_Latitude;

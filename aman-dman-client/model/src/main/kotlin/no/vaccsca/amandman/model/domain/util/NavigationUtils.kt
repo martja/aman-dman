@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.model.domain.util
 
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
+import no.vaccsca.amandman.model.domain.valueobjects.bearingTo
 import kotlin.math.*
 
 object NavigationUtils {
@@ -57,5 +58,11 @@ object NavigationUtils {
         }
 
         return LatLng(coords[0], coords[1]) // (latitude, longitude)
+    }
+
+    fun LatLng.isBehind(position: LatLng, trackDeg: Int): Boolean {
+        val bearingToPoint = position.bearingTo(this)
+        val angleDifference = ((bearingToPoint - trackDeg + 540) % 360) - 180
+        return angleDifference.absoluteValue >= 90
     }
 }

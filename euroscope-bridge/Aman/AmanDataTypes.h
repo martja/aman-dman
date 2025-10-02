@@ -41,6 +41,7 @@ public:
     int pressureAltitude;
     int flightLevel;
     int flightPlanTas;
+    int track;
 };
 
 class DmanAircraft {

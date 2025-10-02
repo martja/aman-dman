@@ -5,6 +5,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.AircraftPerformance
 import no.vaccsca.amandman.model.domain.valueobjects.DescentStep
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.util.NavigationUtils.interpolatePositionAlongPath
+import no.vaccsca.amandman.model.domain.util.NavigationUtils.isBehind
 import no.vaccsca.amandman.model.domain.util.SpeedConversionUtils
 import no.vaccsca.amandman.model.domain.util.WeatherUtils
 import no.vaccsca.amandman.model.domain.util.WeatherUtils.interpolateWeatherAtAltitude
@@ -73,7 +74,7 @@ object DescentTrajectoryService {
                 )
             )
 
-        val isAtEndOfRoute = remainingRoute.size == 2 && remainingRoute.last().latLng.isBehind(currentPosition)
+        val isAtEndOfRoute = remainingRoute.size == 2 && remainingRoute.last().latLng.isBehind(currentPosition.latLng, currentPosition.trackDeg)
         if (isAtEndOfRoute) {
             return emptyList()
         }
@@ -325,11 +326,5 @@ object DescentTrajectoryService {
 
     private fun Star.nextAltitudeExpectation(route: List<Waypoint>): Waypoint? =
         route.routeToNextAltitudeExpectation(fixes).lastOrNull()
-
-    private fun LatLng.isBehind(currentPosition: AircraftPosition): Boolean {
-        val bearingToPoint = currentPosition.latLng.bearingTo(this)
-        val angleDifference = ((bearingToPoint - currentPosition.trackDeg + 540) % 360) - 180
-        return angleDifference.absoluteValue > 90
-    }
 
 }
