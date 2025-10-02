@@ -228,12 +228,6 @@ class AtcClientEuroScope(
             return null
         }
 
-        val waypoints = this.route.filter { !it.isPassed }.map {
-            Waypoint(id = it.name, latLng = LatLng(it.latitude, it.longitude))
-        }
-
-        val runwayThreshold = Waypoint(assignedRunway.id, assignedRunway.latLng)
-
         return AtcClientArrivalData(
             callsign = this.callsign,
             icaoType = this.icaoType,
@@ -241,7 +235,9 @@ class AtcClientEuroScope(
             assignedStar = this.assignedStar,
             assignedDirect = this.assignedDirect,
             scratchPad = this.scratchPad,
-            remainingWaypoints = waypoints + runwayThreshold,
+            remainingWaypoints = this.route.filter { !it.isPassed }.map {
+                Waypoint(id = it.name, latLng = LatLng(it.latitude, it.longitude))
+            },
             currentPosition = AircraftPosition(
                 latLng = LatLng(this.latitude, this.longitude),
                 altitudeFt = this.pressureAltitude,

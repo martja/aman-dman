@@ -15,7 +15,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
  * @param trackingController The position ID of the controller currently tracking.
  * @param scratchPad The scratchpad text for the aircraft, if any.
  * @param currentPosition The current position of the aircraft.
- * @param remainingWaypoints The remaining waypoints from the aircraft position, including the waypoints of the assigned STAR, if any. It should not include aircraft position, runway or airport.
+ * @param remainingWaypoints All remaining waypoints between the aircraft position and the runway threshold. Runway threshold, airport or current position should not be included.
  * @param assignedRunway The runway assigned to the aircraft, if any.
  * @param arrivalAirportIcao The ICAO code of the arrival airport.
  * @param flightPlanTas The true airspeed (TAS) from the flight plan,
