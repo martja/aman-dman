@@ -15,7 +15,7 @@ class PlannerServiceSlave(
     val timer = Timer()
     val arrivalAirportsToFetch = mutableSetOf<String>()
 
-    init {
+    override fun start() {
         timer.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 fetchAll()

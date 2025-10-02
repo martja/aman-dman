@@ -360,6 +360,8 @@ class Presenter(
         plannerManager.getServiceForAirport(timelineGroup.airportIcao).planArrivals()
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
+
+        plannerService.start()
     }
 
     private fun registerTimeline(airportIcao: String, timelineConfig: TimelineConfig) {

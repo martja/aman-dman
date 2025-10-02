@@ -28,6 +28,7 @@ class AtcClientEuroScope(
     private val host: String = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.host,
     private val port: Int = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.port ?: 12345,
 ) : AtcClient {
+    private var isRunning = false
     private var socket: Socket? = null
     private var writer: OutputStreamWriter? = null
     private var reader: InputStreamReader? = null
@@ -50,11 +51,9 @@ class AtcClientEuroScope(
     val isClientConnected: Boolean
         get() = isConnected
 
-    init {
-        startConnectionLoop()
-    }
-
-    private fun startConnectionLoop() {
+    override fun start() {
+        if (isRunning) return
+        isRunning = true
         scope.launch {
             while (true) {
                 if (!isConnected) {
@@ -261,6 +260,8 @@ class AtcClientEuroScope(
     override fun close() {
         try {
             isConnected = false
+            isRunning = false
+            scope.cancel()
 
             socket?.close()
             writer?.close()

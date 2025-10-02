@@ -36,6 +36,14 @@ class PlannerServiceMaster(
         refreshWeatherData()
     }
 
+    override fun stop() {
+        atcClient.stopCollectingMovementsFor(airportIcao)
+    }
+
+    override fun start() {
+        atcClient.start()
+    }
+
     override fun planArrivals() {
         atcClient.collectDataFor(airportIcao,
             onArrivalsReceived = { arrivals ->
@@ -190,10 +198,6 @@ class PlannerServiceMaster(
         runCatching {
             descentTrajectoryCache[callsign]
         }
-
-    override fun stop() {
-        atcClient.stopCollectingMovementsFor(airportIcao)
-    }
 
     /**
      * Refreshes the UI with the current sequence data by updating the latest arrivals

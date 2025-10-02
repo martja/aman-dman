@@ -5,6 +5,8 @@ import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySe
 import java.io.Closeable
 
 interface AtcClient : Closeable {
+    fun start()
+
     fun collectDataFor(
         airportIcao: String,
         onArrivalsReceived: (List<AtcClientArrivalData>) -> Unit,

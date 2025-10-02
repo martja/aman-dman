@@ -14,4 +14,5 @@ abstract class PlannerService(
     abstract fun isTimeSlotAvailable(callsign: String, scheduledTime: Instant): Result<Boolean>
     abstract fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?>
     abstract fun stop()
+    abstract fun start()
 }
