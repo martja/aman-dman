@@ -25,6 +25,7 @@ import java.net.SocketTimeoutException
 import kotlin.collections.get
 
 class AtcClientEuroScope(
+    private val navdataRepository: NavdataRepository,
     private val host: String = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.host,
     private val port: Int = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.port ?: 12345,
 ) : AtcClient {
@@ -220,7 +221,7 @@ class AtcClientEuroScope(
     }
 
     private fun ArrivalJson.toArrival(): AtcClientArrivalData? {
-        val assignedRunway = NavdataRepository().airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }
+        val assignedRunway = navdataRepository.airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }
 
         if (assignedRunway == null) {
             println("Warning: Assigned runway ${this.assignedRunway} not found for airport ${this.arrivalAirportIcao} in navdata")

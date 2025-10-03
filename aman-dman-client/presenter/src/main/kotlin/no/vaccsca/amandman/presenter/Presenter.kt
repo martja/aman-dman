@@ -46,9 +46,11 @@ class Presenter(
     // Create or return existing AtcClientEuroScope instance
     private var euroScopeClient: AtcClientEuroScope? = null
 
+    private val navdataRepository = NavdataRepository()
+
     private fun getOrCreateAtcClient(): AtcClientEuroScope {
         if (euroScopeClient == null || !euroScopeClient!!.isClientConnected) {
-            euroScopeClient = AtcClientEuroScope()
+            euroScopeClient = AtcClientEuroScope(navdataRepository)
         }
         return euroScopeClient!!
     }
@@ -326,7 +328,7 @@ class Presenter(
             return // Group already exists
         }
 
-        val airport = NavdataRepository().airports.find { it.icao == timelineGroup.airportIcao }
+        val airport = navdataRepository.airports.find { it.icao == timelineGroup.airportIcao }
 
         if (airport == null) {
             view.showErrorMessage("Airport ${timelineGroup.airportIcao} not found in navdata")
