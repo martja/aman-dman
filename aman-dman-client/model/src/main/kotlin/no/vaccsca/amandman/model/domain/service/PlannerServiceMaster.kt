@@ -97,7 +97,7 @@ class PlannerServiceMaster(
             return null
         }
 
-        val star = airport.stars.find { it.id == arrival.assignedStar }
+        val star = airport.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway }
 
         val trajectory = DescentTrajectoryService.calculateDescentTrajectory(
             currentPosition = arrival.currentPosition,
