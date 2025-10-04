@@ -8,7 +8,7 @@ data class RunwayDelayEvent(
     override val timelineId: Int,
     override val scheduledTime: Instant,
     override val estimatedTime: Instant,
-    override val runway: RunwayInfo,
+    override val runway: String,
     override val airportIcao: String,
     val delay: Duration,
     val name: String,

@@ -60,7 +60,7 @@ object ArrivalEventService {
             wakeCategory = aircraftPerformance.takeOffWTC,
             assignedStar = arrival.assignedStar,
             trackingController = arrival.trackingController,
-            runway = trajectory.runway,
+            runway = arrival.assignedRunway,
             estimatedTime = estimatedTime,
             scheduledTime = estimatedTime,
             pressureAltitude = arrival.currentPosition.altitudeFt,

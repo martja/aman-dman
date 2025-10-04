@@ -8,7 +8,7 @@ data class DepartureEvent(
     override val timelineId: Int,
     override val scheduledTime: Instant,
     override val estimatedTime: Instant,
-    override val runway: RunwayInfo,
+    override val runway: String,
     override val callsign: String,
     override val icaoType: String,
     override val wakeCategory: Char,
