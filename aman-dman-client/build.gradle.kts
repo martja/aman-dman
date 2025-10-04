@@ -15,7 +15,6 @@ dependencies {
     implementation("com.squareup.okio:okio:3.4.0")
 
     implementation("com.google.guava:guava:32.1.2-jre")
-    implementation("org.jsoup:jsoup:1.19.1")
     runtimeOnly("org.slf4j:slf4j-jdk14:1.7.32")
 
     testImplementation(kotlin("test"))
