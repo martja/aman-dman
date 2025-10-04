@@ -3,27 +3,25 @@ package no.vaccsca.amandman.presenter
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.data.integration.AtcClientEuroScope
+import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.data.repository.NavdataRepository
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.domain.PlannerManager
-import no.vaccsca.amandman.model.domain.service.PlannerServiceMaster
-import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
-import no.vaccsca.amandman.model.data.integration.AtcClientEuroScope
-import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
+import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
-import no.vaccsca.amandman.model.domain.service.ArrivalEventService
 import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
-import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
+import no.vaccsca.amandman.model.domain.service.PlannerServiceMaster
+import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import kotlin.time.Duration.Companion.seconds
 
@@ -171,6 +169,7 @@ class Presenter(
                             view.updateDescentTrajectory(callsign, selectedDescentProfile)
                     }
                     .onFailure {
+                        selectedCallsign = null
                         when (it) {
                             is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
                             else -> view.showErrorMessage("Failed to fetch descent profile")
