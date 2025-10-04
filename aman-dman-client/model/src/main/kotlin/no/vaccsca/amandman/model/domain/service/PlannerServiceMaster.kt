@@ -1,10 +1,9 @@
 package no.vaccsca.amandman.model.domain.service
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.data.integration.AtcClient
+import no.vaccsca.amandman.model.domain.exception.DescentTrajectoryException
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
@@ -12,7 +11,6 @@ import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * This is only used in the Master and Local instances of the application
@@ -29,8 +27,6 @@ class PlannerServiceMaster(
     private var arrivalsCache: List<RunwayArrivalEvent> = emptyList()
     private var sequence: Sequence = Sequence(emptyList())
     private var minimumSpacingNm = 3.0 // Minimum spacing in nautical miles
-
-    private val descentTrajectoryCache = mutableMapOf<String, List<TrajectoryPoint>>()
 
     init {
         refreshWeatherData()
@@ -61,7 +57,7 @@ class PlannerServiceMaster(
     }
 
     private fun handleUpdateFromAtcClient(arrivals: List<AtcClientArrivalData>) {
-        val runwayArrivalEvents = arrivals.mapNotNull { arrival -> createRunwayArrivalEvent(arrival) }
+        val runwayArrivalEvents = makeRunwayArrivalEvents(arrivals)
         val sequenceItems = runwayArrivalEvents.map {
             AircraftSequenceCandidate(
                 callsign = it.callsign,
@@ -84,62 +80,15 @@ class PlannerServiceMaster(
         onSequenceUpdated()
     }
 
-    private fun createRunwayArrivalEvent(arrival: AtcClientArrivalData): RunwayArrivalEvent? {
-        val aircraftPerformance = try {
-            AircraftPerformanceData.get(arrival.icaoType)
-        } catch (e: Exception) {
-            println("Error fetching performance data for ${arrival.icaoType}: ${e.message}")
-            return null
+    private fun makeRunwayArrivalEvents(arrivals: List<AtcClientArrivalData>): List<RunwayArrivalEvent> =
+        arrivals.mapNotNull { arrival ->
+            try {
+                ArrivalEventService.createRunwayArrivalEvent(airport, arrival, weatherData)
+            } catch (e: DescentTrajectoryException) {
+                println("Failed to map arrival ${arrival.callsign}: ${e.message}")
+                null
+            }
         }
-
-        if (arrival.assignedRunway == null) {
-            println("No runway assigned for ${arrival.callsign}, skipping arrival event creation.")
-            return null
-        }
-
-        val star = airport.stars.find { it.id == arrival.assignedStar && it.runway == arrival.assignedRunway }
-
-        val trajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = arrival.currentPosition,
-            assignedRunway = arrival.assignedRunway,
-            remainingWaypoints = arrival.remainingWaypoints,
-            verticalWeatherProfile = weatherData,
-            star = star,
-            aircraftPerformance = aircraftPerformance,
-            flightPlanTas = arrival.flightPlanTas,
-            arrivalAirportIcao = arrival.arrivalAirportIcao
-        )
-
-        if (trajectory.isEmpty()) {
-            println("No trajectory for ${arrival.callsign}, skipping arrival event creation.")
-            return null
-        }
-
-        descentTrajectoryCache[arrival.callsign] = trajectory
-
-        val estimatedTime = Clock.System.now() + (trajectory.firstOrNull()?.remainingTime ?: 0.seconds)
-
-        return RunwayArrivalEvent(
-            callsign = arrival.callsign,
-            icaoType = arrival.icaoType,
-            flightLevel = arrival.currentPosition.flightLevel,
-            groundSpeed = arrival.currentPosition.groundspeedKts,
-            wakeCategory = aircraftPerformance.takeOffWTC,
-            assignedStar = arrival.assignedStar,
-            trackingController = arrival.trackingController,
-            runway = arrival.assignedRunway,
-            estimatedTime = estimatedTime,
-            scheduledTime = estimatedTime,
-            pressureAltitude = arrival.currentPosition.altitudeFt,
-            airportIcao = arrival.arrivalAirportIcao,
-            remainingDistance = trajectory.first().remainingDistance,
-            timelineId = 0,
-            assignedStarOk = star != null,
-            withinActiveAdvisoryHorizon = false,
-            sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE,
-            landingIas = aircraftPerformance.landingVat
-        )
-    }
 
     override fun setMinimumSpacing(minimumSpacingDistanceNm: Double): Result<Unit> =
         runCatching {
@@ -201,7 +150,7 @@ class PlannerServiceMaster(
 
     override  fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =
         runCatching {
-            descentTrajectoryCache[callsign]
+            ArrivalEventService.getDescentProfileForCallsign(callsign)
         }
 
     /**

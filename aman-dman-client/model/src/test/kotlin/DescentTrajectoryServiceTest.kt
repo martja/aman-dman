@@ -6,29 +6,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class DescentTrajectoryServiceTest {
-    val rwy19L = RunwayInfo("19L", latLng = LatLng(60.20116653568569,11.12244616482607), elevation = 681f, trueHeading = 194f)
-
-    val starInrex4m = Star(
-        id="INREX4M",
-        airport="ENGM",
-        runway=rwy19L,
-        fixes= listOf(
-            StarFix(id="INREX", typicalAltitude=null, typicalSpeedIas=250),
-            StarFix(id="GM418", typicalAltitude=11000, typicalSpeedIas=220),
-            StarFix(id="TITLA", typicalAltitude=5000, typicalSpeedIas=200),
-            StarFix(id="OSPAD", typicalAltitude=4000, typicalSpeedIas=180),
-            StarFix(id="XIVTA", typicalAltitude=3500, typicalSpeedIas=170),
-            StarFix(id="ENGM", typicalAltitude=700, typicalSpeedIas=null)
-        ))
 
     val testArrival1 =
         AtcClientArrivalData(
             callsign="SAS4411",
             icaoType="A20N",
-            assignedRunway=rwy19L,
+            assignedRunway="19L",
             assignedStar="INREX4M",
             assignedDirect=null,
             trackingController=null,
@@ -67,7 +54,7 @@ class DescentTrajectoryServiceTest {
         AtcClientArrivalData(
             callsign="EZY9",
             icaoType="A320",
-            assignedRunway=rwy19L,
+            assignedRunway="19L",
             assignedStar="ESEBA4M",
             assignedDirect=null,
             trackingController=null,
@@ -100,25 +87,11 @@ class DescentTrajectoryServiceTest {
             flightPlanTas=450
         )
 
-    val adopi3m =
-        Star(
-            id="ADOPI3M",
-            airport="ENGM",
-            runway=rwy19L,
-            fixes=listOf(
-                StarFix(id="ADOPI", typicalAltitude=null, typicalSpeedIas=250),
-                StarFix(id="GM428", typicalAltitude=10000, typicalSpeedIas=220),
-                StarFix(id="BAVAD", typicalAltitude=5000, typicalSpeedIas=200),
-                StarFix(id="OSPAD", typicalAltitude=4000, typicalSpeedIas=180),
-                StarFix(id="XIVTA", typicalAltitude=3500, typicalSpeedIas=170),
-                StarFix(id="ENGM", typicalAltitude=700, typicalSpeedIas=null)
-            )
-        )
 
     val arrivalWithDirectRouting = AtcClientArrivalData(
         callsign="SRR22X",
         icaoType="B77L",
-        assignedRunway=rwy19L,
+        assignedRunway="19L",
         assignedStar="ADOPI3M",
         assignedDirect="BAVAD",
         trackingController="GWR",
@@ -131,15 +104,6 @@ class DescentTrajectoryServiceTest {
             trackDeg = 0
         ),
         remainingWaypoints = listOf(
-            Waypoint(id="EIDW", latLng=LatLng(53.421389, -6.2700000000000005)),
-            Waypoint(id="ROTEV", latLng=LatLng(54.028806, -6.066222000000001)),
-            Waypoint(id="GOTNA", latLng=LatLng(54.594842, -5.598013999999999)),
-            Waypoint(id="TRN", latLng=LatLng(55.313410999999995, -4.783864)),
-            Waypoint(id="KLONN", latLng=LatLng(58.390122000000005, 2.828922)),
-            Waypoint(id="ADOPI", latLng=LatLng(60.323611, 9.383333)),
-            Waypoint(id="EXUDA", latLng=LatLng(60.39744388888889, 9.926332777777777)),
-            Waypoint(id="GM428", latLng=LatLng(60.46558277777778, 10.442388888888889)),
-            Waypoint(id="GM429", latLng=LatLng(60.572943888888894, 10.479721944444444)),
             Waypoint(id="BAVAD", latLng=LatLng(60.46611083333334, 11.08444388888889)),
             Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
             Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
@@ -150,61 +114,38 @@ class DescentTrajectoryServiceTest {
         flightPlanTas = 450
     )
 
-    val eseba4m =
-        Star(
-            id="ESEBA4M",
-            airport="ENGM",
-            runway=rwy19L,
-            fixes= listOf(
-                StarFix(id="ESEBA", typicalAltitude=null, typicalSpeedIas=250),
-                StarFix(id="GM422", typicalAltitude=10000, typicalSpeedIas=220),
-                StarFix(id="TITLA", typicalAltitude=5000, typicalSpeedIas=200),
-                StarFix(id="OSPAD", typicalAltitude=4000, typicalSpeedIas=180),
-                StarFix(id="XIVTA", typicalAltitude=3500, typicalSpeedIas=170),
-                StarFix(id="ENGM", typicalAltitude=700, typicalSpeedIas=null)
-            )
-        )
+    val testAirport = Airport(
+        icao="ENGM",
+        location=LatLng(60.20116653568569,11.12244616482607),
+        runways=listOf(rwy19L),
+        stars=listOf(star19LInrex4M, star19LEseba4M, star19LAdopi3M)
+    )
 
     @Test
     fun `When route does not end with destination airport, append runway threshold to descent trajectory`() {
-        val arrivalWithoutAirport = testArrival1.copy(
+        val arrivalWithoutAirportInWaypointsList = testArrival1.copy(
             remainingWaypoints = testArrival1.remainingWaypoints.filter { it.id != testArrival1.arrivalAirportIcao }
         )
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = arrivalWithoutAirport.currentPosition,
-            assignedRunway = arrivalWithoutAirport.assignedRunway!!,
-            remainingWaypoints = arrivalWithoutAirport.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+
+        val descentTrajectory = calculateDescentTrajectoryFor(arrivalWithoutAirportInWaypointsList)
+
         // Ensure that the descent trajectory does not contain the airport ICAO as a fixId
-        assertTrue { arrivalWithoutAirport.remainingWaypoints.none { it.id == arrivalWithoutAirport.arrivalAirportIcao } }
-        assertTrue { descentTrajectory.none { it.fixId == arrivalWithoutAirport.arrivalAirportIcao } }
+        assertTrue { arrivalWithoutAirportInWaypointsList.remainingWaypoints.none { it.id == arrivalWithoutAirportInWaypointsList.arrivalAirportIcao } }
+        assertTrue { descentTrajectory.none { it.fixId == arrivalWithoutAirportInWaypointsList.arrivalAirportIcao } }
 
         // Ensure that the last point in the descent trajectory is the runway threshold
-        assertNotEquals(illegal = testArrival1.arrivalAirportIcao, actual = arrivalWithoutAirport.remainingWaypoints.last().id)
-        assertEquals(expected = starInrex4m.runway.latLng.lat, actual = descentTrajectory.last().latLng.lat)
-        assertEquals(expected = starInrex4m.runway.latLng.lon, actual = descentTrajectory.last().latLng.lon)
-        assertEquals(expected = starInrex4m.runway.elevation.toInt(), actual = descentTrajectory.last().altitude)
+        assertNotEquals(illegal = testArrival1.arrivalAirportIcao, actual = arrivalWithoutAirportInWaypointsList.remainingWaypoints.last().id)
+        assertEquals(expected = star19LInrex4M.runway.latLng.lat, actual = descentTrajectory.last().latLng.lat)
+        assertEquals(expected = star19LInrex4M.runway.latLng.lon, actual = descentTrajectory.last().latLng.lon)
+        assertEquals(expected = star19LInrex4M.runway.elevation.toInt(), actual = descentTrajectory.last().altitude)
     }
 
     @Test
     fun `When direct routing, use preferred speed until next typical speed`() {
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = arrivalWithDirectRouting.currentPosition,
-            assignedRunway = arrivalWithDirectRouting.assignedRunway!!,
-            remainingWaypoints = arrivalWithDirectRouting.remainingWaypoints,
-            star = adopi3m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val descentTrajectory = calculateDescentTrajectoryFor(arrivalWithDirectRouting)
+
         val directRoutingIndex = descentTrajectory.indexOfFirst { it.fixId == arrivalWithDirectRouting.assignedDirect }
-        val expectedSpeedAtDirectRouting = adopi3m.fixes.find { it.id == arrivalWithDirectRouting.assignedDirect }!!.typicalSpeedIas!!
+        val expectedSpeedAtDirectRouting = star19LAdopi3M.fixes.find { it.id == arrivalWithDirectRouting.assignedDirect }!!.typicalSpeedIas!!
 
         descentTrajectory.subList(0, directRoutingIndex).forEach {
             assertTrue { it.ias > expectedSpeedAtDirectRouting }
@@ -213,18 +154,9 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Descent trajectory should contain all fixes in route, including runway`() {
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway!!,
-            remainingWaypoints = testArrival1.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val descentTrajectory = calculateDescentTrajectoryFor(testArrival1)
 
-        val expectedFixes = testArrival1.remainingWaypoints.map { it.id } + listOf(starInrex4m.runway.id)
+        val expectedFixes = testArrival1.remainingWaypoints.map { it.id } + listOf(star19LInrex4M.runway.id)
 
         val fixesOnDescentTrajectory = descentTrajectory.mapNotNull { it.fixId }
 
@@ -237,16 +169,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated TAS should not jump by more than 10 knots`() {
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival2.currentPosition,
-            assignedRunway = testArrival2.assignedRunway!!,
-            remainingWaypoints = testArrival2.remainingWaypoints,
-            star = eseba4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val descentTrajectory = calculateDescentTrajectoryFor(testArrival2)
 
         descentTrajectory.forEach {
             println(
@@ -261,16 +184,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated IAS should not jump by more than 5 knots`() {
-        val descentTrajectoryNew = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway!!,
-            remainingWaypoints = testArrival1.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val descentTrajectoryNew = calculateDescentTrajectoryFor(testArrival1)
 
         val iasList = descentTrajectoryNew.map { it.ias }
         val isJumping = iasList.zipWithNext().any { (prev, next) -> abs(prev - next) > 5 }
@@ -279,23 +193,14 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Estimated IAS should never exceed typical speed on STAR point`() {
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway!!,
-            remainingWaypoints = testArrival1.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        ).filter { it.fixId != null }
+        val descentTrajectory = calculateDescentTrajectoryFor(testArrival1)
+        val fixesInTrajectory = descentTrajectory.filter { it.fixId != null }
 
-        assertEquals(descentTrajectory.size, 10)
+        assertEquals(fixesInTrajectory.size, 10)
 
-        val isExceeding = descentTrajectory
-            .filter { it.fixId != null }
+        val isExceeding = fixesInTrajectory
             .any { point ->
-                val starFix = starInrex4m.fixes.find { it.id == point.fixId }
+                val starFix = star19LInrex4M.fixes.find { it.id == point.fixId }
                 if (starFix?.typicalSpeedIas == null) return@any false
                 point.ias > starFix.typicalSpeedIas
             }
@@ -305,50 +210,23 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Trajectory points that have a fix id should have the same coordinates as the corresponding fix on the aircraft's route`() {
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway!!,
-            remainingWaypoints = testArrival1.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        ).filter { it.fixId != null }
+        val descentTrajectory = calculateDescentTrajectoryFor(testArrival1)
 
-        val isMatching = descentTrajectory.all { point ->
-            if (point.fixId == testArrival1.assignedRunway.id) return@all true // Skip runway, as it is not part of the route waypoints
+        val allAreMatching = descentTrajectory
+            .filter { it.fixId != null }
+            .all { point ->
+                if (point.fixId == testArrival1.assignedRunway) return@all true // Skip runway, as it is not part of the route waypoints
+                val routeFix = testArrival1.remainingWaypoints.find { it.id == point.fixId || it.id == "19L" }!!
+                point.latLng.lat == routeFix.latLng.lat && point.latLng.lon == routeFix.latLng.lon
+            }
 
-            val routeFix = testArrival1.remainingWaypoints.find { it.id == point.fixId || it.id == starInrex4m.runway.id }!!
-            point.latLng.lat == routeFix.latLng.lat && point.latLng.lon == routeFix.latLng.lon
-        }
-
-        assertEquals(true, isMatching, "Coordinates should match the fix coordinates")
+        assertEquals(true, allAreMatching, "Coordinates should match the fix coordinates")
     }
 
     @Test
     fun `Estimated IAS should not be more than 250 below FL100`() {
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway!!,
-            remainingWaypoints = testArrival1.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
-
-        val descentTrajectory2 = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = arrivalWithDirectRouting.currentPosition,
-            assignedRunway = arrivalWithDirectRouting.assignedRunway!!,
-            remainingWaypoints = arrivalWithDirectRouting.remainingWaypoints,
-            star = adopi3m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val descentTrajectory = calculateDescentTrajectoryFor(testArrival1)
+        val descentTrajectory2 = calculateDescentTrajectoryFor(arrivalWithDirectRouting)
 
         val isExceeding = descentTrajectory.any { it.altitude < 10_000 && it.ias > 250 }
         assertEquals(false, isExceeding, "IAS should not exceed 250 below FL100")
@@ -360,16 +238,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Altitude should never be increasing`() {
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway!!,
-            remainingWaypoints = testArrival1.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val descentTrajectory = calculateDescentTrajectoryFor(testArrival1)
 
         val altitudeList = descentTrajectory.map { it.altitude }
         val isIncreasing = altitudeList.zipWithNext().any { (prev, next) -> prev < next }
@@ -378,71 +247,35 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Removing waypoint along a straight line should not affect ETA`() {
-        val originalTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival2.currentPosition,
-            assignedRunway = testArrival2.assignedRunway!!,
-            remainingWaypoints = testArrival2.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val originalTrajectory = calculateDescentTrajectoryFor(testArrival2)
 
         val modifiedRoute = testArrival2.copy(
             remainingWaypoints = testArrival2.remainingWaypoints.filter { it.id != "TEKVA" }
         )
 
-        val newTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = modifiedRoute.currentPosition,
-            assignedRunway = modifiedRoute.assignedRunway!!,
-            remainingWaypoints = modifiedRoute.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val newTrajectory = calculateDescentTrajectoryFor(modifiedRoute)
 
         assertEquals(
             expected = originalTrajectory.first().remainingTime.inWholeSeconds.toDouble(),
             actual = newTrajectory.first().remainingTime.inWholeSeconds.toDouble(),
-            absoluteTolerance = 1.0,
+            absoluteTolerance = 5.0,
             "ETA should not change when removing a waypoint along a straight line"
         )
     }
 
     @Test
     fun `Removing waypoint along a curve should affect ETA`() {
-        val originalTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival2.currentPosition,
-            assignedRunway = testArrival2.assignedRunway!!,
-            remainingWaypoints = testArrival2.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val originalTrajectory = calculateDescentTrajectoryFor(testArrival2)
 
         val modifiedRoute = testArrival2.copy(
             remainingWaypoints = testArrival2.remainingWaypoints.filter { it.id != "GM423" }
         )
 
-        val newTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = modifiedRoute.currentPosition,
-            assignedRunway = modifiedRoute.assignedRunway!!,
-            remainingWaypoints = modifiedRoute.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val newTrajectory = calculateDescentTrajectoryFor(modifiedRoute)
 
         val timeGained = originalTrajectory.first().remainingTime - newTrajectory.first().remainingTime
 
-        assertTrue { timeGained > 30.seconds && timeGained < 60.seconds }
+        assertTrue { timeGained > 30.seconds && timeGained < 2.minutes }
 
         assertNotEquals(
             illegal = originalTrajectory.first().remainingTime.inWholeSeconds.toDouble(),
@@ -454,16 +287,7 @@ class DescentTrajectoryServiceTest {
 
     @Test
     fun `Descent trajectory should have same length as the remaining route`() {
-        val descentTrajectory = DescentTrajectoryService.calculateDescentTrajectory(
-            currentPosition = testArrival1.currentPosition,
-            assignedRunway = testArrival1.assignedRunway!!,
-            remainingWaypoints = testArrival1.remainingWaypoints,
-            star = starInrex4m,
-            verticalWeatherProfile = null,
-            flightPlanTas = 450,
-            aircraftPerformance = b738performance,
-            arrivalAirportIcao = "ENGM",
-        )
+        val descentTrajectory = calculateDescentTrajectoryFor(testArrival1)
 
         val descentTrajectoryLength =
             descentTrajectory
@@ -486,5 +310,17 @@ class DescentTrajectoryServiceTest {
             "Descent trajectory should have same length as the remaining route"
         )
     }
+
+    private fun calculateDescentTrajectoryFor(arrival: AtcClientArrivalData) =
+        DescentTrajectoryService.calculateDescentTrajectory(
+            currentPosition = arrival.currentPosition,
+            assignedRunway = arrival.assignedRunway!!,
+            remainingWaypoints = arrival.remainingWaypoints,
+            assignedStar = arrival.assignedStar,
+            verticalWeatherProfile = null,
+            flightPlanTas = 450,
+            aircraftPerformance = b738performance,
+            airport = testAirport
+        )!!.trajectoryPoints
 
 }

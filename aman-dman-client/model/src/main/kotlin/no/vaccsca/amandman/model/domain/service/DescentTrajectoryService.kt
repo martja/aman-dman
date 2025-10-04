@@ -1,63 +1,60 @@
 package no.vaccsca.amandman.model.domain.service
 
 import no.vaccsca.amandman.model.domain.util.NavdataUtils.getInterpolatedSpeedExpectation
-import no.vaccsca.amandman.model.domain.valueobjects.AircraftPerformance
-import no.vaccsca.amandman.model.domain.valueobjects.DescentStep
-import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.util.NavigationUtils.interpolatePositionAlongPath
 import no.vaccsca.amandman.model.domain.util.NavigationUtils.isBehind
 import no.vaccsca.amandman.model.domain.util.SpeedConversionUtils
 import no.vaccsca.amandman.model.domain.util.WeatherUtils
 import no.vaccsca.amandman.model.domain.util.WeatherUtils.interpolateWeatherAtAltitude
-import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
-import no.vaccsca.amandman.model.domain.valueobjects.LatLng
-import no.vaccsca.amandman.model.domain.valueobjects.ArrivalState
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
-import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
-import no.vaccsca.amandman.model.domain.valueobjects.Star
-import no.vaccsca.amandman.model.domain.valueobjects.StarFix
-import no.vaccsca.amandman.model.domain.valueobjects.bearingTo
-import no.vaccsca.amandman.model.domain.valueobjects.distanceTo
+import no.vaccsca.amandman.model.domain.valueobjects.*
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.domain.valueobjects.weather.WindVector
-import kotlin.collections.plusAssign
-import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
 object DescentTrajectoryService {
 
-    private const val CURRENT_ID = "CURRENT"
-    private const val DECELERATION_RATE = 0.5
+    private val CURRENT_ID = "CURRENT"
+    private val DECELERATION_RATE = 0.5
     private val calmWindVector = WindVector(0, 0)
 
     /**
      * Calculates a descent trajectory from the current position to the runway using the provided STAR and aircraft performance data.
      *
-     * @param state The current route of the aircraft including waypoints and runway information.
-     * @param verticalWeatherProfile The vertical weather profile above the airport, if available.
-     * @param star The Standard Terminal Arrival Route (STAR) to be used for the descent, if available.
+     * @param currentPosition The current position of the aircraft.
+     * @param assignedRunway The runway assigned to the aircraft.
+     * @param remainingWaypoints The remaining waypoints in the flight plan leading to the runway
+     * @param verticalWeatherProfile The vertical weather profile, if available.
+     * @param assignedStar The STAR assigned to the aircraft, if any.
      * @param aircraftPerformance The performance characteristics of the aircraft.
-     * @param flightPlanTas The true airspeed from the flight plan, if available.
+     * @param flightPlanTas The true airspeed (TAS) from the flight plan
      *
      * @return A list of TrajectoryPoint objects representing the descent trajectory.
      */
     fun calculateDescentTrajectory(
         currentPosition: AircraftPosition,
-        assignedRunway: RunwayInfo,
+        assignedRunway: String,
         remainingWaypoints: List<Waypoint>,
         verticalWeatherProfile: VerticalWeatherProfile?,
-        star: Star?,
+        assignedStar: String?,
         aircraftPerformance: AircraftPerformance,
         flightPlanTas: Int?,
-        arrivalAirportIcao: String,
-    ): List<TrajectoryPoint> {
-        val starMap = star?.fixes?.associateBy { it.id }
+        airport: Airport,
+    ): DescentTrajectoryResult? {
+        val runwayInfo = airport.runways.find { it.id == assignedRunway }
+        if (runwayInfo == null) {
+            println("No runway info for $assignedRunway at ${airport.icao}")
+            return null
+        }
+
+        val starInfo = airport.stars.find { it.id == assignedStar && it.runway == runwayInfo }
+
+        val starFixLookupMap = starInfo?.fixes?.associateBy { it.id }
         val trajectoryPoints = mutableListOf<TrajectoryPoint>()
 
         // Starts at the airports and works backwards
-        var probePosition = assignedRunway.latLng
-        var probeAltitude = assignedRunway.elevation.roundToInt()
+        var probePosition = runwayInfo.latLng
+        var probeAltitude = runwayInfo.elevation.roundToInt()
         var probingDistance = 0f
         var accumulatedTimeFromDestination = 0.seconds
 
@@ -67,22 +64,22 @@ object DescentTrajectoryService {
                     id = CURRENT_ID,
                     latLng = currentPosition.latLng,
                 )
-            ) + remainingWaypoints.filter { it.id != arrivalAirportIcao } + listOf(
+            ) + remainingWaypoints.filter { it.id != airport.icao } + listOf(
                 Waypoint(
-                    id = assignedRunway.id,
-                    latLng = assignedRunway.latLng,
+                    id = runwayInfo.id,
+                    latLng = runwayInfo.latLng,
                 )
             )
 
         val isAtEndOfRoute = remainingRoute.size == 2 && remainingRoute.last().latLng.isBehind(currentPosition.latLng, currentPosition.trackDeg)
         if (isAtEndOfRoute) {
-            return emptyList()
+            return null
         }
 
         // Add the last point (the airport) to the profile
         trajectoryPoints +=
                 TrajectoryPoint(
-                    fixId = assignedRunway.id,
+                    fixId = runwayInfo.id,
                     latLng = probePosition,
                     altitude = probeAltitude,
                     remainingDistance = probingDistance,
@@ -91,7 +88,7 @@ object DescentTrajectoryService {
                     tas = aircraftPerformance.landingVat,
                     windVector = calmWindVector, // TODO: use wind from METAR
                     ias = aircraftPerformance.landingVat,
-                    heading = assignedRunway.trueHeading.roundToInt(),
+                    heading = runwayInfo.trueHeading.roundToInt(),
                 )
 
         // Start from the last waypoint (the runway threshold) and work backward
@@ -100,13 +97,13 @@ object DescentTrajectoryService {
             val earlierPoint = remainingRoute[i-1]
             val remainingRouteReversed = remainingRoute.subList(0, i).reversed()
 
-            val nextAltitudeExpectation = star?.nextAltitudeExpectation(remainingRouteReversed)
-                ?.let { starMap?.get(it.id)?.typicalAltitude }
+            val nextAltitudeExpectation = starInfo?.nextAltitudeExpectation(remainingRouteReversed)
+                ?.let { starFixLookupMap?.get(it.id)?.typicalAltitude }
                 ?: currentPosition.altitudeFt
 
             val earlierSpeedExpectation =
-                if (star != null) {
-                    remainingWaypoints.getInterpolatedSpeedExpectation(star = star.fixes, atWaypoint = earlierPoint)
+                if (starInfo != null) {
+                    remainingWaypoints.getInterpolatedSpeedExpectation(star = starInfo.fixes, atWaypoint = earlierPoint)
                 } else {
                     aircraftPerformance.getPreferredIas(
                         altitudeFt = nextAltitudeExpectation,
@@ -151,7 +148,11 @@ object DescentTrajectoryService {
             }
         }
 
-        return trajectoryPoints.reversed()
+        return DescentTrajectoryResult(
+            trajectoryPoints = trajectoryPoints.reversed(),
+            runway = runwayInfo,
+            star = starInfo,
+        )
     }
 
     /**

@@ -78,11 +78,11 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
 
         var distFromPreviousBarb = 0
 
-        trajectoryPoints.forEach {
-            val x = calculateXcoordinate(it.remainingDistance)
-            val yPosAlt = calculateAltitudeCoordinates(it.altitude)
-            val yPosGs = calculateSpeedCoordinates(it.groundSpeed)
-            val yPosTas = calculateSpeedCoordinates(it.tas)
+        trajectoryPoints.forEach { tp ->
+            val x = calculateXcoordinate(tp.remainingDistance)
+            val yPosAlt = calculateAltitudeCoordinates(tp.altitude)
+            val yPosGs = calculateSpeedCoordinates(tp.groundSpeed)
+            val yPosTas = calculateSpeedCoordinates(tp.tas)
 
             // Visualize true airspeed
             g.color = Color.YELLOW
@@ -97,16 +97,15 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
             g.drawLine(prevX, prevY, x, yPosAlt)
 
             g.color = Color.WHITE
-            it.fixId?.let { fixId ->
+            tp.fixId?.let { fixId ->
                 g.drawOval(x - 3, yPosAlt - 3, 6, 6)
                 g.drawString(fixId, x, yPosAlt - 5)
-                g.drawString(it.groundSpeed.toString() + " kts", x, yPosGs - 5)
             }
 
 
             if (distFromPreviousBarb > BARB_SPACING) {
                 distFromPreviousBarb = 0
-                WindBarbs.drawWindBarb(g, x, 40, it.windVector.directionDeg, it.windVector.speedKts, relativeToHeading = it.heading + 90 )
+                WindBarbs.drawWindBarb(g, x, 40, tp.windVector.directionDeg, tp.windVector.speedKts, relativeToHeading = tp.heading + 90 )
             } else {
                 distFromPreviousBarb += (x - prevX)
             }
@@ -124,18 +123,59 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
             g.drawString(
                 if (tailwindComponent > 0) "+${tailwindComponent} kt" else "${tailwindComponent} kt",
                 x + 5,
-                height - diagramMargin - 20
+                diagramMargin + 20
             )
 
-            g.drawString(
-                "GS: ${it.groundSpeed} | TAS: ${it.tas} | IAS: ${it.ias} | ETA: ${it.remainingTime} | ${it.remainingDistance.roundToInt()} NM",
-                5,
-                height - 5
-            )
+            drawLegend(g, it)
 
             g.color = java.awt.Color.RED
             g.drawLine(x, diagramMarginTop, x, height - diagramMargin)
         }
+    }
+
+    private fun drawLegend(g: java.awt.Graphics, it: TrajectoryPoint) {
+        var x = 5
+
+        // Altitude
+        g.color = Color.MAGENTA
+        val alt = "FL${(it.altitude / 100).toString().padStart(3, '0')}"
+        g.drawString(alt, x, height - 5)
+        x += g.fontMetrics.stringWidth("$alt | ")
+
+        // Ground speed
+        g.color = Color.GREEN
+        val gs = "GS: ${it.groundSpeed} "
+        g.drawString(gs, x, height - 5)
+        x += g.fontMetrics.stringWidth("$gs | ")
+
+        // True airspeed
+        g.color = Color.YELLOW
+        val tas = "TAS: ${it.tas}"
+        g.drawString(tas, x, height - 5)
+        x += g.fontMetrics.stringWidth("$tas | ")
+
+        g.color = Color.WHITE
+
+        // Indicated airspeed
+        val ias = "IAS: ${it.ias}"
+        g.drawString(ias, x, height - 5)
+        x += g.fontMetrics.stringWidth("$ias | ")
+
+        // ETA
+        val eta = "ETA: ${it.remainingTime}"
+        g.drawString(eta, x, height - 5)
+        x += g.fontMetrics.stringWidth("$eta | ")
+
+        // Remaining distance
+        val dist = "${it.remainingDistance.roundToInt()} NM"
+        g.drawString(dist, x, height - 5)
+        x += g.fontMetrics.stringWidth("$dist | ")
+
+        // Tailwind component
+        val tailwindComponent = it.groundSpeed - it.tas
+        g.color = if (tailwindComponent > 0) Color.GREEN.brighter() else Color.PINK
+        val twc = if (tailwindComponent > 0) "+${tailwindComponent} kt" else "${tailwindComponent} kt"
+        g.drawString(twc, x, height - 5)
     }
 
     private fun calculateSpeedCoordinates(speed: Int): Int {

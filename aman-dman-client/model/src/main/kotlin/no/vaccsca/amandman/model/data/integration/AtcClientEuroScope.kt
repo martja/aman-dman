@@ -220,18 +220,11 @@ class AtcClientEuroScope(
         }
     }
 
-    private fun ArrivalJson.toArrival(): AtcClientArrivalData? {
-        val assignedRunway = navdataRepository.airports.find { it.icao == this.arrivalAirportIcao }?.runways?.find { it.id == this.assignedRunway }
-
-        if (assignedRunway == null) {
-            println("Warning: Assigned runway ${this.assignedRunway} not found for airport ${this.arrivalAirportIcao} in navdata")
-            return null
-        }
-
+    private fun ArrivalJson.toArrival(): AtcClientArrivalData {
         return AtcClientArrivalData(
             callsign = this.callsign,
             icaoType = this.icaoType,
-            assignedRunway = assignedRunway,
+            assignedRunway = this.assignedRunway,
             assignedStar = this.assignedStar,
             assignedDirect = this.assignedDirect,
             scratchPad = this.scratchPad,

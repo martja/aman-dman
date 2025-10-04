@@ -8,21 +8,23 @@ import java.io.FileNotFoundException
 
 object AircraftPerformanceData {
 
-    private val all: List<AircraftPerformance>
-
     // Path to the external config file
     private const val CONFIG_FILE_PATH = "config/aircraft_performance.json"
 
-    init {
-        val jsonFile = File(CONFIG_FILE_PATH)
-        if (!jsonFile.exists()) {
-            throw FileNotFoundException("Settings file not found at: $CONFIG_FILE_PATH")
-        }
-        all = jacksonObjectMapper().readValue(jsonFile.readText())
+    private val all by lazy {
+        loadSettingsFromFile(CONFIG_FILE_PATH)
     }
 
     fun get(icao: String): AircraftPerformance {
         return all.find { it.ICAO == icao }
             ?: throw IllegalArgumentException("No aircraft performance data for ICAO $icao")
+    }
+
+    fun loadSettingsFromFile(filePath: String): List<AircraftPerformance> {
+        val jsonFile = File(filePath)
+        if (!jsonFile.exists()) {
+            throw FileNotFoundException("Settings file not found at: $filePath")
+        }
+        return jacksonObjectMapper().readValue(jsonFile.readText())
     }
 }

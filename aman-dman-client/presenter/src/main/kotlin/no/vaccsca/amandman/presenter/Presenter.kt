@@ -18,8 +18,10 @@ import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
 import no.vaccsca.amandman.model.data.integration.AtcClientEuroScope
 import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
+import no.vaccsca.amandman.model.domain.service.ArrivalEventService
 import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
+import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
@@ -43,16 +45,12 @@ class Presenter(
     private val runwayModeStateManager = RunwayModeStateManager(view)
     private var minimumSpacingNm: Double = 0.0
 
-    // Create or return existing AtcClientEuroScope instance
-    private var euroScopeClient: AtcClientEuroScope? = null
+    private val navdataRepository by lazy {
+        NavdataRepository()
+    }
 
-    private val navdataRepository = NavdataRepository()
-
-    private fun getOrCreateAtcClient(): AtcClientEuroScope {
-        if (euroScopeClient == null || !euroScopeClient!!.isClientConnected) {
-            euroScopeClient = AtcClientEuroScope(navdataRepository)
-        }
-        return euroScopeClient!!
+    private val euroScopeClient by lazy {
+        AtcClientEuroScope(navdataRepository)
     }
 
     private val dataUpdatesServerSender by lazy {
@@ -61,6 +59,10 @@ class Presenter(
 
     private val sharedStateHttpClient by lazy {
         SharedStateHttpClient()
+    }
+
+    private val weatherDataRepository by lazy {
+        WeatherDataRepository()
     }
 
     init {
@@ -242,10 +244,9 @@ class Presenter(
             val remainingMasterServices = plannerManager.getAllServices()
                 .filterIsInstance<PlannerServiceMaster>()
 
-            if (remainingMasterServices.isEmpty()) {
+            if (remainingMasterServices.isEmpty() && euroScopeClient.isClientConnected) {
                 // No more services using the AtcClient, clean it up
-                euroScopeClient?.close()
-                euroScopeClient = null
+                euroScopeClient.close()
             }
         }
     }
@@ -339,15 +340,15 @@ class Presenter(
             UserRole.MASTER ->
                 PlannerServiceMaster(
                     airport = airport,
-                    weatherDataRepository = WeatherDataRepository(),
-                    atcClient = getOrCreateAtcClient(),
+                    weatherDataRepository = weatherDataRepository,
+                    atcClient = euroScopeClient,
                     dataUpdateListeners = arrayOf(guiUpdater, dataUpdatesServerSender),
                 )
             UserRole.LOCAL ->
                 PlannerServiceMaster(
                     airport = airport,
-                    weatherDataRepository = WeatherDataRepository(),
-                    atcClient = getOrCreateAtcClient(),
+                    weatherDataRepository = weatherDataRepository,
+                    atcClient = euroScopeClient,
                     dataUpdateListeners = arrayOf(guiUpdater),
                 )
             UserRole.SLAVE ->
