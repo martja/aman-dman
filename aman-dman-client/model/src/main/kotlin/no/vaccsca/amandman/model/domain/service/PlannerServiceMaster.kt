@@ -63,7 +63,8 @@ class PlannerServiceMaster(
                 callsign = it.callsign,
                 preferredTime = it.estimatedTime,
                 landingIas = it.landingIas,
-                wakeCategory = it.wakeCategory
+                wakeCategory = it.wakeCategory,
+                assignedRunway = it.runway
             )
         }
 
