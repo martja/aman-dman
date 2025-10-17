@@ -107,7 +107,7 @@ object DescentTrajectoryService {
                 } else {
                     aircraftPerformance.getPreferredIas(
                         altitudeFt = nextAltitudeExpectation,
-                        temperatureC = verticalWeatherProfile?.interpolateWeatherAtAltitude(nextAltitudeExpectation)?.temperatureC,
+                        temperatureC = verticalWeatherProfile?.weatherLayers?.interpolateWeatherAtAltitude(nextAltitudeExpectation)?.temperatureC,
                         flightPlanTas = flightPlanTas
                     )
                 }
@@ -188,10 +188,10 @@ object DescentTrajectoryService {
         val verticalSpeed = descentRateFpm / 60.0 // ft/sec
 
         var remainingProbingDistance = laterPoint.distanceTo(earlierPoint)
-        var currentExpectedSpeed = laterExpectedSpeed ?: this.getPreferredIas(probeAltitude, verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)?.temperatureC, flightPlanTas)
+        var currentExpectedSpeed = laterExpectedSpeed ?: this.getPreferredIas(probeAltitude, verticalWeatherProfile?.weatherLayers?.interpolateWeatherAtAltitude(probeAltitude)?.temperatureC, flightPlanTas)
 
         while (true) {
-            val probeWeather = verticalWeatherProfile?.interpolateWeatherAtAltitude(probeAltitude)
+            val probeWeather = verticalWeatherProfile?.weatherLayers?.interpolateWeatherAtAltitude(probeAltitude)
             val estimatedOutsideTemperature = WeatherUtils.getStandardTemperatureAt(probeAltitude)
 
             val targetSpeed = earlierExpectedSpeed ?: getPreferredIas(probeAltitude, probeWeather?.temperatureC, flightPlanTas)

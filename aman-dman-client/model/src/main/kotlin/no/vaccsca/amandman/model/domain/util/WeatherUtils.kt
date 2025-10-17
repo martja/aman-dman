@@ -3,7 +3,9 @@ package no.vaccsca.amandman.model.domain.util
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.domain.valueobjects.weather.WeatherLayer
 import no.vaccsca.amandman.model.domain.valueobjects.weather.WindVector
+import kotlin.compareTo
 import kotlin.math.roundToInt
+import kotlin.text.toFloat
 
 object WeatherUtils {
 
@@ -17,9 +19,8 @@ object WeatherUtils {
         return (seaLevelTemperature - (lapseRate * altitudeFt)).roundToInt()
     }
 
-    fun VerticalWeatherProfile.interpolateWeatherAtAltitude(altitudeFt: Int): WeatherLayer {
-        // Interpolate wind data based on the two closest altitudes
-        val sorted = weatherLayers.sortedBy { it.flightLevelFt }
+    fun List<WeatherLayer>.interpolateWeatherAtAltitude(altitudeFt: Int): WeatherLayer {
+        val sorted = this.sortedBy { it.flightLevelFt }
         val lower = sorted.lastOrNull { it.flightLevelFt <= altitudeFt } ?: sorted.minBy { it.flightLevelFt }
         val upper = sorted.firstOrNull { it.flightLevelFt > altitudeFt } ?: sorted.maxBy { it.flightLevelFt }
 
@@ -28,7 +29,12 @@ object WeatherUtils {
             else if (altitudeFt >= upper.flightLevelFt) 1f
             else (altitudeFt - lower.flightLevelFt).toFloat() / (upper.flightLevelFt - lower.flightLevelFt).toFloat()
 
-        val direction = (1 - ratio) * lower.windVector.directionDeg + ratio * upper.windVector.directionDeg
+        // Interpolate wind direction with wrap-around
+        val dir1 = lower.windVector.directionDeg.toFloat()
+        val dir2 = upper.windVector.directionDeg.toFloat()
+        var delta = ((dir2 - dir1 + 540) % 360) - 180 // shortest path
+        val direction = (dir1 + ratio * delta + 360) % 360
+
         val speed = (1 - ratio) * lower.windVector.speedKts + ratio * upper.windVector.speedKts
         val temperature = (1 - ratio) * lower.temperatureC + ratio * upper.temperatureC
 
