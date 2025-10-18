@@ -192,13 +192,29 @@ void AmanPlugIn::onRequestOutboundsFromAirport(long requestId, const std::string
     sendUpdatedRunwayStatuses(requestId);
 }
 
-void AmanPlugIn::onUnsubscribe(long requestId) {
+void AmanPlugIn::onCancelRequest(long requestId) {
     for (auto it = inboundsSubscriptions.begin(); it != inboundsSubscriptions.end(); ++it) {
         if ((*it)->requestId == requestId) {
             inboundsSubscriptions.erase(it);
             break;
         }
     }
+}
+
+void AmanPlugIn::onRequestAssignRunway(long requestId, const std::string& callsign, const std::string& runway) {
+    CRadarTarget rt = RadarTargetSelect(callsign.c_str());
+    if (rt.IsValid()) {
+        CFlightPlan fp = rt.GetCorrelatedFlightPlan();
+        if (fp.IsValid()) {
+            CFlightPlanData fpd = fp.GetFlightPlanData();
+            auto originalRoute = fpd.GetRoute();
+            auto arrivalAirport = fpd.GetDestination();
+            auto newRoute = addAssignedArrivalRunwayToRoute(originalRoute, arrivalAirport, runway);
+            fpd.SetRoute(newRoute.c_str());
+            fpd.AmendFlightPlan();
+        }
+    }
+
 }
 
 void AmanPlugIn::onSetCtot(const std::string& callSign, long ctot) {
@@ -340,6 +356,40 @@ std::vector<RunwayStatus> AmanPlugIn::collectRunwayStatuses(const std::string& a
 
 inline std::string AmanPlugIn::trimString(const std::string& value) {
     return std::regex_replace(value, std::regex("^ +| +$|( ) +"), "$1");
+}
+
+
+std::string AmanPlugIn::addAssignedArrivalRunwayToRoute(const std::string& originalRoute, const std::string& arrivalAirport, const std::string& assignedRunway) {
+    std::stringstream ss(originalRoute);
+    std::vector<std::string> tokens;
+    std::string token;
+
+    while (ss >> token) {
+        tokens.push_back(token);
+    }
+
+    if (tokens.empty())
+        return arrivalAirport + "/" + assignedRunway; // fallback
+
+    std::string& last = tokens.back();
+    size_t slashPos = last.find('/');
+
+    if (slashPos != std::string::npos) {
+        // Replace everything after "/" with the new runway
+        last = last.substr(0, slashPos + 1) + assignedRunway;
+    } else {
+        // Append new arrival
+        last = last; // unchanged
+        tokens.push_back(arrivalAirport + "/" + assignedRunway);
+    }
+
+    // Rebuild route
+    std::ostringstream out;
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        if (i > 0) out << " ";
+        out << tokens[i];
+    }
+    return out.str();
 }
 
 // HHMM to epoch time

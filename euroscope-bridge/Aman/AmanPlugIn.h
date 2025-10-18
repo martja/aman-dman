@@ -46,6 +46,7 @@ private:
     bool hasCorrectDestination(CFlightPlanData fpd, std::vector<std::string> destinationAirports);
     int getFixIndexByName(CFlightPlanExtractedRoute extractedRoute, const std::string& fixName);
     int getFirstViaFixIndex(CFlightPlanExtractedRoute extractedRoute, std::vector<std::string> viaFixes);
+    
     std::vector<RouteFix> findExtractedRoutePoints(CRadarTarget radarTarget);
 
     std::vector<AmanAircraft> getInboundsForAirport(const std::string& fixName);
@@ -53,6 +54,7 @@ private:
     std::vector<RunwayStatus> collectRunwayStatuses(const std::string& airportIcao);
 
     std::string trimString(const std::string& value);
+    std::string addAssignedArrivalRunwayToRoute(const std::string& originalRoute, const std::string& departureAirport, const std::string& assignedRunway);
 
     long processDepartureTime(const std::string& departureTime);
     
@@ -63,7 +65,8 @@ private:
     // Server methods
     void onRequestInboundsForFix(long requestId, const std::vector<std::string>& viaFixes, const std::vector<std::string>& destinationFixes, const std::vector<std::string>& destinationAirports) override;
     void onRequestOutboundsFromAirport(long requestId, const std::string& icao) override;
-    void onUnsubscribe(long requestId) override;
+    void onCancelRequest(long requestId) override;
+    void onRequestAssignRunway(long requestId, const std::string& callsign, const std::string& runway) override;
     void onSetCtot(const std::string& callSign, long ctot) override;
     void onClientDisconnected() override;
     void onErrorProcessingMessage(const std::string& errorMessage) override;

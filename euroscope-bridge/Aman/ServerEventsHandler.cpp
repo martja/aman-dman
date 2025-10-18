@@ -35,7 +35,16 @@ void ServerEventsHandler::processMessage(const std::string& message) {
             destinationAirports.push_back(airport.GetString());
         }
         onRequestInboundsForFix(requestId, viaFixes, destinationFixes, destinationAirports);
-    } else {
+    }
+    else if (strcmp(messageType, "cancelRequest") == 0) {
+        long requestId = document["requestId"].GetInt64();
+        onCancelRequest(requestId);
+    }
+    else if (strcmp(messageType, "assignRunway") == 0) {
+        long requestId = document["requestId"].GetInt64();
+        onRequestAssignRunway(requestId, document["callsign"].GetString(), document["runway"].GetString());
+    }
+    else {
         onErrorProcessingMessage("Unknown message type: " + std::string(messageType));
     }
 
