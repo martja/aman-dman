@@ -118,6 +118,44 @@ const std::string JsonMessageHelper::getJsonOfRunwayStatuses(long requestId, con
     return sb.GetString();
 }
 
+const std::string JsonMessageHelper::getJsonOfControllerInfo(long requestId, const ControllerInfo& controllerInfo) {
+    Document document;
+    document.SetObject();
+    Document::AllocatorType& allocator = document.GetAllocator();
+
+    Value controllerInfoObject(kObjectType);
+
+    // callsign
+    if (!controllerInfo.callsign.empty()) {
+        controllerInfoObject.AddMember("callsign", Value(controllerInfo.callsign.c_str(), allocator), allocator);
+    } else {
+        controllerInfoObject.AddMember("callsign", Value(kNullType), allocator);
+    }
+
+    // positionId
+    if (!controllerInfo.positionId.empty()) {
+        controllerInfoObject.AddMember("positionId", Value(controllerInfo.positionId.c_str(), allocator), allocator);
+    } else {
+        controllerInfoObject.AddMember("positionId", Value(kNullType), allocator);
+    }
+
+    // facility
+    if (controllerInfo.facilityType > 0) {
+        controllerInfoObject.AddMember("facilityType", controllerInfo.facilityType, allocator);
+    } else {
+        controllerInfoObject.AddMember("facilityType", Value(kNullType), allocator);
+    }
+
+    document.AddMember("type", "controllerInfo", allocator);
+    document.AddMember("requestId", requestId, allocator);
+    document.AddMember("me", controllerInfoObject, allocator);
+
+    StringBuffer sb;
+    Writer<StringBuffer> writer(sb);
+    document.Accept(writer);
+    return sb.GetString();
+}
+
 const std::string JsonMessageHelper::getJsonOfDepartures(long requestId, const std::vector<DmanAircraft>& aircraftList) {
     Document document;
     document.SetObject();

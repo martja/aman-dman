@@ -32,5 +32,5 @@ interface PresenterInterface {
     fun onRemoveTimelineClicked(timelineConfig: TimelineConfig)
     fun onLabelDrag(airportIcao: String, timelineEvent: TimelineEvent, newInstant: Instant)
     fun onMinimumSpacingDistanceSet(airportIcao: String, minimumSpacingDistanceNm: Double)
-    fun selectRunway(runwayEvent: RunwayEvent, onClose: (runway: String) -> Unit)
+    fun beginRunwaySelection(runwayEvent: RunwayEvent, onClose: (runway: String?) -> Unit)
 }

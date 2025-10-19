@@ -6,6 +6,7 @@ import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 
@@ -18,6 +19,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 interface ViewInterface {
     var presenterInterface: PresenterInterface
 
+    fun updateControllerInfo(controllerInfoData: ControllerInfoData)
     fun updateTimelineGroups(timelineGroups: List<TimelineGroup>)
     fun openMetWindow()
     fun openLandingRatesWindow()
@@ -36,5 +38,5 @@ interface ViewInterface {
     fun showErrorMessage(message: String)
     fun openWindow()
     fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double)
-    fun selectRunway(runwayEvent: RunwayEvent, runwayOptions: Set<String>, onClose: (String) -> Unit)
+    fun openSelectRunwayDialog(runwayEvent: RunwayEvent, runwayOptions: Set<String>, onClose: (String) -> Unit)
 }

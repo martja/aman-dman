@@ -2,7 +2,6 @@ package no.vaccsca.amandman
 
 import com.jtattoo.plaf.hifi.HiFiLookAndFeel
 import no.vaccsca.amandman.presenter.Presenter
-import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.domain.PlannerManager
 import no.vaccsca.amandman.model.domain.service.GuiDataHandler
 import no.vaccsca.amandman.view.AmanDmanMainFrame
@@ -45,8 +44,6 @@ fun main() {
         val presenter = Presenter(PlannerManager(), view, guiUpdater)
         guiUpdater.presenter = presenter
 
-        // Update window title to show network mode
-        view.setWindowTitle("AMAN-DMAN")
         view.openWindow()
     }
 

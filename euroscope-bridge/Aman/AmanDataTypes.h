@@ -61,3 +61,9 @@ struct RunwayStatus {
     bool isActiveForDepartures;
     bool isActiveForArrivals;
 };
+
+struct ControllerInfo {
+    std::string callsign;
+    std::string positionId;
+    int facilityType;
+};

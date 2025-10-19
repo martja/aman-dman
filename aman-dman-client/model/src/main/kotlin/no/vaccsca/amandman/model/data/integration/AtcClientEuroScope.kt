@@ -6,6 +6,7 @@ import kotlinx.coroutines.*
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalJson
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalsUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.AssignRunwayMessage
+import no.vaccsca.amandman.model.data.dto.euroscope.ControllerInfoFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.DeparturesUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageToEuroScopePluginJson
@@ -20,6 +21,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalD
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySelectionData
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import java.io.*
 import java.net.Socket
 import java.net.SocketTimeoutException
@@ -27,6 +29,7 @@ import kotlin.collections.get
 
 class AtcClientEuroScope(
     private val navdataRepository: NavdataRepository,
+    private val controllerInfoCallback: ((ControllerInfoData) -> Unit),
     private val host: String = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.host,
     private val port: Int = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.port ?: 12345,
 ) : AtcClient {
@@ -53,7 +56,7 @@ class AtcClientEuroScope(
     val isClientConnected: Boolean
         get() = isConnected
 
-    override fun start() {
+    override fun start(onControllerInfoData: (ControllerInfoData) -> Unit) {
         if (isRunning) return
         isRunning = true
         scope.launch {
@@ -119,6 +122,24 @@ class AtcClientEuroScope(
                 runway = newRunway
             )
         )
+    }
+
+    override fun close() {
+        try {
+            isConnected = false
+            isRunning = false
+            scope.cancel()
+
+            socket?.close()
+            writer?.close()
+            reader?.close()
+        } catch (e: Exception) {
+            println("Error closing connection: ${e.message}")
+        } finally {
+            socket = null
+            writer = null
+            reader = null
+        }
     }
 
     private fun onConnectionEstablished() {
@@ -217,7 +238,7 @@ class AtcClientEuroScope(
         when (messageFromServerJson) {
             is ArrivalsUpdateFromServerJson -> {
                 val airportIcao = requestIdToAirportMap[messageFromServerJson.requestId]
-                arrivalCallbacks[airportIcao]?.invoke(messageFromServerJson.inbounds.mapNotNull { it.toArrival() })
+                arrivalCallbacks[airportIcao]?.invoke(messageFromServerJson.inbounds.map { it.toArrival() })
             }
             is DeparturesUpdateFromServerJson -> {
                 TODO("Departures not yet implemented")
@@ -227,6 +248,14 @@ class AtcClientEuroScope(
                     val statuses = statusesJson.map { (name, statusJson) -> statusJson.toRunwayStatus(name) }
                     runwayStatusCallbacks[airportIcao]?.invoke(statuses)
                 }
+            }
+            is ControllerInfoFromServerJson -> {
+                val infoData = ControllerInfoData(
+                    callsign = messageFromServerJson.me.callsign,
+                    positionId = messageFromServerJson.me.positionId,
+                    facilityType = facilityTypeToString(messageFromServerJson.me.facilityType),
+                )
+                controllerInfoCallback(infoData)
             }
         }
     }
@@ -262,21 +291,15 @@ class AtcClientEuroScope(
             allowDepartures = this.departures,
         )
 
-    override fun close() {
-        try {
-            isConnected = false
-            isRunning = false
-            scope.cancel()
-
-            socket?.close()
-            writer?.close()
-            reader?.close()
-        } catch (e: Exception) {
-            println("Error closing connection: ${e.message}")
-        } finally {
-            socket = null
-            writer = null
-            reader = null
+    private fun facilityTypeToString(facilityType: Int?): String {
+        return when (facilityType) {
+            1 -> "FSS"
+            2 -> "DEL"
+            3 -> "GND"
+            4 -> "TWR"
+            5 -> "APP"
+            6 -> "CTR"
+            else -> "UNKNOWN"
         }
     }
 }

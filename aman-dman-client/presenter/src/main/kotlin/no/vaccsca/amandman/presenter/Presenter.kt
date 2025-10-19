@@ -20,6 +20,7 @@ import no.vaccsca.amandman.model.domain.service.PlannerServiceMaster
 import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
@@ -44,14 +45,17 @@ class Presenter(
     private val runwayModeStateManager = RunwayModeStateManager(view)
     private var minimumSpacingNm: Double = 0.0
     private var availableRunways = setOf<String>()
-
+    private var controllerInfo: ControllerInfoData? = null
 
     private val navdataRepository by lazy {
         NavdataRepository()
     }
 
     private val euroScopeClient by lazy {
-        AtcClientEuroScope(navdataRepository)
+        AtcClientEuroScope(
+            navdataRepository = navdataRepository,
+            controllerInfoCallback = { info -> handleControllerInfoUpdate(info) }
+        )
     }
 
     private val dataUpdatesServerSender by lazy {
@@ -294,8 +298,18 @@ class Presenter(
             }
     }
 
-    override fun selectRunway(runwayEvent: RunwayEvent, onClose: (runway: String) -> Unit) {
-        view.selectRunway(runwayEvent, availableRunways, onClose)
+    override fun beginRunwaySelection(runwayEvent: RunwayEvent, onClose: (runway: String?) -> Unit) {
+        if (runwayEvent is RunwayArrivalEvent) {
+            val imTheTrackingController = controllerInfo?.callsign != null && runwayEvent.trackingController == controllerInfo?.positionId
+            if (imTheTrackingController) {
+                view.openSelectRunwayDialog(runwayEvent, availableRunways, onClose)
+            } else {
+                onClose(null)
+                println("Not the tracking controller for ${runwayEvent.callsign}, cannot select runway. Tracking controller is ${runwayEvent.trackingController}, my positionId is ${controllerInfo?.positionId}")
+            }
+        } else {
+            println("selectRunway called with unsupported event type")
+        }
     }
 
     override fun onLabelDrag(airportIcao: String, timelineEvent: TimelineEvent, newInstant: Instant) {
@@ -398,6 +412,11 @@ class Presenter(
 
     override fun onCreateNewTimelineClicked(groupId: String) {
         view.openTimelineConfigForm(groupId)
+    }
+
+    private fun handleControllerInfoUpdate(info: ControllerInfoData) {
+        controllerInfo = info
+        view.updateControllerInfo(info)
     }
 
     private data class CachedEvent(

@@ -61,6 +61,16 @@ void AmanPlugIn::OnTimer(int Counter) {
         std::cout << "Enqueueing outbounds message: " << outboundsJson.substr(0, 100) << "..." << std::endl;
         enqueueMessage(outboundsJson);
     }
+
+    auto me = this->ControllerMyself();
+    if (me.IsValid()) {
+        ControllerInfo controllerInfo;
+        controllerInfo.positionId = me.GetPositionId();
+        controllerInfo.callsign = me.GetCallsign();
+        controllerInfo.facilityType = me.GetFacility();
+        auto controllerInfoJson = jsonSerializer.getJsonOfControllerInfo(0, controllerInfo);
+        enqueueMessage(controllerInfoJson);
+    }
 }
 
 void AmanPlugIn::OnAirportRunwayActivityChanged(void) {

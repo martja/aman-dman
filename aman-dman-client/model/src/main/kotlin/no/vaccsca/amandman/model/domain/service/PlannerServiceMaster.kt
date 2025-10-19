@@ -9,6 +9,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
@@ -30,6 +31,7 @@ class PlannerServiceMaster(
     private var sequence: Sequence = Sequence(emptyList())
     private var minimumSpacingNm = 3.0 // Minimum spacing in nautical miles
     private var availableRunways: List<String>? = null
+    private var controllerInfo: ControllerInfoData? = null
 
     init {
         refreshWeatherData()
@@ -40,7 +42,11 @@ class PlannerServiceMaster(
     }
 
     override fun start() {
-        atcClient.start()
+        atcClient.start(
+            onControllerInfoData = {
+                controllerInfo = it
+            }
+        )
     }
 
     override fun getAvailableRunways(): Result<List<String>> {
@@ -60,7 +66,7 @@ class PlannerServiceMaster(
                     it.onRunwayModesUpdated(airportIcao, map)
                 }
                 availableRunways = runways.map { it.runway }
-            }
+            },
         )
     }
 

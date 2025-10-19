@@ -46,6 +46,7 @@ private:
     bool hasCorrectDestination(CFlightPlanData fpd, std::vector<std::string> destinationAirports);
     int getFixIndexByName(CFlightPlanExtractedRoute extractedRoute, const std::string& fixName);
     int getFirstViaFixIndex(CFlightPlanExtractedRoute extractedRoute, std::vector<std::string> viaFixes);
+    std::string getFacilityString(int facilityType);
     
     std::vector<RouteFix> findExtractedRoutePoints(CRadarTarget radarTarget);
 

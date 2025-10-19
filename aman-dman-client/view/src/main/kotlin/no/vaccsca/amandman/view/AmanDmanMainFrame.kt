@@ -7,6 +7,7 @@ import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.presenter.ViewInterface
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.tabpage.Footer
@@ -20,7 +21,7 @@ import javax.swing.*
 import kotlin.math.roundToInt
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 
-class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
+class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
     override lateinit var presenterInterface: PresenterInterface
 
@@ -81,7 +82,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         footer?.updateMinimumSpacingSelector(minimumSpacingNm)
     }
 
-    override fun selectRunway(
+    override fun openSelectRunwayDialog(
         runwayEvent: RunwayEvent,
         runwayOptions: Set<String>,
         onClose: (String) -> Unit
@@ -317,7 +318,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         )
     }
 
-    fun setWindowTitle(title: String) {
-        this.title = title
+    override fun updateControllerInfo(controllerInfoData: ControllerInfoData) {
+        if (controllerInfoData.callsign != null && controllerInfoData.facilityType != null) {
+            this.title = "AMAN - ${controllerInfoData.callsign} (${controllerInfoData.facilityType})"
+        } else {
+            this.title = "AMAN"
+        }
     }
 }

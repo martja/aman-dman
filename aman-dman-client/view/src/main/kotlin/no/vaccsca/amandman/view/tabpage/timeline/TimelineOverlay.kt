@@ -12,7 +12,6 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrival
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.view.tabpage.timeline.labels.ArrivalLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.DepartureLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.TimelineLabel
@@ -262,14 +261,9 @@ class TimelineOverlay(
 
     private fun onLabelDropped(timelineEvent: TimelineEvent, newTime: Instant) {
         if (timelineEvent is RunwayArrivalEvent) {
-            if (timelineEvent.trackingControllerIsMe) {
-                presenterInterface.selectRunway(timelineEvent) { selectedRunway ->
-                    presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, timelineEvent, newTime,selectedRunway)
-                }
-            } else {
-                presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, timelineEvent, newTime)
+            presenterInterface.beginRunwaySelection(timelineEvent) { selectedRunway ->
+                presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, timelineEvent, newTime,selectedRunway)
             }
-
         }
     }
 
