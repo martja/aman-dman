@@ -10,6 +10,8 @@ import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 
 /**
@@ -27,6 +29,7 @@ class PlannerServiceMaster(
     private var arrivalsCache: List<RunwayArrivalEvent> = emptyList()
     private var sequence: Sequence = Sequence(emptyList())
     private var minimumSpacingNm = 3.0 // Minimum spacing in nautical miles
+    private var availableRunways: List<String>? = null
 
     init {
         refreshWeatherData()
@@ -38,6 +41,10 @@ class PlannerServiceMaster(
 
     override fun start() {
         atcClient.start()
+    }
+
+    override fun getAvailableRunways(): Result<List<String>> {
+        return Result.success(availableRunways ?: emptyList())
     }
 
     override fun planArrivals() {
@@ -52,6 +59,7 @@ class PlannerServiceMaster(
                 dataUpdateListeners.forEach {
                     it.onRunwayModesUpdated(airportIcao, map)
                 }
+                availableRunways = runways.map { it.runway }
             }
         )
     }
@@ -114,13 +122,19 @@ class PlannerServiceMaster(
             }.start()
         }
 
-    override fun suggestScheduledTime(callsign: String, scheduledTime: Instant): Result<Unit> =
+    override fun suggestScheduledTime(timelineEvent: TimelineEvent, scheduledTime: Instant, newRunway: String?): Result<Unit> =
         runCatching {
-            if (checkTimeSlotAvailable(callsign, scheduledTime)) {
-                sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, callsign, scheduledTime, minimumSpacingNm)
+            if (timelineEvent !is RunwayArrivalEvent) {
+                throw IllegalArgumentException("Only RunwayArrivalEvent is supported at the moment")
+            }
+            if (checkTimeSlotAvailable(timelineEvent, scheduledTime)) {
+                sequence = AmanDmanSequenceService.suggestScheduledTime(sequence, timelineEvent.callsign, scheduledTime, minimumSpacingNm)
+                if (newRunway != null) {
+                    atcClient.assignRunway(timelineEvent.callsign, newRunway)
+                }
                 onSequenceUpdated()
             } else {
-                println("Time slot is not available for $callsign at $scheduledTime")
+                println("Time slot is not available for ${timelineEvent.callsign} at $scheduledTime")
             }
         }
 
@@ -135,18 +149,18 @@ class PlannerServiceMaster(
         }
 
     override fun isTimeSlotAvailable(
-        callsign: String,
+        timelineEvent: TimelineEvent,
         scheduledTime: Instant
     ): Result<Boolean> =
         runCatching {
-            checkTimeSlotAvailable(callsign, scheduledTime)
+            checkTimeSlotAvailable(timelineEvent, scheduledTime)
         }
 
     private fun checkTimeSlotAvailable(
-        callsign: String,
+        timelineEvent: TimelineEvent,
         scheduledTime: Instant
     ): Boolean {
-        return AmanDmanSequenceService.isTimeSlotAvailable(sequence, callsign, scheduledTime)
+        return AmanDmanSequenceService.isTimeSlotAvailable(sequence, timelineEvent, scheduledTime)
     }
 
     override  fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =

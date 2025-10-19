@@ -12,6 +12,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrival
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.view.tabpage.timeline.labels.ArrivalLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.DepartureLabel
 import no.vaccsca.amandman.view.tabpage.timeline.labels.TimelineLabel
@@ -79,7 +80,7 @@ class TimelineOverlay(
         timelineNameLabel.setBounds(scale.x - 10, scale.y + scale.height - labelHeight, 100, labelHeight)
     }
 
-    fun updateDraggedLabel(callsign: String, proposedTime: Instant, available: Boolean) {
+    fun updateDraggedLabel(timelineEvent: TimelineEvent, proposedTime: Instant, available: Boolean) {
         this.proposedTime = proposedTime
         this.proposedTimeIsAvailable = available
         repaint()
@@ -191,28 +192,6 @@ class TimelineOverlay(
                     label.updateColors()
                 } else {
                     val newLabel = timelineEvent.createLabel()
-                    newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
-                    newLabel.addMouseListener(object : MouseAdapter() {
-                        override fun mouseReleased(e: MouseEvent) {
-                            if (!isDraggingLabel) {
-                                handleLabelClick(newLabel)
-                                return
-                            }
-                            isDraggingLabel = false
-                            proposedTime = null // Reset proposed time after dragging
-                            val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
-                            val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
-                            presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, flight.callsign, newInstant)
-                        }
-                    })
-                    newLabel.addMouseMotionListener(object : MouseMotionAdapter() {
-                        override fun mouseDragged(e: MouseEvent) {
-                            isDraggingLabel = true
-                            val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
-                            val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
-                            presenterInterface.onLabelDrag(timelineConfig.airportIcao, flight.callsign, newInstant)
-                        }
-                    })
                     currentLabels[flight.callsign] = newLabel
                     add(newLabel)
                 }
@@ -248,11 +227,49 @@ class TimelineOverlay(
     }
 
     private fun TimelineEvent.createLabel(): TimelineLabel {
-        return when (this) {
+        val newLabel = when (this) {
             //is FixInboundEvent -> ArrivalLabel(this)
             is DepartureEvent -> DepartureLabel(this)
             is RunwayArrivalEvent -> ArrivalLabel(this, presenterInterface)
             else -> throw IllegalArgumentException("Unsupported occurrence type")
+        }
+
+        newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
+        newLabel.addMouseListener(object : MouseAdapter() {
+            override fun mouseReleased(e: MouseEvent) {
+                if (!isDraggingLabel) {
+                    handleLabelClick(newLabel)
+                    return
+                }
+                isDraggingLabel = false
+                proposedTime = null // Reset proposed time after dragging
+                val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
+                val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
+                onLabelDropped(newLabel.timelineEvent, newInstant)
+            }
+        })
+        newLabel.addMouseMotionListener(object : MouseMotionAdapter() {
+            override fun mouseDragged(e: MouseEvent) {
+                isDraggingLabel = true
+                val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
+                val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
+                presenterInterface.onLabelDrag(timelineConfig.airportIcao, newLabel.timelineEvent, newInstant)
+            }
+        })
+
+        return newLabel
+    }
+
+    private fun onLabelDropped(timelineEvent: TimelineEvent, newTime: Instant) {
+        if (timelineEvent is RunwayArrivalEvent) {
+            if (timelineEvent.trackingControllerIsMe) {
+                presenterInterface.selectRunway(timelineEvent) { selectedRunway ->
+                    presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, timelineEvent, newTime,selectedRunway)
+                }
+            } else {
+                presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, timelineEvent, newTime)
+            }
+
         }
     }
 

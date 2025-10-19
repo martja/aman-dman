@@ -21,6 +21,7 @@ import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import kotlin.time.Duration.Companion.seconds
@@ -42,6 +43,8 @@ class Presenter(
     // Replace the simple currentMinimumSpacingNm with a reactive state manager
     private val runwayModeStateManager = RunwayModeStateManager(view)
     private var minimumSpacingNm: Double = 0.0
+    private var availableRunways = setOf<String>()
+
 
     private val navdataRepository by lazy {
         NavdataRepository()
@@ -127,6 +130,7 @@ class Presenter(
         airportIcao: String,
         runwayStatuses: Map<String, RunwayStatus>,
     ) {
+        availableRunways = runwayStatuses.keys
         runwayModeStateManager.updateRunwayStatuses(airportIcao, runwayStatuses, minimumSpacingNm)
     }
 
@@ -258,8 +262,8 @@ class Presenter(
         view.openNonSequencedWindow()
     }
 
-    override fun onLabelDragEnd(airportIcao: String, callsign: String, newScheduledTime: Instant) {
-        plannerManager.getServiceForAirport(airportIcao).suggestScheduledTime(callsign, newScheduledTime)
+    override fun onLabelDragEnd(airportIcao: String, timelineEvent: TimelineEvent, newScheduledTime: Instant, newRunway: String?) {
+        plannerManager.getServiceForAirport(airportIcao).suggestScheduledTime(timelineEvent, newScheduledTime, newRunway)
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
@@ -290,9 +294,16 @@ class Presenter(
             }
     }
 
-    override fun onLabelDrag(airportIcao: String, callsign: String, newInstant: Instant) {
-        plannerManager.getServiceForAirport(airportIcao).isTimeSlotAvailable(callsign, newInstant)
-            .onSuccess { view.updateDraggedLabel(callsign, newInstant, it) }
+    override fun selectRunway(runwayEvent: RunwayEvent, onClose: (runway: String) -> Unit) {
+        view.selectRunway(runwayEvent, availableRunways, onClose)
+    }
+
+    override fun onLabelDrag(airportIcao: String, timelineEvent: TimelineEvent, newInstant: Instant) {
+        if (timelineEvent !is RunwayArrivalEvent) {
+            return
+        }
+        plannerManager.getServiceForAirport(airportIcao).isTimeSlotAvailable(timelineEvent, newInstant)
+            .onSuccess { view.updateDraggedLabel(timelineEvent, newInstant, it) }
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)

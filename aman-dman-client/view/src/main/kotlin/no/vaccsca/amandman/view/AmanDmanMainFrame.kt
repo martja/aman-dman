@@ -7,6 +7,8 @@ import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.presenter.ViewInterface
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.tabpage.Footer
 import no.vaccsca.amandman.view.windows.LandingRatesGraph
 import no.vaccsca.amandman.view.windows.NewTimelineForm
@@ -79,6 +81,43 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         footer?.updateMinimumSpacingSelector(minimumSpacingNm)
     }
 
+    override fun selectRunway(
+        runwayEvent: RunwayEvent,
+        runwayOptions: Set<String>,
+        onClose: (String) -> Unit
+    ) {
+        val dialog = JDialog(this, "Select Runway", true).apply {
+            defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
+            layout = BorderLayout(10, 10)
+            setLocationRelativeTo(this@AmanDmanMainFrame)
+        }
+
+        val comboBox = JComboBox(runwayOptions.toTypedArray())
+        val okButton = JButton("OK")
+        val cancelButton = JButton("Cancel")
+
+        comboBox.selectedItem = runwayEvent.runway
+
+        okButton.addActionListener {
+            val selected = comboBox.selectedItem as String
+            onClose(selected)
+            dialog.dispose()
+        }
+        cancelButton.addActionListener { dialog.dispose() }
+
+        val buttonPanel = JPanel().apply {
+            add(okButton)
+            add(cancelButton)
+        }
+
+        dialog.add(comboBox, BorderLayout.CENTER)
+        dialog.add(buttonPanel, BorderLayout.SOUTH)
+
+        dialog.pack()              // <-- sizes dialog exactly to its contents
+        dialog.isResizable = false // <-- prevents empty extra space
+        dialog.isVisible = true
+    }
+
     override fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>) {
         val popup = JPopupMenu()
         val tab = tabPane.getComponentAt(tabIndex) as TabView
@@ -134,9 +173,9 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN / DMAN") {
         }
     }
 
-    override fun updateDraggedLabel(callsign: String, newInstant: Instant, isAvailable: Boolean) {
+    override fun updateDraggedLabel(timelineEvent: TimelineEvent, newInstant: Instant, isAvailable: Boolean) {
         tabPane.components.filterIsInstance<TabView>()
-            .forEach { it.updateDraggedLabel(callsign, newInstant, isAvailable) }
+            .forEach { it.updateDraggedLabel(timelineEvent, newInstant, isAvailable) }
     }
 
     override fun updateRunwayModes(airportIcao: String, runwayModes: List<Pair<String, Boolean>>) {

@@ -4,6 +4,8 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 
 /**
  * Interface defining the contract for the Presenter in the MVP architecture.
@@ -25,9 +27,10 @@ interface PresenterInterface {
     fun onRemoveTab(airportIcao: String)
     fun onOpenLandingRatesWindow()
     fun onOpenNonSequencedWindow()
-    fun onLabelDragEnd(airportIcao: String, callsign: String, newScheduledTime: Instant)
+    fun onLabelDragEnd(airportIcao: String, timelineEvent: TimelineEvent, newScheduledTime: Instant, newRunway: String? = null)
     fun onRecalculateSequenceClicked(airportIcao: String, callSign: String? = null)
     fun onRemoveTimelineClicked(timelineConfig: TimelineConfig)
-    fun onLabelDrag(airportIcao: String, callsign: String, newInstant: Instant)
+    fun onLabelDrag(airportIcao: String, timelineEvent: TimelineEvent, newInstant: Instant)
     fun onMinimumSpacingDistanceSet(airportIcao: String, minimumSpacingDistanceNm: Double)
+    fun selectRunway(runwayEvent: RunwayEvent, onClose: (runway: String) -> Unit)
 }

@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.Dimension
@@ -103,7 +104,7 @@ class TimelineView(
         labelContainer.setBounds(0, 0, width, height)
     }
 
-    fun updateDraggedLabel(callsign: String, proposedTime: Instant, available: Boolean) {
-        labelContainer.updateDraggedLabel(callsign, proposedTime, available)
+    fun updateDraggedLabel(timelineEvent: TimelineEvent, proposedTime: Instant, available: Boolean) {
+        labelContainer.updateDraggedLabel(timelineEvent, proposedTime, available)
     }
 }

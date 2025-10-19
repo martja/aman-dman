@@ -7,6 +7,7 @@ import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.tabpage.TimeRangeScrollBarVertical
 import no.vaccsca.amandman.view.tabpage.TimelineScrollPane
@@ -78,13 +79,13 @@ class TabView(
     }
 
     fun updateDraggedLabel(
-        callsign: String,
+        timelineEvent: TimelineEvent,
         proposedTime: Instant,
         isAvailable: Boolean,
     ) {
         val items = timelineScrollPane.viewport.view as JPanel
         items.components.filterIsInstance<TimelineView>().forEach { timelineView ->
-            timelineView.updateDraggedLabel(callsign, proposedTime, isAvailable)
+            timelineView.updateDraggedLabel(timelineEvent, proposedTime, isAvailable)
         }
     }
 

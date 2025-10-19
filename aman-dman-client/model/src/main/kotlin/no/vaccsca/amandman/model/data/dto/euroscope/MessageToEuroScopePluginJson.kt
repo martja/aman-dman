@@ -22,4 +22,10 @@ data class RegisterDeparturesMessageJson(
 
 data class UnregisterTimelineMessageJson(
     val requestId: Int,
-) : MessageToEuroScopePluginJson("unregisterTimeline")
+) : MessageToEuroScopePluginJson("cancelRequest")
+
+data class AssignRunwayMessage(
+    val requestId: Int,
+    val callsign: String,
+    val runway: String,
+) : MessageToEuroScopePluginJson("assignRunway")

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonFactory
 import kotlinx.coroutines.*
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalJson
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalsUpdateFromServerJson
+import no.vaccsca.amandman.model.data.dto.euroscope.AssignRunwayMessage
 import no.vaccsca.amandman.model.data.dto.euroscope.DeparturesUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageToEuroScopePluginJson
@@ -108,6 +109,16 @@ class AtcClientEuroScope(
         // Clean up local callbacks for this airport
         runwayStatusCallbacks.remove(airportIcao)
         arrivalCallbacks.remove(airportIcao)
+    }
+
+    override fun assignRunway(callsign: String, newRunway: String) {
+        sendMessage(
+            AssignRunwayMessage(
+                requestId = nextRequestId,
+                callsign = callsign,
+                runway = newRunway
+            )
+        )
     }
 
     private fun onConnectionEstablished() {

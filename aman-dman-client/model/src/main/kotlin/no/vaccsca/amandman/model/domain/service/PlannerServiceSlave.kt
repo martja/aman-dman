@@ -4,6 +4,8 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import java.util.Timer
 import java.util.TimerTask
 
@@ -22,6 +24,11 @@ class PlannerServiceSlave(
             }
         }, 0, 1000)
     }
+
+    override fun getAvailableRunways(): Result<List<String>> =
+        runCatching {
+            throw UnsupportedInSlaveModeException("Descent profile cannot be viewed in slave mode")
+        }
 
     private fun fetchAll() {
         for (airport in arrivalAirportsToFetch) {
@@ -77,8 +84,7 @@ class PlannerServiceSlave(
         }
 
     override fun suggestScheduledTime(
-        callsign: String,
-        scheduledTime: Instant
+        timelineEvent: TimelineEvent, scheduledTime: Instant, newRunway: String?
     ): Result<Unit> =
         runCatching {
             throw UnsupportedInSlaveModeException("Sequence cannot be changed in slave mode")
@@ -90,7 +96,7 @@ class PlannerServiceSlave(
         }
 
     override fun isTimeSlotAvailable(
-        callsign: String,
+        timelineEvent: TimelineEvent,
         scheduledTime: Instant
     ): Result<Boolean> =
         runCatching {

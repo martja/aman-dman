@@ -2,6 +2,8 @@ package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -135,16 +137,21 @@ object AmanDmanSequenceService {
      *
      * TODO: also consider departures and runway closures.
      *
-     * @param callsign The callsign of the aircraft being checked.
-     * @param requestedTime The time slot being requested for the aircraft.
+     * @param currentSequence The current sequence of aircraft.
+     * @param timelineEvent The timeline event representing the aircraft to check.
+     * @param requestedTime The requested scheduled time for the aircraft.
+     * @param minimumSeparationNm The minimum separation to use for different runways.
+     * @return True if the time slot is available, false otherwise.
      */
     fun isTimeSlotAvailable(
         currentSequence: Sequence,
-        callsign: String,
+        timelineEvent: TimelineEvent,
         requestedTime: Instant,
         minimumSeparationNm: Double = 3.0
     ): Boolean {
-        val arrivalToCheck = findSequenceItem(currentSequence.sequecencePlaces.map { it.item }, callsign)
+        if (timelineEvent !is RunwayArrivalEvent) return false
+
+        val arrivalToCheck = findSequenceItem(currentSequence.sequecencePlaces.map { it.item }, timelineEvent.callsign)
 
         if (arrivalToCheck == null) {
             // The aircraft is not in the sequence yet
@@ -160,7 +167,7 @@ object AmanDmanSequenceService {
             return true
         }
 
-        if (closestLeader.item.id == callsign) {
+        if (closestLeader.item.id == timelineEvent.callsign) {
             // The aircraft cannot conflict with itself
             return true
         }

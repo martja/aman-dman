@@ -1,8 +1,6 @@
 package no.vaccsca.amandman.model.domain.valueobjects.atcClient
 
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
-import no.vaccsca.amandman.model.domain.valueobjects.ArrivalState
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 
 /**

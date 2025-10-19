@@ -14,6 +14,7 @@ interface AtcClient : Closeable {
     )
 
     fun stopCollectingMovementsFor(airportIcao: String)
+    fun assignRunway(callsign: String, newRunway: String)
 
     override fun close()
 }
