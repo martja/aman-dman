@@ -2,6 +2,7 @@ package no.vaccsca.amandman.view.tabpage.timeline
 
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.view.tabpage.timeline.enums.TimelineAlignment
 import java.awt.Color
 import java.awt.Graphics
 import javax.swing.JPanel
