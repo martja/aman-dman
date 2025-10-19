@@ -33,9 +33,6 @@
     <ClCompile Include="JsonMessageHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="incomingJsonStructs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ServerEventsHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -48,16 +48,16 @@ AmanPlugIn::~AmanPlugIn() {
 void AmanPlugIn::OnTimer(int Counter) {
     std::cout << "OnTimer called, Counter: " << Counter << std::endl;
     
-    for each(auto & timeline in inboundsSubscriptions) {
-        auto inbounds = collectResponseToInboundsSubscription(timeline);
-        auto inboundsJson = jsonSerializer.getJsonOfArrivals(timeline->requestId, inbounds);
+    for each(auto& airportIcao in airportsSubscribedTo) {
+        auto inbounds = getInboundsForAirport(airportIcao);
+        auto inboundsJson = jsonSerializer.getJsonOfArrivals(inbounds);
         std::cout << "Enqueueing inbounds message: " << inboundsJson.substr(0, 100) << "..." << std::endl;
         enqueueMessage(inboundsJson);
     }
 
-    for each(auto & timeline in outboundsSubscriptions) {
-        auto outbounds = collectResponseToOutboundsSubscription(timeline);
-        auto outboundsJson = jsonSerializer.getJsonOfDepartures(timeline->requestId, outbounds);
+    for each(auto & airportIcao in airportsSubscribedTo) {
+        auto outbounds = getOutboundsFromAirport(airportIcao);
+        auto outboundsJson = jsonSerializer.getJsonOfDepartures(outbounds);
         std::cout << "Enqueueing outbounds message: " << outboundsJson.substr(0, 100) << "..." << std::endl;
         enqueueMessage(outboundsJson);
     }
@@ -68,15 +68,13 @@ void AmanPlugIn::OnTimer(int Counter) {
         controllerInfo.positionId = me.GetPositionId();
         controllerInfo.callsign = me.GetCallsign();
         controllerInfo.facilityType = me.GetFacility();
-        auto controllerInfoJson = jsonSerializer.getJsonOfControllerInfo(0, controllerInfo);
+        auto controllerInfoJson = jsonSerializer.getJsonOfControllerInfo(controllerInfo);
         enqueueMessage(controllerInfoJson);
     }
 }
 
 void AmanPlugIn::OnAirportRunwayActivityChanged(void) {
-    for each(auto & timeline in inboundsSubscriptions) {
-        sendUpdatedRunwayStatuses(timeline->requestId);
-    }
+    sendUpdatedRunwayStatuses();
 }
 
 bool AmanPlugIn::hasCorrectDestination(CFlightPlanData fpd, std::vector<std::string> destinationAirports) {
@@ -125,21 +123,6 @@ std::vector<RouteFix> AmanPlugIn::findExtractedRoutePoints(CRadarTarget radarTar
     return route;
 }
 
-std::vector<AmanAircraft> AmanPlugIn::collectResponseToInboundsSubscription(std::shared_ptr<InboundsToFixSubscription> timeline) {
-    auto pAircraftList = std::vector<AmanAircraft>();
-
-    for each (auto airportIcao in timeline->destinationAirports) {
-        auto inbounds = getInboundsForAirport(airportIcao);
-        pAircraftList.insert(pAircraftList.end(), inbounds.begin(), inbounds.end());
-    }
-
-    return pAircraftList;
-}
-
-std::vector<DmanAircraft> AmanPlugIn::collectResponseToOutboundsSubscription(std::shared_ptr<OutboundsSubscription> subscription) {
-    return getOutboundsFromAirport(subscription->airport);
-}
-
 std::vector<std::string> AmanPlugIn::splitString(const std::string& string, const char delim) {
     std::vector<std::string> output;
     size_t startServer;
@@ -151,67 +134,24 @@ std::vector<std::string> AmanPlugIn::splitString(const std::string& string, cons
     return output;
 }
 
-void AmanPlugIn::sendUpdatedRunwayStatuses(long requestId) {
-    for each(auto& timeline in inboundsSubscriptions) {
-        if (timeline->requestId != requestId)
-            continue;
-
-        auto runwayStatuses = collectRunwayStatuses(timeline->destinationAirports.size() > 0 ? timeline->destinationAirports[0] : "");
-        auto runwaysJson = jsonSerializer.getJsonOfRunwayStatuses(timeline->requestId, runwayStatuses);
+void AmanPlugIn::sendUpdatedRunwayStatuses() {
+    for each(auto& airportIcao in airportsSubscribedTo) {
+        auto runwayStatuses = collectRunwayStatuses(airportIcao);
+        auto runwaysJson = jsonSerializer.getJsonOfRunwayStatuses(runwayStatuses);
         enqueueMessage(runwaysJson);
     }
 }
 
-void AmanPlugIn::onRequestInboundsForFix(long requestId, const std::vector<std::string>& viaFixes, const std::vector<std::string>& destinationFixes, const std::vector<std::string>& destinationAirports) {
-
-    // If id exists, update the subscription
-    for (auto& sub : inboundsSubscriptions) {
-        if (sub->requestId == requestId) {
-            sub->viaFixes = viaFixes;
-            sub->destinationFixes = destinationFixes;
-            sub->destinationAirports = destinationAirports;
-            return;
-        }
-    }
-
-    // Else create a new timeline
-    std::shared_ptr<InboundsToFixSubscription> sub = std::make_shared<InboundsToFixSubscription>();
-    sub->requestId = requestId;
-    sub->viaFixes = viaFixes;
-    sub->destinationFixes = destinationFixes;
-    sub->destinationAirports = destinationAirports;
-    inboundsSubscriptions.push_back(sub);
-
-    sendUpdatedRunwayStatuses(requestId);
+void AmanPlugIn::onRegisterAirport(const std::string& icao) {
+    airportsSubscribedTo.insert(icao);
+    sendUpdatedRunwayStatuses();
 }
 
-void AmanPlugIn::onRequestOutboundsFromAirport(long requestId, const std::string& icao) {
-    // If id exists, update the subscription
-    for (auto& sub : outboundsSubscriptions) {
-        if (sub->requestId == requestId) {
-            sub->airport = icao;
-            return;
-        }
-    }
-    // Else create a new timeline
-    std::shared_ptr<OutboundsSubscription> sub = std::make_shared<OutboundsSubscription>();
-    sub->requestId = requestId;
-    sub->airport = icao;
-    outboundsSubscriptions.push_back(sub);
-
-    sendUpdatedRunwayStatuses(requestId);
+void AmanPlugIn::onUnregisterAirport(const std::string& icao) {
+    airportsSubscribedTo.erase(icao);
 }
 
-void AmanPlugIn::onCancelRequest(long requestId) {
-    for (auto it = inboundsSubscriptions.begin(); it != inboundsSubscriptions.end(); ++it) {
-        if ((*it)->requestId == requestId) {
-            inboundsSubscriptions.erase(it);
-            break;
-        }
-    }
-}
-
-void AmanPlugIn::onRequestAssignRunway(long requestId, const std::string& callsign, const std::string& runway) {
+void AmanPlugIn::onRequestAssignRunway(const std::string& callsign, const std::string& runway) {
     CRadarTarget rt = RadarTargetSelect(callsign.c_str());
     if (rt.IsValid()) {
         CFlightPlan fp = rt.GetCorrelatedFlightPlan();
@@ -244,8 +184,7 @@ void AmanPlugIn::onSetCtot(const std::string& callSign, long ctot) {
 
 void AmanPlugIn::onClientDisconnected() {
     // Remove all subscriptions when the client disconnects
-    inboundsSubscriptions.clear();
-    outboundsSubscriptions.clear();
+    airportsSubscribedTo.clear();
 }
 
 void AmanPlugIn::onErrorProcessingMessage(const std::string& errorMessage) {
@@ -320,6 +259,7 @@ std::vector<DmanAircraft> AmanPlugIn::getOutboundsFromAirport(const std::string&
             ac.estimatedDepartureTime = processDepartureTime(departureTime);
             ac.icaoType = fpd.GetAircraftFPType();
             ac.wakeCategory = fpd.GetAircraftWtc();
+            ac.departureAirportIcao = airport;
 
             departures.push_back(ac);
         }

@@ -8,24 +8,15 @@ sealed class MessageToEuroScopePluginJson(
     val type: String
 )
 
-data class RegisterFixInboundsMessageJson(
-    val requestId: Int,
-    val targetFixes: List<String>,
-    val viaFixes: List<String>,
-    val destinationAirports: List<String>,
-) : MessageToEuroScopePluginJson("requestInboundsForFix")
-
-data class RegisterDeparturesMessageJson(
-    val requestId: Int,
-    val airportIcao: String,
-) : MessageToEuroScopePluginJson("requestOutbounds")
+data class RequestArrivalAndDeparturesMessageJson(
+    val icao: String,
+) : MessageToEuroScopePluginJson("registerAirport")
 
 data class UnregisterTimelineMessageJson(
-    val requestId: Int,
-) : MessageToEuroScopePluginJson("cancelRequest")
+    val icao: String,
+) : MessageToEuroScopePluginJson("unregisterAirport")
 
 data class AssignRunwayMessage(
-    val requestId: Int,
     val callsign: String,
     val runway: String,
 ) : MessageToEuroScopePluginJson("assignRunway")

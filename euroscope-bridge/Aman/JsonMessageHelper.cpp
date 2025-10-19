@@ -11,7 +11,7 @@
 
 using namespace rapidjson;
 
-const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std::vector<AmanAircraft>& aircraftList) {
+const std::string JsonMessageHelper::getJsonOfArrivals(const std::vector<AmanAircraft>& aircraftList) {
     Document document;
     document.SetObject();
     Value arrivalsArray(kArrayType);
@@ -65,7 +65,6 @@ const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std
     }
 
     document.AddMember("type", "arrivals", allocator);
-    document.AddMember("requestId", requestId, allocator);
     document.AddMember("inbounds", arrivalsArray, allocator);
 
     StringBuffer sb;
@@ -75,7 +74,7 @@ const std::string JsonMessageHelper::getJsonOfArrivals(long requestId, const std
     return sb.GetString();
 }
 
-const std::string JsonMessageHelper::getJsonOfRunwayStatuses(long requestId, const std::vector<RunwayStatus>& runways) {
+const std::string JsonMessageHelper::getJsonOfRunwayStatuses(const std::vector<RunwayStatus>& runways) {
     Document document;
     document.SetObject();
     Document::AllocatorType& allocator = document.GetAllocator();
@@ -108,7 +107,6 @@ const std::string JsonMessageHelper::getJsonOfRunwayStatuses(long requestId, con
     }
 
     document.AddMember("type", "runwayStatuses", allocator);
-    document.AddMember("requestId", requestId, allocator);
     document.AddMember("airports", airportsObj, allocator);
 
     StringBuffer sb;
@@ -118,7 +116,7 @@ const std::string JsonMessageHelper::getJsonOfRunwayStatuses(long requestId, con
     return sb.GetString();
 }
 
-const std::string JsonMessageHelper::getJsonOfControllerInfo(long requestId, const ControllerInfo& controllerInfo) {
+const std::string JsonMessageHelper::getJsonOfControllerInfo(const ControllerInfo& controllerInfo) {
     Document document;
     document.SetObject();
     Document::AllocatorType& allocator = document.GetAllocator();
@@ -147,7 +145,6 @@ const std::string JsonMessageHelper::getJsonOfControllerInfo(long requestId, con
     }
 
     document.AddMember("type", "controllerInfo", allocator);
-    document.AddMember("requestId", requestId, allocator);
     document.AddMember("me", controllerInfoObject, allocator);
 
     StringBuffer sb;
@@ -156,7 +153,7 @@ const std::string JsonMessageHelper::getJsonOfControllerInfo(long requestId, con
     return sb.GetString();
 }
 
-const std::string JsonMessageHelper::getJsonOfDepartures(long requestId, const std::vector<DmanAircraft>& aircraftList) {
+const std::string JsonMessageHelper::getJsonOfDepartures(const std::vector<DmanAircraft>& aircraftList) {
     Document document;
     document.SetObject();
     Value departuresArray(kArrayType);
@@ -165,6 +162,7 @@ const std::string JsonMessageHelper::getJsonOfDepartures(long requestId, const s
 
     for (auto& outbound : aircraftList) {
         Value departureObject(kObjectType);
+        departureObject.AddMember("departureAirportIcao", outbound.departureAirportIcao, allocator);
         departureObject.AddMember("callsign", outbound.callsign, allocator);
         departureObject.AddMember("sid", outbound.sid, allocator);
         departureObject.AddMember("runway", outbound.runway, allocator);
@@ -176,7 +174,6 @@ const std::string JsonMessageHelper::getJsonOfDepartures(long requestId, const s
     }
 
     document.AddMember("type", "departures", allocator);
-    document.AddMember("requestId", requestId, allocator);
     document.AddMember("outbounds", departuresArray, allocator);
 
     StringBuffer sb;

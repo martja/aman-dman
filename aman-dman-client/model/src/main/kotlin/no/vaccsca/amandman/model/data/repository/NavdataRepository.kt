@@ -49,7 +49,7 @@ class NavdataRepository {
                 lon = this.location.longitude,
             ),
             runways = runways,
-            stars = parseStars(runways, readTextFile("config/stars.txt"))
+            stars = parseStars(runways, readTextFile("config/stars/$icao.txt"))
         )
     }
 

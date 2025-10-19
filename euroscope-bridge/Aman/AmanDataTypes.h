@@ -46,6 +46,7 @@ public:
 
 class DmanAircraft {
 public:
+    std::string departureAirportIcao;
     std::string callsign;
     std::string sid;
     std::string runway;

@@ -10,7 +10,7 @@ import no.vaccsca.amandman.model.data.dto.euroscope.ControllerInfoFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.DeparturesUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageToEuroScopePluginJson
-import no.vaccsca.amandman.model.data.dto.euroscope.RegisterFixInboundsMessageJson
+import no.vaccsca.amandman.model.data.dto.euroscope.RequestArrivalAndDeparturesMessageJson
 import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusJson
 import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusesUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.UnregisterTimelineMessageJson
@@ -25,7 +25,6 @@ import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoDat
 import java.io.*
 import java.net.Socket
 import java.net.SocketTimeoutException
-import kotlin.collections.get
 
 class AtcClientEuroScope(
     private val navdataRepository: NavdataRepository,
@@ -41,12 +40,6 @@ class AtcClientEuroScope(
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val arrivalCallbacks = mutableMapOf<String, (List<AtcClientArrivalData>) -> Unit>()
     private val runwayStatusCallbacks = mutableMapOf<String, (List<AtcClientRunwaySelectionData>) -> Unit>()
-    private var nextRequestId = 0
-        get() {
-            return field++
-        }
-
-    private val requestIdToAirportMap = mutableMapOf<Int, String>()
 
     private val objectMapper = jacksonObjectMapper().apply {
         // Configure Jackson for large messages
@@ -97,17 +90,12 @@ class AtcClientEuroScope(
         arrivalCallbacks[airportIcao] = onArrivalsReceived
         runwayStatusCallbacks[airportIcao] = onRunwaySelectionChanged
 
-        val theRequestId = nextRequestId
-        requestIdToAirportMap[theRequestId] = airportIcao
+        reSubscribeToAllAirports()
     }
 
     override fun stopCollectingMovementsFor(airportIcao: String) {
         // Send unregister message to the server
-        requestIdToAirportMap.filterValues { it == airportIcao }.keys.forEach { requestId ->
-            sendMessage(
-                UnregisterTimelineMessageJson(requestId)
-            )
-        }
+        sendMessage(UnregisterTimelineMessageJson(airportIcao))
 
         // Clean up local callbacks for this airport
         runwayStatusCallbacks.remove(airportIcao)
@@ -117,7 +105,6 @@ class AtcClientEuroScope(
     override fun assignRunway(callsign: String, newRunway: String) {
         sendMessage(
             AssignRunwayMessage(
-                requestId = nextRequestId,
                 callsign = callsign,
                 runway = newRunway
             )
@@ -143,19 +130,14 @@ class AtcClientEuroScope(
     }
 
     private fun onConnectionEstablished() {
-        // Resubscribe to all previously registered airports
-        val currentAirports = requestIdToAirportMap.values.toSet()
-        requestIdToAirportMap.clear()
-        currentAirports.forEach { airportIcao ->
-            val theRequestId = nextRequestId
-            requestIdToAirportMap[theRequestId] = airportIcao
+        reSubscribeToAllAirports()
+    }
 
+    private fun reSubscribeToAllAirports() {
+        arrivalCallbacks.keys.toList().forEach { airportIcao ->
             sendMessage(
-                RegisterFixInboundsMessageJson(
-                    requestId = theRequestId,
-                    targetFixes = emptyList(),
-                    viaFixes = emptyList(), // TODO
-                    destinationAirports = listOf(airportIcao)
+                RequestArrivalAndDeparturesMessageJson(
+                    icao = airportIcao
                 )
             )
         }
@@ -237,11 +219,12 @@ class AtcClientEuroScope(
     private fun handleMessage(messageFromServerJson: MessageFromServerJson) {
         when (messageFromServerJson) {
             is ArrivalsUpdateFromServerJson -> {
-                val airportIcao = requestIdToAirportMap[messageFromServerJson.requestId]
-                arrivalCallbacks[airportIcao]?.invoke(messageFromServerJson.inbounds.map { it.toArrival() })
+                messageFromServerJson.inbounds.groupBy { it.arrivalAirportIcao }.forEach { (arrivalAirportIcao, arrivals) ->
+                    arrivalCallbacks[arrivalAirportIcao]?.invoke(arrivals.map { it.toArrival() })
+                }
             }
             is DeparturesUpdateFromServerJson -> {
-                TODO("Departures not yet implemented")
+                // TODO: Handle departures ...
             }
             is RunwayStatusesUpdateFromServerJson -> {
                 messageFromServerJson.airports.forEach { (airportIcao, statusesJson) ->

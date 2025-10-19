@@ -144,7 +144,6 @@
     <ClCompile Include="Aman.cpp" />
     <ClCompile Include="AmanPlugIn.cpp" />
     <ClCompile Include="AmanServer.cpp" />
-    <ClCompile Include="incomingJsonStructs.cpp" />
     <ClCompile Include="JsonMessageHelper.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ServerEventsHandler.cpp" />

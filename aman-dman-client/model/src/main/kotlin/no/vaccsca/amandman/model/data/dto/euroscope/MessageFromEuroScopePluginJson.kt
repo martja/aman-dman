@@ -14,29 +14,23 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(value = RunwayStatusesUpdateFromServerJson::class, name = "runwayStatuses"),
     JsonSubTypes.Type(value = ControllerInfoFromServerJson::class, name = "controllerInfo"),
 )
-sealed class MessageFromServerJson(
-    open val requestId: Int,
-)
+sealed class MessageFromServerJson()
 
 data class DeparturesUpdateFromServerJson(
-    override val requestId: Int,
     val outbounds: List<DepartureJson>
-) : MessageFromServerJson(requestId)
+) : MessageFromServerJson()
 
 data class ArrivalsUpdateFromServerJson(
-    override val requestId: Int,
     val inbounds: List<ArrivalJson>
-) : MessageFromServerJson(requestId)
+) : MessageFromServerJson()
 
 data class RunwayStatusesUpdateFromServerJson(
-    override val requestId: Int,
     val airports: Map<String, Map<String, RunwayStatusJson>>
-) : MessageFromServerJson(requestId)
+) : MessageFromServerJson()
 
 data class ControllerInfoFromServerJson(
-    override val requestId: Int,
     val me: ControllerInfoJson
-) : MessageFromServerJson(requestId)
+) : MessageFromServerJson()
 
 data class RunwayStatusJson(
     val arrivals: Boolean,
@@ -48,7 +42,7 @@ data class DepartureJson(
     val icaoType: String,
     val wakeCategory: Char,
     val estimatedDepartureTime: Long,
-    val airportIcao: String,
+    val departureAirportIcao: String,
     val runway: String,
     val sid: String,
 )
