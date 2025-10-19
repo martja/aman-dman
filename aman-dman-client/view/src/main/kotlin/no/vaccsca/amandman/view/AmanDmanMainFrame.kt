@@ -158,7 +158,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
             .forEach { it.updateAmanData(tabData) }
 
         val allArrivalEvents = tabData.timelinesData.flatMap { it.left + it.right }
-        landingRatesGraph.updateData(allArrivalEvents)
+        landingRatesGraph.updateData(airportIcao, allArrivalEvents)
         nonSeqView.updateNonSeqData(
             tabData.timelinesData.flatMap { it.left + it.right }
         )

@@ -27,6 +27,7 @@ import org.jfree.data.xy.XYBarDataset
 import java.awt.*
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
 import javax.swing.JPanel
 import kotlin.time.Duration.Companion.hours
@@ -60,6 +61,12 @@ class LandingRatesGraph : JPanel() {
 
     private val timeWindowScrollbar = TimeRangeScrollBarHorizontal(selectedTimeRange, availableTimeRange)
 
+    // ICAO dropdown and tracking
+    private val icaoComboBox = JComboBox<String>()
+    private val knownIcaos = mutableSetOf<String>()
+    private var selectedIcao: String? = null
+    private val allArrivalEventsByIcao = mutableMapOf<String, List<TimelineEvent>>()
+
     init {
         layout = BorderLayout()
 
@@ -70,7 +77,15 @@ class LandingRatesGraph : JPanel() {
         val controlPanel = JPanel().apply {
             background = Color.DARK_GRAY
             foreground = Color.WHITE
+            add(icaoComboBox)
             add(bucketSelector)
+        }
+
+        icaoComboBox.addActionListener {
+            val selected = icaoComboBox.selectedItem as? String
+            selectedIcao = selected
+            val events = selected?.let { allArrivalEventsByIcao[it] } ?: emptyList()
+            showEvents(events)
         }
 
         bucketSelector.addActionListener {
@@ -81,6 +96,9 @@ class LandingRatesGraph : JPanel() {
                 else -> 10 * 60 * 1000L
             }
             updateChartBarWidth()
+            // Re-filter and show data for current ICAO
+            val events = selectedIcao?.let { allArrivalEventsByIcao[it] } ?: emptyList()
+            showEvents(events)
         }
 
         selectedTimeRange.addListener {
@@ -169,10 +187,35 @@ class LandingRatesGraph : JPanel() {
         plot?.dataset = barDataset
     }
 
-    fun updateData(allArrivalEvents: List<TimelineEvent>) {
-        if (allArrivalEvents.isEmpty()) return
+    fun updateData(airportIcao: String, allArrivalEvents: List<TimelineEvent>) {
+        // Track ICAOs and update dropdown if new
+        if (knownIcaos.add(airportIcao)) {
+            val sortedIcaos = knownIcaos.toList().sorted()
+            icaoComboBox.model = DefaultComboBoxModel(sortedIcaos.toTypedArray())
+            // Select the first ICAO if none selected
+            if (selectedIcao == null && sortedIcaos.isNotEmpty()) {
+                selectedIcao = sortedIcaos.first()
+            }
+        }
+        // Store events for this ICAO
+        allArrivalEventsByIcao[airportIcao] = allArrivalEvents
 
-        val grouped = allArrivalEvents.groupBy {
+        icaoComboBox.selectedItem = selectedIcao
+
+        // If this ICAO is selected, show its data
+        if (airportIcao == selectedIcao) {
+            showEvents(allArrivalEvents)
+        }
+    }
+
+    private fun showEvents(events: List<TimelineEvent>) {
+        if (events.isEmpty()) {
+            timeSeries.clear()
+            updateChartBarWidth()
+            return
+        }
+
+        val grouped = events.groupBy {
             val timeUtc = it.scheduledTime.toEpochMilliseconds() / 1000
             Instant.fromEpochSeconds(timeUtc / (currentBucketMillis / 1000) * (currentBucketMillis / 1000))
         }.mapValues { (_, occurrences) -> occurrences.size }
