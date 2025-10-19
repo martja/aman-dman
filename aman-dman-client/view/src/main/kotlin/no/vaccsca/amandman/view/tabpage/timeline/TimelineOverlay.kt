@@ -50,6 +50,8 @@ class TimelineOverlay(
     private val timeFormat = SimpleDateFormat("HH:mm")
 
     private var isDraggingLabel: Boolean = false
+    private var draggedLabelCopy: TimelineLabel? = null
+    private var draggedLabelOriginalX: Int = 0
 
     private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
         font = Font(Font.MONOSPACED, Font.PLAIN, 14)
@@ -129,20 +131,32 @@ class TimelineOverlay(
 
         drawLineFromLabelsToTimeScale(g)
 
+        // Draw line from dragged label copy to timeline ruler
+        draggedLabelCopy?.let { copy ->
+            val scaleBounds = timelineView.getScaleBounds()
+            val isOnRightSide = copy.x > scaleBounds.x
+            val labelX = if (isOnRightSide) copy.x else copy.x + copy.width
+            val dotX = if (isOnRightSide) scaleBounds.x + scaleBounds.width else scaleBounds.x
+            val labelCenterY = copy.y + copy.height / 2
+
+            proposedTime?.let { proposedTime ->
+                if (proposedTimeIsAvailable) {
+                    g.color = Color.WHITE
+                    paintHourglass(g, dotX, proposedTime)
+                    g.drawLine(labelX, labelCenterY, dotX, labelCenterY)
+                }
+            }
+        }
+
         val scaleBounds = timelineView.getScaleBounds()
-        paintHourglass(g, scaleBounds.x)
-        paintHourglass(g, scaleBounds.x + scaleBounds.width)
+        val now = Clock.System.now()
+        paintHourglass(g, scaleBounds.x, now)
+        paintHourglass(g, scaleBounds.x + scaleBounds.width, now)
 
         // Paint UTC HH:MM at the proposed time if available
         if (proposedTime != null && proposedTimeIsAvailable) {
             val proposedY = timelineView.calculateYPositionForInstant(proposedTime!!)
-            g.color = Color.WHITE
-            g.fillOval(
-                scaleBounds.x - pointDiameter / 2,
-                proposedY - pointDiameter / 2,
-                pointDiameter,
-                pointDiameter,
-            )
+            g.color = Color.YELLOW
             g.drawString(
                 timeFormat.format(proposedTime!!.toEpochMilliseconds()),
                 scaleBounds.x + 10,
@@ -235,7 +249,36 @@ class TimelineOverlay(
 
         newLabel.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
         newLabel.addMouseListener(object : MouseAdapter() {
+            override fun mousePressed(e: MouseEvent) {
+                // Store original X position
+                draggedLabelOriginalX = newLabel.x
+
+                // Create a copy when drag starts
+                val copy = when (newLabel.timelineEvent) {
+                    is DepartureEvent -> DepartureLabel(newLabel.timelineEvent as DepartureEvent)
+                    is RunwayArrivalEvent -> ArrivalLabel(newLabel.timelineEvent as RunwayArrivalEvent, presenterInterface)
+                    else -> return
+                }
+                copy.font = newLabel.font
+                copy.bounds = newLabel.bounds
+                copy.isOpaque = true
+                copy.background = newLabel.background.darker()
+                copy.updateText()
+                draggedLabelCopy = copy
+                add(copy)
+                setComponentZOrder(copy, 0) // Bring to front
+
+                newLabel.onDragStart()
+            }
+
             override fun mouseReleased(e: MouseEvent) {
+                // Remove the copy when drag ends
+                draggedLabelCopy?.let {
+                    remove(it)
+                    draggedLabelCopy = null
+                    repaint()
+                }
+
                 if (!isDraggingLabel) {
                     handleLabelClick(newLabel)
                     return
@@ -245,11 +288,19 @@ class TimelineOverlay(
                 val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                 val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
                 onLabelDropped(newLabel.timelineEvent, newInstant)
+                newLabel.onDragEnd()
             }
         })
         newLabel.addMouseMotionListener(object : MouseMotionAdapter() {
             override fun mouseDragged(e: MouseEvent) {
                 isDraggingLabel = true
+
+                draggedLabelCopy?.let { copy ->
+                    val pointInOverlay = SwingUtilities.convertPoint(e.component, e.point, this@TimelineOverlay)
+                    copy.setLocation(copy.x, pointInOverlay.y - copy.height / 2)
+                    repaint() // Trigger repaint to update the line
+                }
+
                 val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                 val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
                 presenterInterface.onLabelDrag(timelineConfig.airportIcao, newLabel.timelineEvent, newInstant)
@@ -267,8 +318,8 @@ class TimelineOverlay(
         }
     }
 
-    private fun paintHourglass(g: Graphics, xPosition: Int) {
-        val nowY = timelineView.calculateYPositionForInstant(Clock.System.now())
+    private fun paintHourglass(g: Graphics, xPosition: Int, atInstant: Instant) {
+        val nowY = timelineView.calculateYPositionForInstant(atInstant)
         g.color = Color.WHITE
         val hourglassSize = 6
 
@@ -285,4 +336,3 @@ class TimelineOverlay(
     }
 
 }
-

@@ -14,6 +14,7 @@ abstract class TimelineLabel(
     val hoverForegroundColor: Color = Color.BLACK
 ) : JLabel() {
     private var isHovered: Boolean = false
+    private var isDragging: Boolean = false
 
     init {
         background = defaultBackgroundColor
@@ -35,7 +36,7 @@ abstract class TimelineLabel(
     }
 
     fun updateColors() {
-        if (isHovered) {
+        if (isHovered || isDragging) {
             background = hoverBackgroundColor
             foreground = hoverForegroundColor
             isOpaque = hoverBackgroundColor != null
@@ -45,6 +46,16 @@ abstract class TimelineLabel(
             isOpaque = defaultBackgroundColor != null
         }
         repaint()
+    }
+
+    fun onDragStart() {
+        isDragging = true
+        updateColors()
+    }
+
+    fun onDragEnd() {
+        isDragging = false
+        updateColors()
     }
 
     abstract fun updateText()
