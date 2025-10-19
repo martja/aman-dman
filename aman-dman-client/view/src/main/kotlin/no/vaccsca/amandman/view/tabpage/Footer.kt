@@ -18,7 +18,7 @@ class Footer(
     private val profileButton = JButton("Profile")
     private val reloadButton = JButton("Reload settings")
     private val newTabButton = JButton("New tab")
-    private val spacingSelector = JSpinner(SpinnerNumberModel(0.0, 0.0, 20.0, 1))
+    private val spacingSelector = JSpinner(SpinnerNumberModel(3.0, 0.0, 20.0, 1))
     private var spacingChangeListener: javax.swing.event.ChangeListener? = null
 
     init {

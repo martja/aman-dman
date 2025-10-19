@@ -43,7 +43,7 @@ class Presenter(
 
     // Replace the simple currentMinimumSpacingNm with a reactive state manager
     private val runwayModeStateManager = RunwayModeStateManager(view)
-    private var minimumSpacingNm: Double = 0.0
+    private var minimumSpacingNm: Double = 3.0
     private var availableRunways = setOf<String>()
     private var controllerInfo: ControllerInfoData? = null
 
