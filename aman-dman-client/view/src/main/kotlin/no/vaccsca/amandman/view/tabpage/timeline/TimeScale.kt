@@ -7,6 +7,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEv
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
+import no.vaccsca.amandman.view.tabpage.timeline.utils.GraphicUtils.drawCenteredString
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.*
 import java.awt.event.MouseEvent
@@ -76,11 +77,11 @@ class TimeScale(
                     g.drawLine(0, yPos, TICK_WIDTH_5_MIN, yPos)
                 }
                 g.drawLine(width, yPos, width - TICK_WIDTH_5_MIN, yPos)
-
+                val scaleCenter = width / 2
                 if (accSeconds % (60L * 10L) == 0L) {
-                    g.drawCenteredString(accInstant.format("HH:mm"), Rectangle(0, yPos - g.fontMetrics.height / 2, width, g.fontMetrics.height), g.font)
+                    g.drawCenteredString(accInstant.format("HH:mm"), scaleCenter, yPos)
                 } else {
-                    g.drawCenteredString(accInstant.format("mm"), Rectangle(0, yPos - g.fontMetrics.height / 2, width, g.fontMetrics.height), g.font)
+                    g.drawCenteredString(accInstant.format("mm"), scaleCenter, yPos)
                 }
             } else if (accSeconds % 60L == 0L) {
                 if (!scaleOnRightSideOnly) {
@@ -105,14 +106,6 @@ class TimeScale(
             g.color = Color.RED
             g.fillRect(0, topY, 2, height)
         }
-    }
-
-    private fun Graphics.drawCenteredString(text: String, rect: Rectangle, font: Font) {
-        val metrics = this.getFontMetrics(font)
-        val x = rect.x + (rect.width - metrics.stringWidth(text)) / 2
-        val y = rect.y + ((rect.height - metrics.height) / 2) + metrics.ascent
-        this.font = font
-        this.drawString(text, x, y)
     }
 
     private fun showPopupMenu(e: MouseEvent) {

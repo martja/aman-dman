@@ -9,11 +9,14 @@ import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.*
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.tabpage.timeline.labels.*
+import no.vaccsca.amandman.view.tabpage.timeline.utils.GraphicUtils.drawCenteredString
+import org.w3c.dom.css.Rect
 import java.awt.*
 import java.awt.event.*
 import java.text.SimpleDateFormat
 import javax.swing.*
 import kotlin.math.min
+import kotlin.text.format
 
 class TimelineOverlay(
     val timelineConfig: TimelineConfig,
@@ -148,8 +151,14 @@ class TimelineOverlay(
         if (proposedTime != null && proposedTimeIsAvailable) {
             val scaleBounds = timelineView.getScaleBounds()
             val proposedY = timelineView.calculateYPositionForInstant(proposedTime!!)
+            val text = timeFormat.format(proposedTime!!.toEpochMilliseconds())
             g.color = Color.YELLOW
-            g.drawString(timeFormat.format(proposedTime!!.toEpochMilliseconds()), scaleBounds.x + 10, proposedY + 5)
+            g.drawCenteredString(
+                text = text,
+                x = scaleBounds.x + scaleBounds.width / 2,
+                y = proposedY,
+                backgroundColor = Color(80, 80, 80)
+            )
         }
     }
 
@@ -214,12 +223,14 @@ class TimelineOverlay(
             label.onDragStart()
         }
 
+        override fun mouseClicked(e: MouseEvent?) {
+            label.onDragEnd()
+            cleanupDraggedLabelCopy()
+            handleLabelClick(label)
+        }
+
         override fun mouseReleased(e: MouseEvent) {
-            draggedLabelCopy?.let {
-                remove(it)
-                draggedLabelCopy = null
-                repaint()
-            }
+            cleanupDraggedLabelCopy()
             if (!isDraggingLabel) {
                 handleLabelClick(label)
                 return
@@ -270,6 +281,14 @@ class TimelineOverlay(
             presenterInterface.beginRunwaySelection(timelineEvent) { selectedRunway ->
                 presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, timelineEvent, newTime, selectedRunway)
             }
+        }
+    }
+
+    private fun cleanupDraggedLabelCopy() {
+        draggedLabelCopy?.let {
+            remove(it)
+            draggedLabelCopy = null
+            repaint()
         }
     }
 
