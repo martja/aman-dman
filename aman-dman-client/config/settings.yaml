@@ -22,6 +22,19 @@ timelines:
       right:
         runways: ["01R"]
 
+  ENBR:
+    - title: "BR17"
+      right:
+        runways: ["17"]
+
+    - title: "BR35"
+      right:
+        runways: ["35"]
+
+    - title: "ENBR ALL"
+      right:
+        runways: ["17", "35"]
+
 connectionConfig:
   atcClient:
     host: "localhost"
