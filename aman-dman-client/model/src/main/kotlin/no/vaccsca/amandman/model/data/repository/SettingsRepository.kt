@@ -1,18 +1,21 @@
 package no.vaccsca.amandman.model.data.repository
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import no.vaccsca.amandman.model.data.dto.AirportDataJson
 import no.vaccsca.amandman.model.data.dto.AmanDmanSettingsJson
 import java.io.File
 
 object SettingsRepository {
 
-    private var settingsJson: AmanDmanSettingsJson? = null
-    private var airportDataJson: AirportDataJson? = null
+    private var settingsYaml: AmanDmanSettingsJson? = null
+    private var airportDataYaml: AirportDataJson? = null
 
-    // Path to the settings file on classpath
-    private const val SETTINGS_FILE_PATH = "config/settings.json"
-    private const val AIRPORTS_FILE_PATH = "config/airports.json"
+    // Paths to the YAML config files
+    private const val SETTINGS_FILE_PATH = "config/settings.yaml"
+    private const val AIRPORTS_FILE_PATH = "config/airports.yaml"
+
+    private val yamlMapper = YAMLMapper().apply { registerKotlinModule() }
 
     init {
         loadAll()
@@ -24,45 +27,51 @@ object SettingsRepository {
     }
 
     fun getSettings(reload: Boolean = false): AmanDmanSettingsJson {
-        if (settingsJson == null || reload) {
+        if (settingsYaml == null || reload) {
             loadSettings()
         }
-        return settingsJson!!
+        return settingsYaml!!
     }
 
     fun getAirportData(reload: Boolean = false): AirportDataJson {
-        if (airportDataJson == null || reload) {
+        if (airportDataYaml == null || reload) {
             loadAirportData()
         }
-        return airportDataJson!!
+        return airportDataYaml!!
     }
 
     fun updateSettings(newSettings: AmanDmanSettingsJson) {
-        settingsJson = newSettings
+        settingsYaml = newSettings
         saveSettings()
     }
 
-    // Load settings from JSON file
+    /** Load settings from YAML file */
     private fun loadSettings() {
         val localFile = File(SETTINGS_FILE_PATH)
-        val inputStream = localFile.inputStream()
+        if (!localFile.exists()) {
+            throw IllegalStateException("Settings YAML file not found: $SETTINGS_FILE_PATH")
+        }
 
-        inputStream.use {
-            settingsJson = jacksonObjectMapper().readValue(it, AmanDmanSettingsJson::class.java)
+        localFile.inputStream().use {
+            settingsYaml = yamlMapper.readValue(it, AmanDmanSettingsJson::class.java)
         }
     }
 
+    /** Load airport data from YAML file */
     private fun loadAirportData() {
         val localFile = File(AIRPORTS_FILE_PATH)
-        val inputStream = localFile.inputStream()
+        if (!localFile.exists()) {
+            throw IllegalStateException("Airport YAML file not found: $AIRPORTS_FILE_PATH")
+        }
 
-        inputStream.use {
-            airportDataJson = jacksonObjectMapper().readValue(it, AirportDataJson::class.java)
+        localFile.inputStream().use {
+            airportDataYaml = yamlMapper.readValue(it, AirportDataJson::class.java)
         }
     }
 
+    /** Save settings back to YAML */
     private fun saveSettings() {
-        val jsonFile = File(SETTINGS_FILE_PATH)
-        jsonFile.writeText(jacksonObjectMapper().writeValueAsString(settingsJson))
+        val yamlFile = File(SETTINGS_FILE_PATH)
+        yamlFile.writeText(yamlMapper.writeValueAsString(settingsYaml))
     }
 }

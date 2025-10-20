@@ -1,7 +1,6 @@
 package no.vaccsca.amandman.model.domain.valueobjects
 
 data class AircraftPerformance(
-    val ICAO: String,
     val takeOffV2: Int?,
     val takeOffDistance: Int?,
     val takeOffWTC: Char,

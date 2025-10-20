@@ -1,16 +1,38 @@
 package no.vaccsca.amandman.model.data.repository
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import no.vaccsca.amandman.model.data.dto.AirportJson
-import no.vaccsca.amandman.model.data.dto.RunwayThresholdJson
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
 import java.io.File
 import java.io.FileNotFoundException
 
+data class StarYamlFile(
+    val STARS: List<StarYamlEntry>
+)
+
+data class StarYamlEntry(
+    val runway: String,
+    val name: String,
+    val waypoints: List<StarWaypointYaml>
+)
+
+data class StarWaypointYaml(
+    val id: String,
+    val altitude: Int? = null,
+    val speed: Int? = null
+)
+
 class NavdataRepository {
+
+    private val yamlMapper = YAMLMapper().apply {
+        registerKotlinModule()
+    }
 
     val airports: List<Airport>
 
@@ -19,14 +41,12 @@ class NavdataRepository {
         airports = airportJsons.map { (icao, vl) -> vl.toAirport(icao) }
     }
 
-    fun readTextFile(filePath: String): String {
-        // Try reading from local file system (for development)
+    private fun readYamlFile(filePath: String): StarYamlFile {
         val localFile = File(filePath)
-        if (localFile.exists()) {
-            return localFile.readText()
-        } else {
-            throw FileNotFoundException("Resource file not found: $filePath")
+        if (!localFile.exists()) {
+            throw FileNotFoundException("YAML file not found: $filePath")
         }
+        return yamlMapper.readValue(localFile)
     }
 
     fun AirportJson.toAirport(icao: String): Airport {
@@ -42,6 +62,8 @@ class NavdataRepository {
             )
         }
 
+        val starsYaml = readYamlFile("config/stars/$icao.yaml")
+
         return Airport(
             icao = icao,
             location = LatLng(
@@ -49,69 +71,30 @@ class NavdataRepository {
                 lon = this.location.longitude,
             ),
             runways = runways,
-            stars = parseStars(runways, readTextFile("config/stars/$icao.txt"))
+            stars = parseStars(runways, starsYaml)
         )
     }
 
-    fun parseStars(runways: List<RunwayInfo>, input: String): List<Star> {
-        val lines = input.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("[") }
+    fun parseStars(runways: List<RunwayInfo>, yaml: StarYamlFile): List<Star> {
+        return yaml.STARS.map { starEntry ->
+            val runwayInfo = runways.find { it.id == starEntry.runway }
+                ?: throw IllegalArgumentException("Runway ${starEntry.runway} not found")
 
-        val starHeaderRegex = Regex("STAR:(\\S+):(\\S+):(\\S+)")
-        val constraintRegex = Regex("""(A|S)=(\d+)""")
-
-        val stars = mutableListOf<Star>()
-        var currentId: String? = null
-        var currentAirport: String? = null
-        var currentRunway: String? = null
-        var currentFixes = mutableListOf<StarFix>()
-
-        fun flushCurrentStar() {
-            if (currentId != null && currentAirport != null && currentRunway != null) {
-                val rwy = runways.find { it.id == currentRunway }
-                    ?: throw IllegalArgumentException("Runway $currentRunway not found for airport $currentAirport")
-
-                stars.add(Star(currentId!!, currentAirport!!, rwy, currentFixes))
-            }
-            currentId = null
-            currentAirport = null
-            currentRunway = null
-            currentFixes = mutableListOf()
-        }
-
-        for (line in lines) {
-            if (line.startsWith("STAR:")) {
-                flushCurrentStar()
-
-                val (icao, rwy, id) = starHeaderRegex.matchEntire(line)?.destructured
-                    ?: throw IllegalArgumentException("Invalid STAR header: $line")
-                currentId = id
-                currentAirport = icao
-                currentRunway = rwy
-            } else {
-                val parts = line.split(":").map { it.trim() }.filter { it.isNotEmpty() }
-                if (parts.isEmpty()) continue
-
-                val fixId = parts[0]
-                val builder = StarFix.StarFixBuilder(fixId)
-
-                val constraintParts = parts.drop(1)
-                for (constraint in constraintParts) {
-                    val (type, valueStr) = constraintRegex.matchEntire(constraint)?.destructured
-                        ?: throw IllegalArgumentException("Invalid constraint: $constraint")
-                    val value = valueStr.toInt()
-
-                    when (type) {
-                        "A" -> builder.altitude(value)
-                        "S" -> builder.speed(value)
-                        else -> throw IllegalArgumentException("Unknown constraint type: $type")
+            val fixes = starEntry.waypoints.map { wp ->
+                StarFix.StarFixBuilder(wp.id)
+                    .apply {
+                        wp.altitude?.let { altitude(it) }
+                        wp.speed?.let { speed(it) }
                     }
-                }
-
-                currentFixes.add(builder.build())
+                    .build()
             }
-        }
 
-        flushCurrentStar()
-        return stars
+            Star(
+                id = starEntry.name,
+                airport = "N/A", // you can remove if unused
+                runway = runwayInfo,
+                fixes = fixes
+            )
+        }
     }
 }

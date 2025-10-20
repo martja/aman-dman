@@ -1,7 +1,9 @@
 package no.vaccsca.amandman.model.data.repository
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPerformance
 import java.io.File
 import java.io.FileNotFoundException
@@ -9,22 +11,24 @@ import java.io.FileNotFoundException
 object AircraftPerformanceData {
 
     // Path to the external config file
-    private const val CONFIG_FILE_PATH = "config/aircraft_performance.json"
+    private const val CONFIG_FILE_PATH = "config/aircraft-performance.yaml"
+
+    private val yamlMapper = YAMLMapper().apply { registerKotlinModule() }
 
     private val all by lazy {
         loadSettingsFromFile(CONFIG_FILE_PATH)
     }
 
     fun get(icao: String): AircraftPerformance {
-        return all.find { it.ICAO == icao }
-            ?: throw IllegalArgumentException("No aircraft performance data for ICAO $icao")
+        return all[icao] ?: throw IllegalArgumentException("No aircraft performance data for ICAO $icao")
     }
 
-    fun loadSettingsFromFile(filePath: String): List<AircraftPerformance> {
-        val jsonFile = File(filePath)
-        if (!jsonFile.exists()) {
+    fun loadSettingsFromFile(filePath: String): Map<String, AircraftPerformance> {
+        val file = File(filePath)
+        if (!file.exists()) {
             throw FileNotFoundException("Settings file not found at: $filePath")
         }
-        return jacksonObjectMapper().readValue(jsonFile.readText())
+
+        return yamlMapper.readValue(file)
     }
 }

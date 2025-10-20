@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "patternProperties": {
+    "^[A-Z0-9]{3,4}$": {
+      "type": "object",
+      "properties": {
+        "takeOffV2": { "type": ["integer", "null"] },
+        "takeOffDistance": { "type": ["integer", "null"] },
+        "takeOffWTC": { "type": ["string", "null"] },
+        "takeOffRECAT": { "type": ["string", "null"] },
+        "takeOffMTOW": { "type": ["integer", "null"] },
+        "initialClimbIAS": { "type": ["integer", "null"] },
+        "initialClimbROC": { "type": ["integer", "null"] },
+        "climb150IAS": { "type": ["integer", "null"] },
+        "climb150ROC": { "type": ["integer", "null"] },
+        "climb240IAS": { "type": ["integer", "null"] },
+        "climb240ROC": { "type": ["integer", "null"] },
+        "machClimbMACH": { "type": ["number", "null"] },
+        "machClimbROC": { "type": ["integer", "null"] },
+        "cruiseTAS": { "type": ["integer", "null"] },
+        "cruiseMACH": { "type": ["number", "null"] },
+        "cruiseCeiling": { "type": ["integer", "null"] },
+        "cruiseRange": { "type": ["integer", "null"] },
+        "initialDescentMACH": { "type": ["number", "null"] },
+        "initialDescentROD": { "type": ["integer", "null"] },
+        "descentIAS": { "type": ["integer", "null"] },
+        "descentROD": { "type": ["integer", "null"] },
+        "approachIAS": { "type": ["integer", "null"] },
+        "approachROD": { "type": ["integer", "null"] },
+        "approachMCS": { "type": ["integer", "null"] },
+        "landingVat": { "type": ["integer", "null"] },
+        "landingDistance": { "type": ["integer", "null"] },
+        "landingAPC": { "type": ["string", "null"] }
+      },
+      "required": [
+        "takeOffV2","takeOffDistance","takeOffWTC","takeOffRECAT","takeOffMTOW",
+        "initialClimbIAS","initialClimbROC","climb150IAS","climb150ROC",
+        "climb240IAS","climb240ROC","machClimbMACH","machClimbROC",
+        "cruiseTAS","cruiseMACH","cruiseCeiling","cruiseRange",
+        "initialDescentMACH","initialDescentROD","descentIAS","descentROD",
+        "approachIAS","approachROD","approachMCS","landingVat","landingDistance","landingAPC"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

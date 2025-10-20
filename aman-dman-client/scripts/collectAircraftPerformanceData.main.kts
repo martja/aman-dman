@@ -1,11 +1,14 @@
 @file:Repository("https://repo.maven.apache.org/maven2/")
 @file:DependsOn("org.jsoup:jsoup:1.19.1")
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+@file:DependsOn("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.0")
+@file:DependsOn("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.0")
 
-import kotlinx.serialization.encodeToString
-import java.io.File
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.jsoup.Jsoup
-import kotlinx.serialization.json.*
+import java.io.File
 import kotlin.reflect.full.memberProperties
 
 // ---------------------------
@@ -13,54 +16,46 @@ import kotlin.reflect.full.memberProperties
 // ---------------------------
 data class AircraftPerformance(
     val ICAO: String,
-    val takeOffV2: String? = null,
-    val takeOffDistance: String? = null,
+    val takeOffV2: Int? = null,
+    val takeOffDistance: Int? = null,
     val takeOffWTC: String? = null,
     val takeOffRECAT: String? = null,
-    val takeOffMTOW: String? = null,
-    val initialClimbIAS: String? = null,
-    val initialClimbROC: String? = null,
-    val climb150IAS: String? = null,
-    val climb150ROC: String? = null,
-    val climb240IAS: String? = null,
-    val climb240ROC: String? = null,
-    val machClimbMACH: String? = null,
-    val machClimbROC: String? = null,
-    val cruiseTAS: String? = null,
-    val cruiseMACH: String? = null,
-    val cruiseCeiling: String? = null,
-    val cruiseRange: String? = null,
-    val initialDescentMACH: String? = null,
-    val initialDescentROD: String? = null,
-    val descentIAS: String? = null,
-    val descentROD: String? = null,
-    val approachIAS: String? = null,
-    val approachROD: String? = null,
-    val approachMCS: String? = null,
-    val landingVat: String? = null,
-    val landingDistance: String? = null,
+    val takeOffMTOW: Int? = null,
+    val initialClimbIAS: Int? = null,
+    val initialClimbROC: Int? = null,
+    val climb150IAS: Int? = null,
+    val climb150ROC: Int? = null,
+    val climb240IAS: Int? = null,
+    val climb240ROC: Int? = null,
+    val machClimbMACH: Double? = null,
+    val machClimbROC: Int? = null,
+    val cruiseTAS: Int? = null,
+    val cruiseMACH: Double? = null,
+    val cruiseCeiling: Int? = null,
+    val cruiseRange: Int? = null,
+    val initialDescentMACH: Double? = null,
+    val initialDescentROD: Int? = null,
+    val descentIAS: Int? = null,
+    val descentROD: Int? = null,
+    val approachIAS: Int? = null,
+    val approachROD: Int? = null,
+    val approachMCS: Int? = null,
+    val landingVat: Int? = null,
+    val landingDistance: Int? = null,
     val landingAPC: String? = null
 )
 
 // ---------------------------
-// Helper: convert data class to JsonObject
-// Skips nulls and "no data", converts numeric strings to numbers
+// Helper conversion functions
 // ---------------------------
-fun Any.toJsonObject(): JsonObject {
-    val map = this::class.memberProperties.mapNotNull { prop ->
-        val value = prop.getter.call(this)?.toString()?.trim() ?: return@mapNotNull null
+fun String?.toIntOrNullData(): Int? = when {
+    this == null || this.equals("no data", true) -> null
+    else -> this.toIntOrNull()
+}
 
-        val jsonValue = when {
-            value.equals("no data", ignoreCase = true) -> JsonPrimitive(null)
-            value.matches(Regex("^-?\\d+$")) -> JsonPrimitive(value.toInt())
-            value.matches(Regex("^-?\\d+\\.\\d+$")) -> JsonPrimitive(value.toDouble())
-            else -> JsonPrimitive(value)
-        }
-
-        prop.name to jsonValue
-    }.toMap()
-
-    return JsonObject(map)
+fun String?.toDoubleOrNullData(): Double? = when {
+    this == null || this.equals("no data", true) -> null
+    else -> this.toDoubleOrNull()
 }
 
 // ---------------------------
@@ -91,32 +86,32 @@ class AircraftPerformanceScraper {
     fun createPerformanceDataObject(icaoCode: String, data: Map<String, String>) =
         AircraftPerformance(
             ICAO = icaoCode,
-            takeOffV2 = data["takeOffV2"],
-            takeOffDistance = data["takeOffDistance"],
+            takeOffV2 = data["takeOffV2"].toIntOrNullData(),
+            takeOffDistance = data["takeOffDistance"].toIntOrNullData(),
             takeOffWTC = data["takeOffWTC"],
             takeOffRECAT = data["takeOffRECAT"],
-            takeOffMTOW = data["takeOffMTOW"],
-            initialClimbIAS = data["initialClimbIAS"],
-            initialClimbROC = data["initialClimbROC"],
-            climb150IAS = data["climb150IAS"],
-            climb150ROC = data["climb150ROC"],
-            climb240IAS = data["climb240IAS"],
-            climb240ROC = data["climb240ROC"],
-            machClimbMACH = data["machClimbMACH"],
-            machClimbROC = data["machClimbROC"],
-            cruiseTAS = data["cruiseTAS"],
-            cruiseMACH = data["cruiseMACH"],
-            cruiseCeiling = data["cruiseCeiling"],
-            cruiseRange = data["cruiseRange"],
-            initialDescentMACH = data["initialDescentMACH"],
-            initialDescentROD = data["initialDescentROD"],
-            descentIAS = data["descentIAS"],
-            descentROD = data["descentROD"],
-            approachIAS = data["approachIAS"],
-            approachROD = data["approachROD"],
-            approachMCS = data["approachMCS"],
-            landingVat = data["landingVat"],
-            landingDistance = data["landingDistance"],
+            takeOffMTOW = data["takeOffMTOW"].toIntOrNullData(),
+            initialClimbIAS = data["initialClimbIAS"].toIntOrNullData(),
+            initialClimbROC = data["initialClimbROC"].toIntOrNullData(),
+            climb150IAS = data["climb150IAS"].toIntOrNullData(),
+            climb150ROC = data["climb150ROC"].toIntOrNullData(),
+            climb240IAS = data["climb240IAS"].toIntOrNullData(),
+            climb240ROC = data["climb240ROC"].toIntOrNullData(),
+            machClimbMACH = data["machClimbMACH"].toDoubleOrNullData(),
+            machClimbROC = data["machClimbROC"].toIntOrNullData(),
+            cruiseTAS = data["cruiseTAS"].toIntOrNullData(),
+            cruiseMACH = data["cruiseMACH"].toDoubleOrNullData(),
+            cruiseCeiling = data["cruiseCeiling"].toIntOrNullData(),
+            cruiseRange = data["cruiseRange"].toIntOrNullData(),
+            initialDescentMACH = data["initialDescentMACH"].toDoubleOrNullData(),
+            initialDescentROD = data["initialDescentROD"].toIntOrNullData(),
+            descentIAS = data["descentIAS"].toIntOrNullData(),
+            descentROD = data["descentROD"].toIntOrNullData(),
+            approachIAS = data["approachIAS"].toIntOrNullData(),
+            approachROD = data["approachROD"].toIntOrNullData(),
+            approachMCS = data["approachMCS"].toIntOrNullData(),
+            landingVat = data["landingVat"].toIntOrNullData(),
+            landingDistance = data["landingDistance"].toIntOrNullData(),
             landingAPC = data["landingAPC"]
         )
 }
@@ -126,22 +121,36 @@ class AircraftPerformanceScraper {
 // ---------------------------
 val client = AircraftPerformanceScraper()
 val availableIcaoCodes = client.getAllIcaoCodes().sorted()
-val outputFile = "aircraft_performance.json"
+val outputFile = "aircraft-performance.yaml"
 
-val allData = buildJsonArray {
-    for (icao in availableIcaoCodes) {
-        println("Fetching $icao")
-        try {
-            val data = client.getPerformanceDataForIcaoCode(icao)
-            val perf = client.createPerformanceDataObject(icao, data)
-            add(perf.toJsonObject())
-        } catch (e: Exception) {
-            println("⚠️ Failed to fetch $icao: ${e.message}")
-        }
-        Thread.sleep(100) // polite delay
+// Use a Map<String, AircraftPerformanceWithoutICAO> so ICAO is the key
+val allDataMap = mutableMapOf<String, Map<String, Any?>>()
+
+for (icao in availableIcaoCodes) {
+    println("Fetching $icao")
+    try {
+        val data = client.getPerformanceDataForIcaoCode(icao)
+        val perf = client.createPerformanceDataObject(icao, data)
+
+        // Convert data class to Map excluding ICAO
+        val perfMap = perf::class.memberProperties
+            .filter { it.name != "ICAO" }
+            .associate { prop ->
+                val value = prop.getter.call(perf)
+                prop.name to value
+            }
+
+        allDataMap[icao] = perfMap
+    } catch (e: Exception) {
+        println("⚠️ Failed to fetch $icao: ${e.message}")
     }
+    Thread.sleep(100)
 }
 
-// Write JSON
-File(outputFile).writeText(Json { prettyPrint = true }.encodeToString(allData))
-println("✅ Saved ${allData.size} entries to $outputFile")
+val yamlMapper = YAMLMapper(YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)).apply {
+    registerKotlinModule()
+}
+
+yamlMapper.writeValue(File(outputFile), allDataMap)
+
+println("✅ Saved ${allDataMap.size} entries to $outputFile")

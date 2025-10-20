@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "STAR Procedures",
+  "description": "Schema for Standard Terminal Arrival Routes (STAR) definitions in YAML format",
+  "type": "object",
+  "properties": {
+    "STARS": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["runway", "name", "waypoints"],
+        "properties": {
+          "runway": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9]{2}[A-Z]?$",
+                "description": "Runway designator (e.g. \"07\", \"25L\")"
+              },
+              {
+                "not": {},
+                "errorMessage": "Runway must be quoted as a string. Example: \"07\" instead of 07."
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]+$",
+            "description": "Name of the STAR procedure (e.g. LUNIP4L)"
+          },
+          "waypoints": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["id"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Z0-9]+$",
+                  "description": "Waypoint identifier"
+                },
+                "altitude": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Altitude in feet"
+                },
+                "speed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Speed in knots"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["STARS"],
+  "additionalProperties": false
+}

@@ -1,0 +1,262 @@
+# yaml-language-server: $schema=./stars-schema.json
+
+STARS:
+  - runway: 01L
+    name: LUNIP4L
+    waypoints:
+      - { id: LUNIP, speed: 250 }
+      - { id: GM416, altitude: 11000, speed: 220 }
+      - { id: INSUV, altitude: 5000, speed: 200 }
+      - { id: OGRAS, altitude: 4000, speed: 180 }
+      - { id: XIKLA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01R
+    name: LUNIP4L
+    waypoints:
+      - { id: LUNIP, speed: 250 }
+      - { id: GM416, altitude: 11000, speed: 220 }
+      - { id: INSUV, altitude: 5000, speed: 200 }
+      - { id: NOSLA, speed: 180 }
+      - { id: XEMEN, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19L
+    name: LUNIP4M
+    waypoints:
+      - { id: LUNIP, speed: 250 }
+      - { id: GM426, altitude: 9000, speed: 250 }
+      - { id: GM422, altitude: 9000, speed: 220 }
+      - { id: TITLA, altitude: 5000, speed: 200 }
+      - { id: OSPAD, altitude: 4000, speed: 180 }
+      - { id: XIVTA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19R
+    name: LUNIP4M
+    waypoints:
+      - { id: LUNIP, speed: 250 }
+      - { id: GM426, altitude: 9000, speed: 250 }
+      - { id: GM453, altitude: 9000, speed: 220 }
+      - { id: TITLA, altitude: 5000, speed: 200 }
+      - { id: ODUDI, altitude: 4000, speed: 180 }
+      - { id: XINLO, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01L
+    name: ADOPI3L
+    waypoints:
+      - { id: ADOPI, speed: 250 }
+      - { id: GM402, altitude: 10000, speed: 220 }
+      - { id: VALPU, altitude: 5000, speed: 200 }
+      - { id: OGRAS, altitude: 4000, speed: 180 }
+      - { id: XIKLA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01R
+    name: ADOPI3L
+    waypoints:
+      - { id: ADOPI, speed: 250 }
+      - { id: NIVDU, speed: 250 }
+      - { id: GM402, altitude: 10000, speed: 220 }
+      - { id: VALPU, altitude: 5000, speed: 200 }
+      - { id: NOSLA, altitude: 4000, speed: 180 }
+      - { id: NOSLA, altitude: 4000, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19R
+    name: ADOPI3M
+    waypoints:
+      - { id: ADOPI, speed: 250 }
+      - { id: GM428, altitude: 10000, speed: 220 }
+      - { id: BAVAD, altitude: 5000, speed: 200 }
+      - { id: ODUDI, altitude: 4000, speed: 180 }
+      - { id: XINLO, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19L
+    name: ADOPI3M
+    waypoints:
+      - { id: ADOPI, speed: 250 }
+      - { id: GM428, altitude: 10000, speed: 220 }
+      - { id: BAVAD, altitude: 5000, speed: 200 }
+      - { id: OSPAD, altitude: 4000, speed: 180 }
+      - { id: XIVTA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01L
+    name: ESEBA4L
+    waypoints:
+      - { id: ESEBA, speed: 250 }
+      - { id: GM403, altitude: 10000, speed: 220 }
+      - { id: INSUV, altitude: 5000, speed: 200 }
+      - { id: OGRAS, altitude: 4000, speed: 180 }
+      - { id: XIKLA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01R
+    name: ESEBA4L
+    waypoints:
+      - { id: ESEBA, speed: 250 }
+      - { id: GM403, altitude: 10000, speed: 220 }
+      - { id: INSUV, altitude: 5000, speed: 200 }
+      - { id: NOSLA, altitude: 4000, speed: 180 }
+      - { id: XEMEN, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19R
+    name: ESEBA4M
+    waypoints:
+      - { id: ESEBA, speed: 250 }
+      - { id: GM422, altitude: 10000, speed: 220 }
+      - { id: TITLA, altitude: 5000, speed: 200 }
+      - { id: ODUDI, altitude: 4000, speed: 180 }
+      - { id: XINLO, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19L
+    name: ESEBA4M
+    waypoints:
+      - { id: ESEBA, speed: 250 }
+      - { id: GM422, altitude: 10000, speed: 220 }
+      - { id: TITLA, altitude: 5000, speed: 200 }
+      - { id: OSPAD, altitude: 4000, speed: 180 }
+      - { id: XIVTA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01L
+    name: BELGU3L
+    waypoints:
+      - { id: BELGU, speed: 250 }
+      - { id: GM400, altitude: 9000, speed: 250 }
+      - { id: GM402, altitude: 9000, speed: 220 }
+      - { id: VALPU, altitude: 5000, speed: 200 }
+      - { id: OGRAS, altitude: 4000, speed: 180 }
+      - { id: XIKLA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01R
+    name: BELGU3L
+    waypoints:
+      - { id: BELGU, speed: 250 }
+      - { id: GM400, altitude: 9000, speed: 250 }
+      - { id: GM402, altitude: 9000, speed: 220 }
+      - { id: VALPU, altitude: 5000, speed: 200 }
+      - { id: NOSLA, altitude: 4000, speed: 180 }
+      - { id: XEMEN, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01R
+    name: RIPAM3L
+    waypoints:
+      - { id: RIPAM, speed: 250 }
+      - { id: GM410, altitude: 11000, speed: 220 }
+      - { id: VALPU, altitude: 5000, speed: 200 }
+      - { id: NOSLA, altitude: 4000, speed: 180 }
+      - { id: XEMEN, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01L
+    name: RIPAM3L
+    waypoints:
+      - { id: RIPAM, speed: 250 }
+      - { id: GM410, altitude: 11000, speed: 220 }
+      - { id: VALPU, altitude: 5000, speed: 200 }
+      - { id: OGRAS, altitude: 4000, speed: 180 }
+      - { id: XIKLA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19R
+    name: RIPAM4M
+    waypoints:
+      - { id: RIPAM, speed: 250 }
+      - { id: GM427, altitude: 9000, speed: 250 }
+      - { id: GM428, altitude: 9000, speed: 220 }
+      - { id: BAVAD, altitude: 5000, speed: 200 }
+      - { id: ODUDI, altitude: 4000, speed: 180 }
+      - { id: XINLO, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19L
+    name: RIPAM4M
+    waypoints:
+      - { id: RIPAM, speed: 250 }
+      - { id: GM427, altitude: 9000, speed: 250 }
+      - { id: GM428, altitude: 9000, speed: 220 }
+      - { id: BAVAD, altitude: 5000, speed: 200 }
+      - { id: OSPAD, altitude: 4000, speed: 180 }
+      - { id: XIVTA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19R
+    name: BELGU3M
+    waypoints:
+      - { id: BELGU, speed: 250 }
+      - { id: GM433, altitude: 9000, speed: 250 }
+      - { id: GM434, altitude: 9000, speed: 220 }
+      - { id: BAVAD, altitude: 5000, speed: 200 }
+      - { id: ODUDI, altitude: 4000, speed: 180 }
+      - { id: XINLO, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19L
+    name: BELGU3M
+    waypoints:
+      - { id: BELGU, speed: 250 }
+      - { id: GM433, altitude: 9000, speed: 250 }
+      - { id: GM434, altitude: 9000, speed: 220 }
+      - { id: BAVAD, altitude: 5000, speed: 200 }
+      - { id: OSPAD, altitude: 4000, speed: 180 }
+      - { id: XIVTA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01R
+    name: INREX4L
+    waypoints:
+      - { id: INREX, speed: 250 }
+      - { id: GM401, altitude: 9000, speed: 250 }
+      - { id: GM403, altitude: 9000, speed: 220 }
+      - { id: INSUV, altitude: 5000, speed: 200 }
+      - { id: NOSLA, altitude: 4000, speed: 180 }
+      - { id: XEMEN, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01L
+    name: INREX4L
+    waypoints:
+      - { id: INREX, speed: 250 }
+      - { id: GM401, altitude: 9000, speed: 250 }
+      - { id: GM403, altitude: 9000, speed: 220 }
+      - { id: INSUV, altitude: 5000, speed: 200 }
+      - { id: OGRAS, altitude: 4000, speed: 180 }
+      - { id: XIKLA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19L
+    name: INREX4M
+    waypoints:
+      - { id: INREX, speed: 250 }
+      - { id: GM418, altitude: 11000, speed: 220 }
+      - { id: TITLA, altitude: 5000, speed: 200 }
+      - { id: OSPAD, altitude: 4000, speed: 180 }
+      - { id: XIVTA, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 19R
+    name: INREX4M
+    waypoints:
+      - { id: INREX, speed: 250 }
+      - { id: GM418, altitude: 11000, speed: 220 }
+      - { id: TITLA, altitude: 5000, speed: 200 }
+      - { id: ODUDI, altitude: 4000, speed: 180 }
+      - { id: XINLO, altitude: 3500, speed: 170 }
+      - { id: ENGM, altitude: 700 }
+
+  - runway: 01L
+    name: ELVUN-RNP-W
+    waypoints:
+      - { id: ELVUN, altitude: 5000, speed: 200 }
+      - { id: GM551, altitude: 3000, speed: 180 }
+      - { id: GM552, altitude: 2400, speed: 170 }
+      - { id: GM553, altitude: 1800, speed: 150 }
+      - { id: ENGM, altitude: 700 }
