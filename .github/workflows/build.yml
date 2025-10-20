@@ -45,7 +45,7 @@ jobs:
           mkdir -p artifacts/config
           cp euroscope-bridge/Release/*.dll artifacts/
           cp aman-dman-client/build/libs/*.jar artifacts/
-          cp aman-dman-client/config/* artifacts/config/
+          cp -r aman-dman-client/config/* artifacts/config/
 
       - name: Zip artifacts
         run: |
