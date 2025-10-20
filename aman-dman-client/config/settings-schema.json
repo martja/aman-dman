@@ -5,45 +5,36 @@
   "type": "object",
   "properties": {
     "timelines": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["airportIcao", "title", "runwaysLeft", "runwaysRight", "targetFixesLeft", "targetFixesRight"],
-        "properties": {
-          "airportIcao": {
-            "type": "string",
-            "pattern": "^[A-Z0-9]{4}$",
-            "description": "ICAO code must be exactly 4 uppercase letters or digits"
-          },
-          "title": {
-            "type": "string"
-          },
-          "runwaysLeft": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^[0-9]{2}[A-Z]?$",
-              "description": "Runway designator (e.g., 01, 01L, 35R)"
-            }
-          },
-          "runwaysRight": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^[0-9]{2}[A-Z]?$"
-            }
-          },
-          "targetFixesLeft": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "targetFixesRight": {
-            "type": "array",
-            "items": { "type": "string" }
+      "type": "object",
+      "description": "Map of airport ICAO code to list of timelines",
+      "patternProperties": {
+        "^[A-Z]{4}$": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "right"],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Timeline title"
+              },
+              "left": {
+                "oneOf": [
+                  { "$ref": "#/$defs/side" },
+                  { "type": "null" }
+                ],
+                "description": "Defined the left side of the timeline. Set to null for single-sided timelines."
+              },
+              "right": {
+                "$ref": "#/$defs/side",
+                "description": "Defines the right side of the timeline."
+              }
+            },
+            "additionalProperties": false
           }
-        },
-        "additionalProperties": false
-      }
+        }
+      },
+      "additionalProperties": false
     },
     "connectionConfig": {
       "type": "object",
@@ -71,5 +62,22 @@
     }
   },
   "required": ["timelines", "connectionConfig"],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "side": {
+      "type": "object",
+      "required": ["runways"],
+      "properties": {
+        "runways": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9]{2}[A-Z]?$",
+            "description": "Runway identifier (e.g., 01L, 19R)"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }

@@ -87,16 +87,17 @@ class Presenter(
     }
 
     private fun loadSettingsAndOpenTabs() {
-        SettingsRepository.getSettings(reload = true).timelines.forEach { timelineJson ->
-            val newTimelineConfig = TimelineConfig(
-                title = timelineJson.title,
-                runwaysLeft = timelineJson.runwaysLeft,
-                runwaysRight = timelineJson.runwaysRight,
-                targetFixesLeft = timelineJson.targetFixesLeft,
-                targetFixesRight = timelineJson.targetFixesRight,
-                airportIcao = timelineJson.airportIcao
-            )
-            timelineConfigs[timelineJson.title] = newTimelineConfig
+        SettingsRepository.getSettings(reload = true).timelines.forEach { (airportIcao, timelines) ->
+            timelines.forEach { timeline ->
+                TimelineConfig(
+                    title = timeline.title,
+                    runwaysLeft = timeline.left?.runways ?: emptyList(),
+                    runwaysRight = timeline.right.runways,
+                    airportIcao = airportIcao
+                ).also { newTimelineConfig ->
+                    timelineConfigs[timeline.title] = newTimelineConfig
+                }
+            }
         }
     }
 
@@ -333,8 +334,6 @@ class Presenter(
                 title = config.title,
                 runwaysLeft = config.left.targetRunways,
                 runwaysRight = config.right.targetRunways,
-                targetFixesLeft = config.left.targetFixes,
-                targetFixesRight = config.right.targetFixes,
                 airportIcao = config.airportIcao
             )
         )

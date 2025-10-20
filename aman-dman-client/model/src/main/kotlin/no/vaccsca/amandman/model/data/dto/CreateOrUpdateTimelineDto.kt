@@ -8,6 +8,5 @@ data class CreateOrUpdateTimelineDto(
 ) {
     data class TimeLineSide(
         val targetRunways: List<String>,
-        val targetFixes: List<String>,
     )
 }

@@ -13,12 +13,10 @@ class NewTimelineForm(
     existingConfig: TimelineConfig?
 ) : JPanel() {
     // Store references to input fields and checkboxes for data access
-    private lateinit var leftFixesInput: JTextField
     private lateinit var leftRunwaysInput: JTextField
     private lateinit var leftEnabledCheckbox: JCheckBox
     private lateinit var leftLabelInput: JTextField
 
-    private lateinit var rightFixesInput: JTextField
     private lateinit var rightRunwaysInput: JTextField
     private lateinit var rightEnabledCheckbox: JCheckBox
     private lateinit var rightLabelInput: JTextField
@@ -33,9 +31,7 @@ class NewTimelineForm(
         add(fixListsPanel)
 
         existingConfig?.let { config ->
-            leftFixesInput.text = config.targetFixesLeft.joinToString(",")
             leftRunwaysInput.text = config.runwaysLeft.joinToString(",")
-            rightFixesInput.text = config.targetFixesRight.joinToString(",")
             rightRunwaysInput.text = config.runwaysRight.joinToString(",")
         }
 
@@ -47,14 +43,10 @@ class NewTimelineForm(
                     airportIcao = airportIcao,
                     title = leftLabelInput.text + " | " + rightLabelInput.text,
                     left = CreateOrUpdateTimelineDto.TimeLineSide(
-                        targetFixes = leftFixesInput.text.split(",").map { it.trim().uppercase() }
-                            .filter { it.isNotEmpty() },
                         targetRunways = leftRunwaysInput.text.split(",").map { it.trim().uppercase() }
                             .filter { it.isNotEmpty() }
                     ),
                     right = CreateOrUpdateTimelineDto.TimeLineSide(
-                        targetFixes = rightFixesInput.text.split(",").map { it.trim().uppercase() }
-                            .filter { it.isNotEmpty() },
                         targetRunways = rightRunwaysInput.text.split(",").map { it.trim().uppercase() }
                             .filter { it.isNotEmpty() }
                     )
@@ -99,18 +91,15 @@ class NewTimelineForm(
         }
 
         val idInput = createLabeledField("Timeline label*:")
-        val fixesInput = createLabeledField("Threshold fixes* (comma separated):")
         val runwayInput = createLabeledField("Assigned runways (comma separated):")
 
         // Store references
         if (isLeft) {
             leftEnabledCheckbox = enabledCheckBox
-            leftFixesInput = fixesInput
             leftRunwaysInput = runwayInput
             leftLabelInput = idInput
         } else {
             rightEnabledCheckbox = enabledCheckBox
-            rightFixesInput = fixesInput
             rightRunwaysInput = runwayInput
             rightLabelInput = idInput
         }

@@ -1,49 +1,26 @@
 # yaml-language-server: $schema=./settings-schema.json
 
 timelines:
-  - airportIcao: "ENGM"
-    title: "01ALL"
-    runwaysLeft: []
-    runwaysRight:
-      - "01L"
-      - "01R"
-    targetFixesLeft: []
-    targetFixesRight:
-      - "OBW10"
-      - "ONE10"
+  ENGM:
+    - title: "01ALL"
+      right:
+        runways: ["01L", "01R"]
 
-  - airportIcao: "ENGM"
-    title: "19ALL"
-    runwaysLeft: []
-    runwaysRight:
-      - "19L"
-      - "19R"
-    targetFixesLeft: []
-    targetFixesRight:
-      - "GSW1"
-      - "GME1"
+    - title: "19ALL"
+      right:
+        runways: ["19L", "19R"]
 
-  - airportIcao: "ENGM"
-    title: "19R/19L"
-    runwaysLeft:
-      - "19R"
-    runwaysRight:
-      - "19L"
-    targetFixesLeft:
-      - "GSW1"
-    targetFixesRight:
-      - "GME1"
+    - title: "19R/19L"
+      left:
+        runways: ["19R"]
+      right:
+        runways: ["19L"]
 
-  - airportIcao: "ENGM"
-    title: "01L/01R"
-    runwaysLeft:
-      - "01L"
-    runwaysRight:
-      - "01R"
-    targetFixesLeft:
-      - "OBW10"
-    targetFixesRight:
-      - "ONE10"
+    - title: "01L/01R"
+      left:
+        runways: ["01L"]
+      right:
+        runways: ["01R"]
 
 connectionConfig:
   atcClient:
