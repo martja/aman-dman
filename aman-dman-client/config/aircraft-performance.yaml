@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=./aircraft-performance-schema.json
+# yaml-language-server: $schema=./aircraft-performance.schema.yaml
 
 A10:
   approachIAS: 250

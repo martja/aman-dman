@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=./stars-schema.json
+# yaml-language-server: $schema=./stars.schema.yaml
 
 STARS:
   - runway: 01L

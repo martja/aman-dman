@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=./airports-schema.json
+# yaml-language-server: $schema=./airports.schema.yaml
 
 airports:
   ENGM:
