@@ -5,7 +5,6 @@ import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
 
 val b738performance = AircraftPerformance(
-    ICAO = "B738",
     takeOffV2 = 145,
     takeOffDistance = 2300,
     takeOffWTC = 'M',
