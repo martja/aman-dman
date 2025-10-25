@@ -1,11 +1,15 @@
 package no.vaccsca.amandman.view.tabpage
 
 import no.vaccsca.amandman.model.UserRole
+import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.util.Form
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Graphics
+import java.awt.GridBagConstraints
+import java.awt.GridBagLayout
+import java.awt.Insets
 import java.awt.event.MouseEvent
 import java.time.Instant
 import javax.swing.*
@@ -62,19 +66,37 @@ class Footer(
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
 
-                val icaoField = JTextField()
-                Form.enforceUppercase(icaoField, 4)
+                // Get available ICAOs and sort them alphabetically
+                val availableAirports = SettingsRepository.getAirportData().airports.keys.sorted()
+                val icaoComboBox = JComboBox(availableAirports.toTypedArray())
 
                 val roles = UserRole.entries.toTypedArray()
                 val roleComboBox = JComboBox(roles)
 
-                val panel = JPanel().apply {
-                    layout = BoxLayout(this, BoxLayout.Y_AXIS)
-                    add(JLabel("Airport ICAO"))
-                    add(icaoField)
-                    add(Box.createVerticalStrut(5))
-                    add(JLabel("User Role"))
-                    add(roleComboBox)
+                val panel = JPanel(GridBagLayout()).apply {
+                    val gbc = GridBagConstraints().apply {
+                        fill = GridBagConstraints.HORIZONTAL
+                        insets = Insets(5, 5, 5, 5)
+                        anchor = GridBagConstraints.WEST
+                    }
+
+                    // --- ICAO ComboBox ---
+                    gbc.gridx = 0
+                    gbc.gridy = 0
+                    add(JLabel("Airport"), gbc)
+
+                    gbc.gridx = 1
+                    gbc.gridy = 0
+                    add(icaoComboBox, gbc)
+
+                    // --- Role ComboBox ---
+                    gbc.gridx = 0
+                    gbc.gridy = 1
+                    add(JLabel("User Role"), gbc)
+
+                    gbc.gridx = 1
+                    gbc.gridy = 1
+                    add(roleComboBox, gbc)
                 }
 
                 val result = JOptionPane.showConfirmDialog(
@@ -86,9 +108,9 @@ class Footer(
                 )
 
                 if (result == JOptionPane.OK_OPTION) {
-                    val icao = icaoField.text.trim()
+                    val icao = icaoComboBox.selectedItem as? String
                     val role = roleComboBox.selectedItem as? UserRole
-                    if (icao.isNotBlank() && role != null) {
+                    if (!icao.isNullOrBlank() && role != null) {
                         presenterInterface.onNewTimelineGroup(icao, role)
                     }
                 }
