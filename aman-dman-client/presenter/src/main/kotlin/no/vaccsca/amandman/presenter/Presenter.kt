@@ -46,6 +46,7 @@ class Presenter(
     private var minimumSpacingNm: Double = 3.0
     private var availableRunways = setOf<String>()
     private var controllerInfo: ControllerInfoData? = null
+    private val myMasterRoles = mutableSetOf<String>()
 
     private val navdataRepository by lazy {
         NavdataRepository()
@@ -58,12 +59,12 @@ class Presenter(
         )
     }
 
-    private val dataUpdatesServerSender by lazy {
-        DataUpdatesServerSender()
+    private val sharedState by lazy {
+        SharedStateHttpClient()
     }
 
-    private val sharedStateHttpClient by lazy {
-        SharedStateHttpClient()
+    private val dataUpdatesServerSender by lazy {
+        DataUpdatesServerSender(sharedState)
     }
 
     private val weatherDataRepository by lazy {
@@ -75,6 +76,20 @@ class Presenter(
 
         javax.swing.Timer(1000) {
             updateViewFromCachedData()
+        }.start()
+
+        javax.swing.Timer(1000) {
+            myMasterRoles.forEach { airport ->
+                if (!sharedState.checkMasterRoleStatus(airport)) {
+                    view.showErrorMessage("Lost master role for $airport")
+                    plannerManager.unregisterService(airport)
+                    runwayModeStateManager.cleanupAirportState(airport)
+                    timelineGroups.removeAll { it.airportIcao == airport }
+                    view.updateTimelineGroups(timelineGroups)
+                    sharedState.releaseMasterRole(airport)
+                    myMasterRoles.remove(airport)
+                }
+            }
         }.start()
     }
 
@@ -257,6 +272,9 @@ class Presenter(
                 euroScopeClient.close()
             }
         }
+
+        sharedState.releaseMasterRole(airportIcao)
+        myMasterRoles.remove(airportIcao)
     }
 
     override fun onOpenLandingRatesWindow() {
@@ -360,13 +378,22 @@ class Presenter(
         }
 
         val plannerService = when(timelineGroup.userRole) {
-            UserRole.MASTER ->
+            UserRole.MASTER -> {
+                if (sharedState.acquireMasterRole(airport.icao)) {
+                    println("Acquired master role for ${airport.icao}")
+                    myMasterRoles.add(airport.icao)
+                } else {
+                    view.showErrorMessage("Master role for ${airport.icao} is already taken by another user")
+                    return
+                }
+
                 PlannerServiceMaster(
                     airport = airport,
                     weatherDataRepository = weatherDataRepository,
                     atcClient = euroScopeClient,
                     dataUpdateListeners = arrayOf(guiUpdater, dataUpdatesServerSender),
                 )
+            }
             UserRole.LOCAL ->
                 PlannerServiceMaster(
                     airport = airport,
@@ -377,7 +404,7 @@ class Presenter(
             UserRole.SLAVE ->
                 PlannerServiceSlave(
                     airportIcao = timelineGroup.airportIcao,
-                    sharedStateHttpClient = sharedStateHttpClient,
+                    sharedState = sharedState,
                     dataUpdateListener = guiUpdater,
                 )
         }

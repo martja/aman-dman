@@ -1,8 +1,8 @@
 package no.vaccsca.amandman.model.domain.service
 
+import no.vaccsca.amandman.model.data.integration.SharedState
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 
 /**
@@ -31,22 +31,23 @@ class GuiDataHandler : DataUpdateListener {
 /**
  * Responsible for sending data updates to HTTP server.
  */
-class DataUpdatesServerSender : DataUpdateListener {
-    val sharedStateHttpClient = SharedStateHttpClient()
+class DataUpdatesServerSender(
+    private val sharedState: SharedState
+) : DataUpdateListener {
 
     override fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>) {
-        sharedStateHttpClient.sendTimelineEvents(airportIcao, timelineEvents)
+        sharedState.sendTimelineEvents(airportIcao, timelineEvents)
     }
 
     override fun onRunwayModesUpdated(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>) {
-        sharedStateHttpClient.sendRunwayStatuses(airportIcao, runwayStatuses)
+        sharedState.sendRunwayStatuses(airportIcao, runwayStatuses)
     }
 
     override fun onWeatherDataUpdated(airportIcao: String, data: VerticalWeatherProfile?) {
-        sharedStateHttpClient.sendWeatherData(airportIcao, data)
+        sharedState.sendWeatherData(airportIcao, data)
     }
 
     override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {
-        sharedStateHttpClient.sendMinimumSpacing(airportIcao, minimumSpacingNm)
+        sharedState.sendMinimumSpacing(airportIcao, minimumSpacingNm)
     }
 }

@@ -1,17 +1,16 @@
 package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
+import no.vaccsca.amandman.model.data.integration.SharedState
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import java.util.Timer
 import java.util.TimerTask
 
 class PlannerServiceSlave(
     airportIcao: String,
-    private val sharedStateHttpClient: SharedStateHttpClient,
+    private val sharedState: SharedState,
     private val dataUpdateListener: DataUpdateListener
 ) : PlannerService(airportIcao) {
     val timer = Timer()
@@ -38,28 +37,28 @@ class PlannerServiceSlave(
 
     private fun fetchAmanData(airportIcao: String) {
         try {
-            val data = sharedStateHttpClient.getTimelineEvents(airportIcao)
+            val data = sharedState.getTimelineEvents(airportIcao)
             dataUpdateListener.onLiveData(airportIcao, data)
         } catch (e: Exception) {
             println("Failed to fetch timeline events for $airportIcao: ${e.message}")
         }
 
         try {
-            val runwayStatuses = sharedStateHttpClient.getRunwayStatuses(airportIcao)
+            val runwayStatuses = sharedState.getRunwayStatuses(airportIcao)
             dataUpdateListener.onRunwayModesUpdated(airportIcao, runwayStatuses)
         } catch (e: Exception) {
             println("Failed to fetch runway statuses for $airportIcao: ${e.message}")
         }
 
         try {
-            val weatherData = sharedStateHttpClient.getWeatherData(airportIcao)
+            val weatherData = sharedState.getWeatherData(airportIcao)
             dataUpdateListener.onWeatherDataUpdated(airportIcao, weatherData)
         } catch (e: Exception) {
             println("Failed to fetch weather data for $airportIcao: ${e.message}")
         }
 
         try {
-            val minimumSpacingNm = sharedStateHttpClient.getMinimumSpacing(airportIcao)
+            val minimumSpacingNm = sharedState.getMinimumSpacing(airportIcao)
             dataUpdateListener.onMinimumSpacingUpdated(airportIcao, minimumSpacingNm)
         } catch (e: Exception) {
             println("Failed to fetch minimum spacing data for $airportIcao: ${e.message}")

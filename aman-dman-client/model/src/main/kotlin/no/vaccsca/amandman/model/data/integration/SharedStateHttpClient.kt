@@ -3,11 +3,7 @@ package no.vaccsca.amandman.model.data.integration
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -16,19 +12,20 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateEventJson
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateJson
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.UUID.randomUUID
 
-class SharedStateHttpClient {
-
+class SharedStateHttpClient : SharedState {
+    private val clientUuid = randomUUID().toString()
     private val httpClient = OkHttpClient()
     private val objectMapper = ObjectMapper().apply {
         registerModule(KotlinModule.Builder().build())
@@ -37,10 +34,54 @@ class SharedStateHttpClient {
         findAndRegisterModules()
     }
 
-    val JSON = "application/json".toMediaType()
-    val BASE_URL: String = SettingsRepository.getSettings(reload = true).connectionConfig.api.host
+    private val SESSION_ID_HEADER = "x-session-uuid"
+    private val JSON = "application/json".toMediaType()
+    private val BASE_URL: String = SettingsRepository.getSettings(reload = true).connectionConfig.api.host
 
-    fun sendTimelineEvents(airportIcao: String, timelineEvents: List<TimelineEvent>) {
+    override fun checkMasterRoleStatus(airportIcao: String): Boolean {
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/airports/$airportIcao/master-role")
+            .header(SESSION_ID_HEADER, clientUuid)
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return false
+
+            val body = response.body.string()
+
+            return try {
+                val masterResp = objectMapper.readValue(body, MasterRoleResponse::class.java)
+                masterResp.isMaster
+            } catch (ex: Exception) {
+                false
+            }
+        }
+    }
+
+    override fun acquireMasterRole(airportIcao: String): Boolean {
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/airports/$airportIcao/master-role")
+            .header(SESSION_ID_HEADER, clientUuid)
+            .post("".toRequestBody()) // Empty body
+            .build()
+
+        val response = httpClient.newCall(request).execute()
+
+        return response.isSuccessful
+    }
+
+    override fun releaseMasterRole(airportIcao: String) {
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/airports/$airportIcao/master-role")
+            .header(SESSION_ID_HEADER, clientUuid)
+            .delete()
+            .build()
+
+        httpClient.newCall(request).execute().close()
+    }
+
+    override fun sendTimelineEvents(airportIcao: String, timelineEvents: List<TimelineEvent>) {
         val events = timelineEvents.map { event ->
             val type = when (event) {
                 is RunwayArrivalEvent -> "runwayArrival"
@@ -59,7 +100,7 @@ class SharedStateHttpClient {
         sendStateJson(airportIcao, "events", sharedState)
     }
 
-    fun getTimelineEvents(airportIcao: String): List<TimelineEvent> {
+    override fun getTimelineEvents(airportIcao: String): List<TimelineEvent> {
         val typeRef = object : TypeReference<SharedStateJson<List<SharedStateEventJson>>>() {}
         val timelineEvents = fetchStateJson(airportIcao, "events", typeRef)
 
@@ -73,13 +114,13 @@ class SharedStateHttpClient {
         }
     }
 
-    fun getRunwayStatuses(airportIcao: String): Map<String, RunwayStatus> {
+    override fun getRunwayStatuses(airportIcao: String): Map<String, RunwayStatus> {
         val typeRef = object : TypeReference<SharedStateJson<Map<String, RunwayStatus>>>() {}
         val runwayStatuses = fetchStateJson(airportIcao, "runway-modes", typeRef)
         return runwayStatuses.data
     }
 
-    fun sendRunwayStatuses(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>) {
+    override fun sendRunwayStatuses(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>) {
         val sharedStateJson = SharedStateJson(
             lastUpdate = Clock.System.now(),
             data = runwayStatuses
@@ -87,7 +128,7 @@ class SharedStateHttpClient {
         sendStateJson(airportIcao, "runway-modes", sharedStateJson)
     }
 
-    fun sendWeatherData(airportIcao: String, weatherData: VerticalWeatherProfile?) {
+    override fun sendWeatherData(airportIcao: String, weatherData: VerticalWeatherProfile?) {
         val sharedStateJson = SharedStateJson(
             lastUpdate = Clock.System.now(),
             data = weatherData
@@ -95,19 +136,19 @@ class SharedStateHttpClient {
         sendStateJson(airportIcao, "weather", sharedStateJson)
     }
 
-    fun getWeatherData(airportIcao: String): VerticalWeatherProfile? {
+    override fun getWeatherData(airportIcao: String): VerticalWeatherProfile? {
         val typeRef = object : TypeReference<SharedStateJson<VerticalWeatherProfile?>>() {}
         val weather = fetchStateJson(airportIcao, "weather", typeRef)
         return weather.data
     }
 
-    fun getMinimumSpacing(airportIcao: String): Double {
+    override fun getMinimumSpacing(airportIcao: String): Double {
         val typeRef = object : TypeReference<SharedStateJson<Double>>() {}
         val minimumSpacing = fetchStateJson(airportIcao, "minimum-spacing", typeRef)
         return minimumSpacing.data
     }
 
-    fun sendMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
+    override fun sendMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
         val sharedStateJson = SharedStateJson(
             lastUpdate = Clock.System.now(),
             data = minimumSpacingNm
@@ -139,6 +180,7 @@ class SharedStateHttpClient {
     private fun <T> fetchStateJson(airportIcao: String, dataType: String, typeRef: TypeReference<SharedStateJson<T>>): SharedStateJson<T> {
         val request = Request.Builder()
             .url("$BASE_URL/api/v1/airports/$airportIcao/$dataType")
+            .header(SESSION_ID_HEADER, clientUuid)
             .get()
             .build()
 
@@ -160,6 +202,7 @@ class SharedStateHttpClient {
 
         val request = Request.Builder()
             .url("$BASE_URL/api/v1/airports/$airportIcao/$dataType")
+            .header(SESSION_ID_HEADER, clientUuid)
             .post(json.toRequestBody(JSON))
             .build()
 
@@ -169,4 +212,10 @@ class SharedStateHttpClient {
 
         println(response)
     }
+
+    private data class MasterRoleResponse(
+        val isMaster: Boolean,
+        val currentMaster: String? = null,
+        val sessionId: String? = null
+    )
 }
