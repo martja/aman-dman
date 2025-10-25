@@ -9,14 +9,12 @@ import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.*
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.tabpage.timeline.labels.*
-import no.vaccsca.amandman.view.tabpage.timeline.utils.GraphicUtils.drawCenteredString
-import org.w3c.dom.css.Rect
+import no.vaccsca.amandman.view.tabpage.timeline.utils.GraphicUtils.drawStringAdvanced
 import java.awt.*
 import java.awt.event.*
 import java.text.SimpleDateFormat
 import javax.swing.*
 import kotlin.math.min
-import kotlin.text.format
 
 class TimelineOverlay(
     val timelineConfig: TimelineConfig,
@@ -42,16 +40,8 @@ class TimelineOverlay(
     private var draggedLabelOriginalX = 0
 
     // --- UI ---
-    private val timelineNameLabel = JLabel(timelineConfig.title, SwingConstants.CENTER).apply {
-        font = Font(Font.MONOSPACED, Font.PLAIN, 14)
-        background = Color.WHITE
-        foreground = Color.BLACK
-        isOpaque = true
-    }
-
     init {
         isOpaque = false
-        add(timelineNameLabel)
     }
 
     fun updateTimelineData(timelineData: TimelineData) {
@@ -65,8 +55,6 @@ class TimelineOverlay(
     override fun doLayout() {
         super.doLayout()
         rearrangeLabels()
-        val scale = timelineView.getScaleBounds()
-        timelineNameLabel.setBounds(scale.x - 10, scale.y + scale.height - labelHeight, 100, labelHeight)
     }
 
     fun updateDraggedLabel(timelineEvent: TimelineEvent, proposedTime: Instant, available: Boolean) {
@@ -109,7 +97,27 @@ class TimelineOverlay(
         drawLinesFromLabelsToTimeScale(g)
         drawDraggedLabelLine(g)
         drawHourglasses(g)
+        drawTimelineTitle(g)
         drawProposedTime(g)
+    }
+
+    private fun drawTimelineTitle(g: Graphics) {
+        val scaleBounds = timelineView.getScaleBounds()
+        g.color = Color.BLACK
+
+        val isDualTimeline = timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
+        val vPadding = 2
+        val hPadding = 4
+        g.drawStringAdvanced(
+            text = timelineConfig.title,
+            x = if (isDualTimeline) scaleBounds.x + scaleBounds.width / 2 else scaleBounds.x,
+            y = scaleBounds.y + scaleBounds.height - g.fontMetrics.height - vPadding * 2,
+            backgroundColor = Color.LIGHT_GRAY,
+            hPadding = hPadding,
+            vPadding = vPadding,
+            hCenter = isDualTimeline,
+            vCenter = false,
+        )
     }
 
     private fun drawLinesFromLabelsToTimeScale(g: Graphics) {
@@ -153,11 +161,13 @@ class TimelineOverlay(
             val proposedY = timelineView.calculateYPositionForInstant(proposedTime!!)
             val text = timeFormat.format(proposedTime!!.toEpochMilliseconds())
             g.color = Color.YELLOW
-            g.drawCenteredString(
+            g.drawStringAdvanced(
                 text = text,
                 x = scaleBounds.x + scaleBounds.width / 2,
                 y = proposedY,
-                backgroundColor = Color(80, 80, 80)
+                backgroundColor = Color(80, 80, 80),
+                hCenter = true,
+                vCenter = true,
             )
         }
     }

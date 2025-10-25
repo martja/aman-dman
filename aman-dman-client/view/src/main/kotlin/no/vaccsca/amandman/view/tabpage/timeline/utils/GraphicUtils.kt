@@ -2,33 +2,43 @@ package no.vaccsca.amandman.view.tabpage.timeline.utils
 
 import java.awt.Color
 import java.awt.Graphics
-import java.awt.Rectangle
 
 object GraphicUtils {
-    fun Graphics.drawCenteredString(text: String, x: Int, y: Int, backgroundColor: Color? = null) {
+    fun Graphics.drawStringAdvanced(
+        text: String,
+        x: Int,
+        y: Int,
+        backgroundColor: Color? = null,
+        hPadding: Int = 0,
+        vPadding: Int = 0,
+        hCenter: Boolean = true,
+        vCenter: Boolean = true
+    ) {
         val metrics = this.getFontMetrics(font)
+        val textWidth = metrics.stringWidth(text)
+        val textHeight = metrics.height
 
-        val textWidth = fontMetrics.stringWidth(text)
-        val textBounds = Rectangle(
-            x - textWidth / 2,
-            y - fontMetrics.height / 2,
-            fontMetrics.stringWidth(text),
-            fontMetrics.height
-        )
+        // Total rectangle size including padding
+        val rectWidth = textWidth + 2 * hPadding
+        val rectHeight = textHeight + 2 * vPadding
 
+        // Rectangle top-left corner
+        val rectX = if (hCenter) x - rectWidth / 2 else x
+        val rectY = if (vCenter) y - rectHeight / 2 else y
+
+        // Draw background rectangle if needed
         if (backgroundColor != null) {
             val originalColor = this.color
             this.color = backgroundColor
-            textBounds.grow(4, 0)
-            this.fillRect(
-                textBounds.x, textBounds.y, textBounds.width, textBounds.height
-            )
+            this.fillRect(rectX, rectY, rectWidth, rectHeight)
             this.color = originalColor
         }
 
-        val x = textBounds.x + (textBounds.width - metrics.stringWidth(text)) / 2
-        val y = textBounds.y + ((textBounds.height - metrics.height) / 2) + metrics.ascent
+        // Draw text centered inside the rectangle
+        val textX = rectX + (rectWidth - textWidth) / 2
+        val textY = rectY + (rectHeight - textHeight) / 2 + metrics.ascent
+
         this.font = font
-        this.drawString(text, x, y)
+        this.drawString(text, textX, textY)
     }
 }

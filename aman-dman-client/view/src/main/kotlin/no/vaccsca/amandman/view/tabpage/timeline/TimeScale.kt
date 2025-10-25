@@ -7,7 +7,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEv
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.tabpage.timeline.utils.GraphicUtils.drawCenteredString
+import no.vaccsca.amandman.view.tabpage.timeline.utils.GraphicUtils.drawStringAdvanced
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.*
 import java.awt.event.MouseEvent
@@ -79,9 +79,9 @@ class TimeScale(
                 g.drawLine(width, yPos, width - TICK_WIDTH_5_MIN, yPos)
                 val scaleCenter = width / 2
                 if (accSeconds % (60L * 10L) == 0L) {
-                    g.drawCenteredString(accInstant.format("HH:mm"), scaleCenter, yPos)
+                    g.drawStringAdvanced(accInstant.format("HH:mm"), scaleCenter, yPos)
                 } else {
-                    g.drawCenteredString(accInstant.format("mm"), scaleCenter, yPos)
+                    g.drawStringAdvanced(accInstant.format("mm"), scaleCenter, yPos)
                 }
             } else if (accSeconds % 60L == 0L) {
                 if (!scaleOnRightSideOnly) {
