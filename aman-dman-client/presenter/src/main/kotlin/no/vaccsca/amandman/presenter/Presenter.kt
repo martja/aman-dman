@@ -386,6 +386,7 @@ class Presenter(
         plannerManager.getServiceForAirport(timelineGroup.airportIcao).planArrivals()
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
+        view.showTimelineGroup(timelineGroup)
 
         plannerService.start()
     }

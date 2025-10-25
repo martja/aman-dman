@@ -119,6 +119,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         dialog.isVisible = true
     }
 
+    override fun showTimelineGroup(group: TimelineGroup) {
+        val theIndex = tabPane.components.indexOfFirst { (it as TabView).airportIcao == group.airportIcao }
+        this.tabPane.selectedIndex = theIndex
+    }
+
     override fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>) {
         val popup = JPopupMenu()
         val tab = tabPane.getComponentAt(tabIndex) as TabView

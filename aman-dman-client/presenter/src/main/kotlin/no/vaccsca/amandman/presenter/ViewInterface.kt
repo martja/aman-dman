@@ -39,4 +39,5 @@ interface ViewInterface {
     fun openWindow()
     fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double)
     fun openSelectRunwayDialog(runwayEvent: RunwayEvent, runwayOptions: Set<String>, onClose: (String) -> Unit)
+    fun showTimelineGroup(group: TimelineGroup)
 }
