@@ -8,110 +8,117 @@ import java.awt.*
 import javax.swing.*
 
 class NewTimelineForm(
-    val presenterInterface: PresenterInterface,
+    private val presenterInterface: PresenterInterface,
     airportIcao: String,
     existingConfig: TimelineConfig?
 ) : JPanel() {
-    // Store references to input fields and checkboxes for data access
-    private lateinit var leftRunwaysInput: JTextField
-    private lateinit var leftEnabledCheckbox: JCheckBox
-    private lateinit var leftLabelInput: JTextField
 
-    private lateinit var rightRunwaysInput: JTextField
-    private lateinit var rightEnabledCheckbox: JCheckBox
-    private lateinit var rightLabelInput: JTextField
+    private val titleInput = JTextField(20)
+    private val leftRunwaysInput = JTextField(20)
+    private val rightRunwaysInput = JTextField(20)
 
     init {
-        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        border = BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        layout = GridBagLayout()
+        val gbc = GridBagConstraints().apply {
+            fill = GridBagConstraints.HORIZONTAL
+            anchor = GridBagConstraints.WEST
+            insets = Insets(5, 5, 5, 5)
+        }
 
-        val fixListsPanel = JPanel(GridLayout(1, 2, 10, 10))
-        fixListsPanel.add(createFixPanel("Left", true))
-        fixListsPanel.add(createFixPanel("Right", false))
+        // --- Title input ---
+        val titleLabel = JLabel("Timeline Title*")
+        enforceUppercase(titleInput)
 
-        add(fixListsPanel)
+        gbc.gridx = 0
+        gbc.gridy = 0
+        add(titleLabel, gbc)
 
+        gbc.gridx = 1
+        gbc.gridy = 0
+        add(titleInput, gbc)
+
+        // --- Right runways input ---
+        val rightLabel = JLabel("Right side runways* (comma separated)")
+        enforceUppercase(rightRunwaysInput)
+
+        gbc.gridx = 0
+        gbc.gridy = 1
+        add(rightLabel, gbc)
+
+        gbc.gridx = 1
+        gbc.gridy = 1
+        add(rightRunwaysInput, gbc)
+
+
+        // --- Left runways input ---
+        val leftLabel = JLabel("Left side runways (comma separated)")
+        enforceUppercase(leftRunwaysInput)
+
+        gbc.gridx = 0
+        gbc.gridy = 2
+        add(leftLabel, gbc)
+
+        gbc.gridx = 1
+        gbc.gridy = 2
+        add(leftRunwaysInput, gbc)
+
+        // --- Submit button ---
+        val submitButton = JButton("Submit")
+        gbc.gridx = 0
+        gbc.gridy = 3
+        gbc.gridwidth = 2
+        gbc.anchor = GridBagConstraints.CENTER
+        submitButton.addActionListener { handleSubmit(airportIcao) }
+        add(submitButton, gbc)
+
+        // --- Pre-fill existing config ---
         existingConfig?.let { config ->
+            titleInput.text = config.title
             leftRunwaysInput.text = config.runwaysLeft.joinToString(",")
             rightRunwaysInput.text = config.runwaysRight.joinToString(",")
         }
+    }
 
-        val submitButton = JButton("Submit")
-        submitButton.alignmentX = CENTER_ALIGNMENT
-        submitButton.addActionListener {
-            presenterInterface.onCreateNewTimeline(
-                CreateOrUpdateTimelineDto(
-                    airportIcao = airportIcao,
-                    title = leftLabelInput.text + " | " + rightLabelInput.text,
-                    left = CreateOrUpdateTimelineDto.TimeLineSide(
-                        targetRunways = leftRunwaysInput.text.split(",").map { it.trim().uppercase() }
-                            .filter { it.isNotEmpty() }
-                    ),
-                    right = CreateOrUpdateTimelineDto.TimeLineSide(
-                        targetRunways = rightRunwaysInput.text.split(",").map { it.trim().uppercase() }
-                            .filter { it.isNotEmpty() }
-                    )
+    private fun handleSubmit(airportIcao: String) {
+        val titleText = titleInput.text.trim()
+        val rightText = rightRunwaysInput.text.trim()
+
+        if (titleText.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Title is required.",
+                "Validation Error",
+                JOptionPane.ERROR_MESSAGE
+            )
+            return
+        }
+
+        if (rightText.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Right side runways are required.",
+                "Validation Error",
+                JOptionPane.ERROR_MESSAGE
+            )
+            return
+        }
+
+        presenterInterface.onCreateNewTimeline(
+            CreateOrUpdateTimelineDto(
+                airportIcao = airportIcao,
+                title = titleText,
+                left = CreateOrUpdateTimelineDto.TimeLineSide(
+                    targetRunways = leftRunwaysInput.text.split(",")
+                        .map { it.trim().uppercase() }
+                        .filter { it.isNotEmpty() }
+                ),
+                right = CreateOrUpdateTimelineDto.TimeLineSide(
+                    targetRunways = rightRunwaysInput.text.split(",")
+                        .map { it.trim().uppercase() }
+                        .filter { it.isNotEmpty() }
                 )
             )
-        }
-
-        add(Box.createVerticalStrut(10))
-        add(submitButton)
-    }
-
-    private fun createFixPanel(title: String, isLeft: Boolean): JPanel {
-        val panel = JPanel(BorderLayout(5, 5))
-        panel.border = BorderFactory.createTitledBorder(title)
-
-        val enabledCheckBox = JCheckBox("Enabled")
-        panel.add(enabledCheckBox, BorderLayout.NORTH)
-
-        val inputPanel = JPanel()
-        inputPanel.layout = BoxLayout(inputPanel, BoxLayout.Y_AXIS)
-
-        fun createLabeledField(labelText: String): JTextField {
-            val container = JPanel()
-            container.layout = BoxLayout(container, BoxLayout.Y_AXIS)
-
-            val label = JLabel(labelText)
-            val textField = JTextField()
-            enforceUppercase(textField)
-
-            textField.maximumSize = Dimension(Int.MAX_VALUE, textField.preferredSize.height)
-            textField.alignmentX = Component.LEFT_ALIGNMENT
-
-            container.add(label)
-            container.add(Box.createVerticalStrut(2))
-            container.add(textField)
-            container.alignmentX = Component.LEFT_ALIGNMENT
-
-            inputPanel.add(container)
-            inputPanel.add(Box.createVerticalStrut(5))
-
-            return textField
-        }
-
-        val idInput = createLabeledField("Timeline label*:")
-        val runwayInput = createLabeledField("Assigned runways (comma separated):")
-
-        // Store references
-        if (isLeft) {
-            leftEnabledCheckbox = enabledCheckBox
-            leftRunwaysInput = runwayInput
-            leftLabelInput = idInput
-        } else {
-            rightEnabledCheckbox = enabledCheckBox
-            rightRunwaysInput = runwayInput
-            rightLabelInput = idInput
-        }
-
-        panel.add(inputPanel, BorderLayout.CENTER)
-        return panel
-    }
-
-    private fun formRow(label: String, component: JComponent): JPanel {
-        val panel = JPanel(FlowLayout(FlowLayout.LEFT))
-        panel.add(JLabel(label))
-        panel.add(component)
-        return panel
+        )
     }
 }
