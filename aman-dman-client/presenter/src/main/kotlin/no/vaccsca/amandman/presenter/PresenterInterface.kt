@@ -15,16 +15,11 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
  */
 interface PresenterInterface {
     fun onReloadSettingsRequested()
-    fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto)
     fun onOpenMetWindowClicked()
     fun onOpenVerticalProfileWindowClicked()
     fun onAircraftSelected(callsign: String)
     fun onEditTimelineRequested(groupId: String, timelineTitle: String)
-    fun onCreateNewTimelineClicked(groupId: String)
-    fun onTabMenu(tabIndex: Int, airportIcao: String)
     fun onNewTimelineGroup(airportIcao: String, userRole: UserRole)
-    fun onAddTimelineButtonClicked(airportIcao: String, timelineConfig: TimelineConfig)
-    fun onRemoveTab(airportIcao: String)
     fun onOpenLandingRatesWindow()
     fun onOpenNonSequencedWindow()
     fun onLabelDragEnd(airportIcao: String, timelineEvent: TimelineEvent, newScheduledTime: Instant, newRunway: String? = null)
@@ -33,4 +28,14 @@ interface PresenterInterface {
     fun onLabelDrag(airportIcao: String, timelineEvent: TimelineEvent, newInstant: Instant)
     fun onMinimumSpacingDistanceSet(airportIcao: String, minimumSpacingDistanceNm: Double)
     fun beginRunwaySelection(runwayEvent: RunwayEvent, onClose: (runway: String?) -> Unit)
+
+    // Tab context menu actions
+    fun onTabMenu(tabIndex: Int, airportIcao: String)
+    fun onCreateNewTimelineClicked(groupId: String)
+    fun onRemoveTab(airportIcao: String)
+
+    // New timeline
+    fun onAddTimelineButtonClicked(airportIcao: String, timelineConfig: TimelineConfig)
+    fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto)
+
 }

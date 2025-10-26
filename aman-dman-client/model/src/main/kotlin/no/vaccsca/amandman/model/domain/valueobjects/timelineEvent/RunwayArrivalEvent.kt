@@ -2,8 +2,8 @@ package no.vaccsca.amandman.model.domain.valueobjects.timelineEvent
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.Flight
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
+import kotlin.time.Duration
 
 data class RunwayArrivalEvent(
     override val timelineId: Int,
@@ -25,4 +25,7 @@ data class RunwayArrivalEvent(
     val sequenceStatus: SequenceStatus,
     val landingIas: Int,
     val distanceToPreceding: Float? = null,
+    val timeToPreceding: Duration? = null,
+    val assignedDirect: String?,
+    val scratchPad: String?,
 ) : RunwayEvent(timelineId, scheduledTime, airportIcao, runway, estimatedTime), Flight

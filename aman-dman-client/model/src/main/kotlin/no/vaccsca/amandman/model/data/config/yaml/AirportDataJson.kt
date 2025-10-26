@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.model.data.dto
+package no.vaccsca.amandman.model.data.config.yaml
 
 data class AirportDataJson(
     val airports: Map<String, AirportJson>

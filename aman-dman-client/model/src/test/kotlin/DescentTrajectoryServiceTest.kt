@@ -44,7 +44,7 @@ class DescentTrajectoryServiceTest {
                 Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
                 Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
                 Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
-                Waypoint(id="19L", latLng=rwy19L.latLng),
+                Waypoint(id="19L", latLng=rwy19L.location),
             ),
             arrivalAirportIcao="ENGM",
             flightPlanTas=450
@@ -81,7 +81,7 @@ class DescentTrajectoryServiceTest {
                 Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
                 Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
                 Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
-                Waypoint(id="19L", latLng=rwy19L.latLng),
+                Waypoint(id="19L", latLng=rwy19L.location),
             ),
             arrivalAirportIcao="ENGM",
             flightPlanTas=450
@@ -108,7 +108,7 @@ class DescentTrajectoryServiceTest {
             Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
             Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
             Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
-            Waypoint(id="19L", latLng=rwy19L.latLng),
+            Waypoint(id="19L", latLng=rwy19L.location),
         ),
         arrivalAirportIcao="ENGM",
         flightPlanTas = 450
@@ -117,8 +117,9 @@ class DescentTrajectoryServiceTest {
     val testAirport = Airport(
         icao="ENGM",
         location=LatLng(60.20116653568569,11.12244616482607),
-        runways=listOf(rwy19L),
-        stars=listOf(star19LInrex4M, star19LEseba4M, star19LAdopi3M)
+        runways=mapOf(
+            "19L" to rwy19L,
+        ),
     )
 
     @Test
@@ -135,9 +136,9 @@ class DescentTrajectoryServiceTest {
 
         // Ensure that the last point in the descent trajectory is the runway threshold
         assertNotEquals(illegal = testArrival1.arrivalAirportIcao, actual = arrivalWithoutAirportInWaypointsList.remainingWaypoints.last().id)
-        assertEquals(expected = star19LInrex4M.runway.latLng.lat, actual = descentTrajectory.last().latLng.lat)
-        assertEquals(expected = star19LInrex4M.runway.latLng.lon, actual = descentTrajectory.last().latLng.lon)
-        assertEquals(expected = star19LInrex4M.runway.elevation.toInt(), actual = descentTrajectory.last().altitude)
+        assertEquals(expected = rwy19L.location.lat, actual = descentTrajectory.last().latLng.lat)
+        assertEquals(expected = rwy19L.location.lon, actual = descentTrajectory.last().latLng.lon)
+        assertEquals(expected = rwy19L.elevation.toInt(), actual = descentTrajectory.last().altitude)
     }
 
     @Test
@@ -156,7 +157,7 @@ class DescentTrajectoryServiceTest {
     fun `Descent trajectory should contain all fixes in route, including runway`() {
         val descentTrajectory = calculateDescentTrajectoryFor(testArrival1)
 
-        val expectedFixes = testArrival1.remainingWaypoints.map { it.id } + listOf(star19LInrex4M.runway.id)
+        val expectedFixes = testArrival1.remainingWaypoints.map { it.id } + listOf(rwy19L.id)
 
         val fixesOnDescentTrajectory = descentTrajectory.mapNotNull { it.fixId }
 

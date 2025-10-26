@@ -8,7 +8,6 @@ import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.data.integration.AtcClientEuroScope
 import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
-import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.domain.PlannerManager
@@ -48,13 +47,8 @@ class Presenter(
     private var controllerInfo: ControllerInfoData? = null
     private val myMasterRoles = mutableSetOf<String>()
 
-    private val navdataRepository by lazy {
-        NavdataRepository()
-    }
-
     private val euroScopeClient by lazy {
         AtcClientEuroScope(
-            navdataRepository = navdataRepository,
             controllerInfoCallback = { info -> handleControllerInfoUpdate(info) }
         )
     }
@@ -108,7 +102,9 @@ class Presenter(
                     title = timeline.title,
                     runwaysLeft = timeline.left?.runways ?: emptyList(),
                     runwaysRight = timeline.right.runways,
-                    airportIcao = airportIcao
+                    airportIcao = airportIcao,
+                    depLabelLayout = timeline.departureLabelLayoutId,
+                    arrLabelLayout = timeline.arrivalLabelLayoutId,
                 ).also { newTimelineConfig ->
                     timelineConfigs[timeline.title] = newTimelineConfig
                 }
@@ -352,7 +348,9 @@ class Presenter(
                 title = config.title,
                 runwaysLeft = config.left.targetRunways,
                 runwaysRight = config.right.targetRunways,
-                airportIcao = config.airportIcao
+                airportIcao = config.airportIcao,
+                depLabelLayout = config.depLabelLayout,
+                arrLabelLayout = config.arrLabelLayout
             )
         )
     }
@@ -370,7 +368,7 @@ class Presenter(
             return // Group already exists
         }
 
-        val airport = navdataRepository.airports.find { it.icao == timelineGroup.airportIcao }
+        val airport = SettingsRepository.getAirportData().find { it.icao == timelineGroup.airportIcao }
 
         if (airport == null) {
             view.showErrorMessage("Airport ${timelineGroup.airportIcao} not found in navdata")
@@ -432,13 +430,22 @@ class Presenter(
         if (group != null) {
             val existingConfig = group.timelines.find { it.title == timelineTitle }
             if (existingConfig != null) {
-                view.openTimelineConfigForm(groupId, existingConfig)
+                view.openTimelineConfigForm(
+                    groupId = groupId,
+                    availableTagLayoutsDep = SettingsRepository.getSettings().departureLabelLayouts.keys,
+                    availableTagLayoutsArr = SettingsRepository.getSettings().arrivalLabelLayouts.keys,
+                    existingConfig = existingConfig
+                )
             }
         }
     }
 
     override fun onCreateNewTimelineClicked(groupId: String) {
-        view.openTimelineConfigForm(groupId)
+        view.openTimelineConfigForm(
+            groupId = groupId,
+            availableTagLayoutsDep = SettingsRepository.getSettings().departureLabelLayouts.keys,
+            availableTagLayoutsArr = SettingsRepository.getSettings().arrivalLabelLayouts.keys,
+        )
     }
 
     private fun handleControllerInfoUpdate(info: ControllerInfoData) {

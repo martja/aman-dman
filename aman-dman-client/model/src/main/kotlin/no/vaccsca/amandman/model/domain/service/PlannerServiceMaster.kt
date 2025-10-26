@@ -11,7 +11,6 @@ import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 
@@ -189,7 +188,10 @@ class PlannerServiceMaster(
         } else {
             // Process pairs and add the last element
             val pairedArrivals = updatedArrivals.zipWithNext { a, b ->
-                a.copy(distanceToPreceding = a.remainingDistance - b.remainingDistance)
+                a.copy(
+                    distanceToPreceding = a.remainingDistance - b.remainingDistance,
+                    timeToPreceding = a.estimatedTime - b.estimatedTime,
+                )
             }
             (pairedArrivals + updatedArrivals.last()).reversed()
         }

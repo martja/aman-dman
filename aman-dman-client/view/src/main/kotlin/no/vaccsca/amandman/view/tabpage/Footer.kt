@@ -3,7 +3,6 @@ package no.vaccsca.amandman.view.tabpage
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.presenter.PresenterInterface
-import no.vaccsca.amandman.view.util.Form
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Graphics
@@ -67,8 +66,8 @@ class Footer(
                 super.mousePressed(e)
 
                 // Get available ICAOs and sort them alphabetically
-                val availableAirports = SettingsRepository.getAirportData().airports.keys.sorted()
-                val icaoComboBox = JComboBox(availableAirports.toTypedArray())
+                val availableAirportIcaos = SettingsRepository.getAirportData().map { it.icao }
+                val icaoComboBox = JComboBox(availableAirportIcaos.toTypedArray())
 
                 val roles = UserRole.entries.toTypedArray()
                 val roleComboBox = JComboBox(roles)

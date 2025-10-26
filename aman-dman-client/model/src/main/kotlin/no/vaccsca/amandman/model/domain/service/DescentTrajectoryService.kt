@@ -41,19 +41,19 @@ object DescentTrajectoryService {
         flightPlanTas: Int?,
         airport: Airport,
     ): DescentTrajectoryResult? {
-        val runwayInfo = airport.runways.find { it.id == assignedRunway }
+        val runwayInfo = airport.runways[assignedRunway]
         if (runwayInfo == null) {
             println("No runway info for $assignedRunway at ${airport.icao}")
             return null
         }
 
-        val starInfo = airport.stars.find { it.id == assignedStar && it.runway == runwayInfo }
+        val starInfo = runwayInfo.stars.find { it.id == assignedStar }
 
         val starFixLookupMap = starInfo?.fixes?.associateBy { it.id }
         val trajectoryPoints = mutableListOf<TrajectoryPoint>()
 
         // Starts at the airports and works backwards
-        var probePosition = runwayInfo.latLng
+        var probePosition = runwayInfo.location
         var probeAltitude = runwayInfo.elevation.roundToInt()
         var probingDistance = 0f
         var accumulatedTimeFromDestination = 0.seconds
@@ -66,8 +66,8 @@ object DescentTrajectoryService {
                 )
             ) + remainingWaypoints.filter { it.id != airport.icao } + listOf(
                 Waypoint(
-                    id = runwayInfo.id,
-                    latLng = runwayInfo.latLng,
+                    id = assignedRunway,
+                    latLng = runwayInfo.location,
                 )
             )
 
@@ -79,7 +79,7 @@ object DescentTrajectoryService {
         // Add the last point (the airport) to the profile
         trajectoryPoints +=
                 TrajectoryPoint(
-                    fixId = runwayInfo.id,
+                    fixId = assignedRunway,
                     latLng = probePosition,
                     altitude = probeAltitude,
                     remainingDistance = probingDistance,

@@ -5,6 +5,8 @@ data class CreateOrUpdateTimelineDto(
     val title: String,
     val left: TimeLineSide,
     val right: TimeLineSide,
+    val depLabelLayout: String,
+    val arrLabelLayout: String,
 ) {
     data class TimeLineSide(
         val targetRunways: List<String>,

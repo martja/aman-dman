@@ -3,6 +3,7 @@ package no.vaccsca.amandman.view.tabpage.timeline.labels
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import java.awt.Color
+import java.awt.Dimension
 import javax.swing.JLabel
 import javax.swing.border.EmptyBorder
 
@@ -11,7 +12,9 @@ abstract class TimelineLabel(
     val defaultBackgroundColor: Color? = null,
     var defaultForegroundColor: Color = Color.WHITE,
     val hoverBackgroundColor: Color? = Color.GRAY,
-    val hoverForegroundColor: Color = Color.BLACK
+    val hoverForegroundColor: Color = Color.BLACK,
+    hBorder: Int,
+    vBorder: Int,
 ) : JLabel() {
     private var isHovered: Boolean = false
     private var isDragging: Boolean = false
@@ -20,7 +23,7 @@ abstract class TimelineLabel(
         background = defaultBackgroundColor
         foreground = defaultForegroundColor
         isOpaque = defaultBackgroundColor != null
-        border = EmptyBorder(0, 3, 0, 3)
+        border = EmptyBorder(vBorder, hBorder, vBorder, hBorder)
 
         addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mouseEntered(e: java.awt.event.MouseEvent?) {
