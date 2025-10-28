@@ -45,7 +45,7 @@ class TabView(
 
     val timeWindowScrollbar = TimeRangeScrollBarVertical(selectedTimeRange, availableTimeRange)
     val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, presenter)
-    val topBar = TopBar(presenter)
+    val topBar = TopBar(presenter, airportIcao)
 
     init {
         add(topBar, BorderLayout.NORTH)

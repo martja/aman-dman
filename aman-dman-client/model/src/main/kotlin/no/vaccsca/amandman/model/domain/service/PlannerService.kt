@@ -10,6 +10,7 @@ abstract class PlannerService(
     abstract fun planArrivals()
     abstract fun setMinimumSpacing(minimumSpacingDistanceNm: Double): Result<Unit>
     abstract fun refreshWeatherData(): Result<Unit>
+    abstract fun refreshCdmData(): Result<Unit>
     abstract fun suggestScheduledTime(timelineEvent: TimelineEvent, scheduledTime: Instant, newRunway: String?): Result<Unit>
     abstract fun reSchedule(callSign: String? = null): Result<Unit>
     abstract fun isTimeSlotAvailable(timelineEvent: TimelineEvent, scheduledTime: Instant): Result<Boolean>
@@ -17,4 +18,5 @@ abstract class PlannerService(
     abstract fun stop()
     abstract fun start()
     abstract fun getAvailableRunways(): Result<List<String>>
+    abstract fun setShowDepartures(showDepartures: Boolean)
 }

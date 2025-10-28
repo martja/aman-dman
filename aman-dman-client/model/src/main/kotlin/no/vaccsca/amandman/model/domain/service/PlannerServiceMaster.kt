@@ -3,13 +3,17 @@ package no.vaccsca.amandman.model.domain.service
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.data.integration.AtcClient
+import no.vaccsca.amandman.model.data.repository.CdmClient
 import no.vaccsca.amandman.model.domain.exception.DescentTrajectoryException
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
+import no.vaccsca.amandman.model.domain.valueobjects.CdmData
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientDepartureData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
@@ -21,19 +25,34 @@ class PlannerServiceMaster(
     private val airport: Airport,
     private val weatherDataRepository: WeatherDataRepository,
     private val atcClient: AtcClient,
+    private val cdmClient: CdmClient,
     private vararg val dataUpdateListeners: DataUpdateListener,
 ) : PlannerService(airport.icao) {
     private var weatherData: VerticalWeatherProfile? = null
+    private var cdmDepartures: List<CdmData>? = null
 
     // ID of the sequence, typically the airport ICAO code
     private var arrivalsCache: List<RunwayArrivalEvent> = emptyList()
+    private var departuresCache: List<DepartureEvent> = emptyList()
     private var sequence: Sequence = Sequence(emptyList())
     private var minimumSpacingNm = 3.0 // Minimum spacing in nautical miles
     private var availableRunways: List<String>? = null
     private var controllerInfo: ControllerInfoData? = null
+    private var fetchCdmData = false
 
     init {
         refreshWeatherData()
+
+        // Run every 10 seconds to keep data fresh
+        Thread {
+            while (true) {
+                Thread.sleep(10_000)
+                if (fetchCdmData) {
+                    println("Refreshing CDM data for $airportIcao")
+                    refreshCdmData()
+                }
+            }
+        }.start()
     }
 
     override fun stop() {
@@ -52,10 +71,17 @@ class PlannerServiceMaster(
         return Result.success(availableRunways ?: emptyList())
     }
 
+    override fun setShowDepartures(showDepartures: Boolean) {
+        this.fetchCdmData = showDepartures
+    }
+
     override fun planArrivals() {
         atcClient.collectDataFor(airportIcao,
             onArrivalsReceived = { arrivals ->
-                handleUpdateFromAtcClient(arrivals)
+                handleArrivalsUpdateFromAtcClient(arrivals)
+            },
+            onDeparturesReceived = { departures ->
+                handleDeparturesUpdateFromAtcClient(departures)
             },
             onRunwaySelectionChanged = { runways ->
                 val map = runways.associate {
@@ -69,7 +95,7 @@ class PlannerServiceMaster(
         )
     }
 
-    private fun handleUpdateFromAtcClient(arrivals: List<AtcClientArrivalData>) {
+    private fun handleArrivalsUpdateFromAtcClient(arrivals: List<AtcClientArrivalData>) {
         val runwayArrivalEvents = makeRunwayArrivalEvents(arrivals)
         val sequenceItems = runwayArrivalEvents.map {
             AircraftSequenceCandidate(
@@ -94,12 +120,27 @@ class PlannerServiceMaster(
         onSequenceUpdated()
     }
 
+    private fun handleDeparturesUpdateFromAtcClient(departures: List<AtcClientDepartureData>) {
+        departuresCache = makeDepartureEvents(departures)
+        onSequenceUpdated()
+    }
+
     private fun makeRunwayArrivalEvents(arrivals: List<AtcClientArrivalData>): List<RunwayArrivalEvent> =
         arrivals.mapNotNull { arrival ->
             try {
                 ArrivalEventService.createRunwayArrivalEvent(airport, arrival, weatherData)
             } catch (e: DescentTrajectoryException) {
                 println("Failed to map arrival ${arrival.callsign}: ${e.message}")
+                null
+            }
+        }
+
+    private fun makeDepartureEvents(departures: List<AtcClientDepartureData>): List<DepartureEvent> =
+        departures.mapNotNull { departure ->
+            try {
+                DepartureEventService.createRunwayDepartureEvent(departure, cdmDepartures)
+            } catch (e: Exception) {
+                println("Failed to map departure ${departure.callsign}: ${e.message}")
                 null
             }
         }
@@ -124,6 +165,13 @@ class PlannerServiceMaster(
                 dataUpdateListeners.forEach { listener ->
                     listener.onWeatherDataUpdated(airportIcao, weather)
                 }
+            }.start()
+        }
+
+    override fun refreshCdmData(): Result<Unit> =
+        runCatching {
+            Thread {
+                this.cdmDepartures = cdmClient.fetchCdmDepartures(airportIcao)
             }.start()
         }
 
@@ -198,7 +246,7 @@ class PlannerServiceMaster(
 
         arrivalsCache = sequencedArrivals
         dataUpdateListeners.forEach { listener ->
-            listener.onLiveData(airportIcao, sequencedArrivals)
+            listener.onLiveData(airportIcao, sequencedArrivals + departuresCache)
         }
     }
 

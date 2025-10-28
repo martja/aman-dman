@@ -29,6 +29,10 @@ class PlannerServiceSlave(
             throw UnsupportedInSlaveModeException("Descent profile cannot be viewed in slave mode")
         }
 
+    override fun setShowDepartures(showDepartures: Boolean) {
+        TODO("Not yet implemented")
+    }
+
     private fun fetchAll() {
         for (airport in arrivalAirportsToFetch) {
             fetchAmanData(airport)
@@ -80,6 +84,11 @@ class PlannerServiceSlave(
     override fun refreshWeatherData(): Result<Unit> =
         runCatching {
              throw UnsupportedInSlaveModeException("Weather data update cannot be triggered in slave mode")
+        }
+
+    override fun refreshCdmData(): Result<Unit> =
+        runCatching {
+            throw UnsupportedInSlaveModeException("Weather data update cannot be triggered in slave mode")
         }
 
     override fun suggestScheduledTime(

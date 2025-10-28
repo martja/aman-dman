@@ -7,6 +7,7 @@ import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalJson
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalsUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.AssignRunwayMessage
 import no.vaccsca.amandman.model.data.dto.euroscope.ControllerInfoFromServerJson
+import no.vaccsca.amandman.model.data.dto.euroscope.DepartureJson
 import no.vaccsca.amandman.model.data.dto.euroscope.DeparturesUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageToEuroScopePluginJson
@@ -19,6 +20,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
+import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientDepartureData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySelectionData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import java.io.*
@@ -37,6 +39,7 @@ class AtcClientEuroScope(
     private var isConnected = false
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val arrivalCallbacks = mutableMapOf<String, (List<AtcClientArrivalData>) -> Unit>()
+    private val departuresCallbacks = mutableMapOf<String, (List<AtcClientDepartureData>) -> Unit>()
     private val runwayStatusCallbacks = mutableMapOf<String, (List<AtcClientRunwaySelectionData>) -> Unit>()
 
     private val objectMapper = jacksonObjectMapper().apply {
@@ -83,10 +86,12 @@ class AtcClientEuroScope(
     override fun collectDataFor(
         airportIcao: String,
         onArrivalsReceived: (List<AtcClientArrivalData>) -> Unit,
-        onRunwaySelectionChanged: (List<AtcClientRunwaySelectionData>) -> Unit
+        onDeparturesReceived: (List<AtcClientDepartureData>) -> Unit,
+        onRunwaySelectionChanged: (List<AtcClientRunwaySelectionData>) -> Unit,
     ) {
-        arrivalCallbacks[airportIcao] = onArrivalsReceived
         runwayStatusCallbacks[airportIcao] = onRunwaySelectionChanged
+        arrivalCallbacks[airportIcao] = onArrivalsReceived
+        departuresCallbacks[airportIcao] = onDeparturesReceived
 
         reSubscribeToAllAirports()
     }
@@ -98,6 +103,7 @@ class AtcClientEuroScope(
         // Clean up local callbacks for this airport
         runwayStatusCallbacks.remove(airportIcao)
         arrivalCallbacks.remove(airportIcao)
+        departuresCallbacks.remove(airportIcao)
     }
 
     override fun assignRunway(callsign: String, newRunway: String) {
@@ -132,7 +138,7 @@ class AtcClientEuroScope(
     }
 
     private fun reSubscribeToAllAirports() {
-        arrivalCallbacks.keys.toList().forEach { airportIcao ->
+        (arrivalCallbacks + departuresCallbacks).keys.toSet().forEach { airportIcao ->
             sendMessage(
                 RequestArrivalAndDeparturesMessageJson(
                     icao = airportIcao
@@ -222,7 +228,9 @@ class AtcClientEuroScope(
                 }
             }
             is DeparturesUpdateFromServerJson -> {
-                // TODO: Handle departures ...
+                messageFromServerJson.outbounds.groupBy { it.departureAirportIcao }.forEach { (departureAirportIcao, departures) ->
+                    departuresCallbacks[departureAirportIcao]?.invoke(departures.map { it.toDeparture() })
+                }
             }
             is RunwayStatusesUpdateFromServerJson -> {
                 messageFromServerJson.airports.forEach { (airportIcao, statusesJson) ->
@@ -261,6 +269,19 @@ class AtcClientEuroScope(
             ),
             arrivalAirportIcao = this.arrivalAirportIcao,
             flightPlanTas = this.flightPlanTas,
+            trackingController = this.trackingController
+        )
+    }
+
+    private fun DepartureJson.toDeparture(): AtcClientDepartureData {
+        return AtcClientDepartureData(
+            departureIcao = this.departureAirportIcao,
+            callsign = this.callsign,
+            icaoType = this.icaoType,
+            assignedSid = this.sid,
+            scratchPad = this.scratchPad,
+            assignedRunway = this.runway,
+            wakeCategory = this.wakeCategory,
             trackingController = this.trackingController
         )
     }

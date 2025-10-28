@@ -28,7 +28,8 @@ interface PresenterInterface {
     fun onLabelDrag(airportIcao: String, timelineEvent: TimelineEvent, newInstant: Instant)
     fun onMinimumSpacingDistanceSet(airportIcao: String, minimumSpacingDistanceNm: Double)
     fun beginRunwaySelection(runwayEvent: RunwayEvent, onClose: (runway: String?) -> Unit)
-
+    fun onToggleShowDepartures(airportIcao: String, selected: Boolean)
+    
     // Tab context menu actions
     fun onTabMenu(tabIndex: Int, airportIcao: String)
     fun onCreateNewTimelineClicked(groupId: String)
@@ -37,5 +38,4 @@ interface PresenterInterface {
     // New timeline
     fun onAddTimelineButtonClicked(airportIcao: String, timelineConfig: TimelineConfig)
     fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto)
-
 }

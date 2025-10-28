@@ -31,7 +31,7 @@ class DepartureLabel(
 
         output += departureEvent.callsign.padEnd(8)
         output += departureEvent.runway.padEnd(5)
-        output += departureEvent.sid.padEnd(9)
+        output += (departureEvent.sid ?: "").padEnd(9)
         output += departureEvent.icaoType.padEnd(5)
         output += departureEvent.wakeCategory.toString().padEnd(2)
 

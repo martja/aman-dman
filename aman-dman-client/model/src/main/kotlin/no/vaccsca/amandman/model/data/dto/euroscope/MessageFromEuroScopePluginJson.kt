@@ -45,6 +45,8 @@ data class DepartureJson(
     val departureAirportIcao: String,
     val runway: String,
     val sid: String,
+    val scratchPad: String?,
+    val trackingController: String?,
 )
 
 data class ArrivalJson(

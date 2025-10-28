@@ -2,9 +2,8 @@ package no.vaccsca.amandman.view.tabpage.timeline
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.model.domain.valueobjects.Flight
-import no.vaccsca.amandman.model.domain.valueobjects.LabelItem
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.common.*
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.*
@@ -163,7 +162,8 @@ class TimelineOverlay(
             val labelX = if (isOnRightSide) label.x else label.x + label.width
             val dotX = if (isOnRightSide) scaleBounds.x + scaleBounds.width else scaleBounds.x
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
-            g.color = if ((label.timelineEvent as RunwayArrivalEvent).sequenceStatus == SequenceStatus.OK) Color.WHITE else Color.GRAY
+            val event = label.timelineEvent
+            g.color = if (event is RunwayArrivalEvent && event.sequenceStatus == SequenceStatus.OK) Color.WHITE else Color.GRAY
             g.drawLine(labelX, label.y + labelHeight / 2, dotX, dotY)
             g.fillOval(dotX - pointDiameter / 2, dotY - pointDiameter / 2, pointDiameter, pointDiameter)
         }
@@ -239,8 +239,7 @@ class TimelineOverlay(
     }
 
     // --- Label Creation & Dragging ---
-    private fun TimelineEvent.getFlight(): Flight? = when (this) {
-        is FixInboundEvent -> this
+    private fun TimelineEvent.getFlight(): RunwayFlightEvent? = when (this) {
         is DepartureEvent -> this
         is RunwayArrivalEvent -> this
         is RunwayDelayEvent -> null

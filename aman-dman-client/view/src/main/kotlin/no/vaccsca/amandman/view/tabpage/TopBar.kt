@@ -5,14 +5,20 @@ import java.awt.*
 import javax.swing.*
 
 class TopBar(
-    private val presenter: PresenterInterface
+    private val presenter: PresenterInterface,
+    private val airportIcao: String,
 ) : JPanel() {
+    private val showDepartures = JCheckBox("Departures")
     private val nonSequencedButton = JButton("NonSeq")
     private val landingRatesButton = JButton("Landing Rates")
     private val runwayModeList = JPanel(FlowLayout(FlowLayout.LEFT, 10, 5))
 
     init {
         layout = BorderLayout()
+
+        showDepartures.addActionListener {
+            presenter.onToggleShowDepartures(airportIcao, showDepartures.isSelected)
+        }
 
         landingRatesButton.addActionListener {
             presenter.onOpenLandingRatesWindow()
@@ -24,6 +30,7 @@ class TopBar(
 
         // Right-aligned controls
         val rightPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 10, 5))
+        rightPanel.add(showDepartures)
         rightPanel.add(nonSequencedButton)
         rightPanel.add(landingRatesButton)
 

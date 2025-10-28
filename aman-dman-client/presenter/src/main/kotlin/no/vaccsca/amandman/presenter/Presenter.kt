@@ -8,6 +8,8 @@ import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.data.integration.AtcClientEuroScope
 import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
+import no.vaccsca.amandman.model.data.repository.CdmClient
+import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.domain.PlannerManager
@@ -22,6 +24,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayFlightEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import kotlin.time.Duration.Companion.seconds
@@ -63,6 +66,10 @@ class Presenter(
 
     private val weatherDataRepository by lazy {
         WeatherDataRepository()
+    }
+
+    private val cdmClient by lazy {
+        CdmClient()
     }
 
     init {
@@ -126,7 +133,7 @@ class Presenter(
 
     override fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>) {
         synchronized(lock) {
-            timelineEvents.filterIsInstance<RunwayArrivalEvent>().forEach {
+            timelineEvents.filterIsInstance<RunwayFlightEvent>().forEach {
                 cachedAmanData[it.callsign] = CachedEvent(
                     lastTimestamp = Clock.System.now(),
                     timelineEvent = it
@@ -174,8 +181,8 @@ class Presenter(
                 timelinesData = group.timelines.map { timeline ->
                     TimelineData(
                         timelineId = timeline.title,
-                        left = relevantDataForTab.filter { it is RunwayArrivalEvent && timeline.runwaysLeft.contains(it.runway) },
-                        right = relevantDataForTab.filter { it is RunwayArrivalEvent && timeline.runwaysRight.contains(it.runway) }
+                        left = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysLeft.contains(it.runway) },
+                        right = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysRight.contains(it.runway) }
                     )
                 }
             ))
@@ -327,6 +334,10 @@ class Presenter(
         }
     }
 
+    override fun onToggleShowDepartures(airportIcao: String, selected: Boolean) {
+        plannerManager.getServiceForAirport(airportIcao).setShowDepartures(selected)
+    }
+
     override fun onLabelDrag(airportIcao: String, timelineEvent: TimelineEvent, newInstant: Instant) {
         if (timelineEvent !is RunwayArrivalEvent) {
             return
@@ -389,6 +400,7 @@ class Presenter(
                     airport = airport,
                     weatherDataRepository = weatherDataRepository,
                     atcClient = euroScopeClient,
+                    cdmClient = cdmClient,
                     dataUpdateListeners = arrayOf(guiUpdater, dataUpdatesServerSender),
                 )
             }
@@ -397,6 +409,7 @@ class Presenter(
                     airport = airport,
                     weatherDataRepository = weatherDataRepository,
                     atcClient = euroScopeClient,
+                    cdmClient = cdmClient,
                     dataUpdateListeners = arrayOf(guiUpdater),
                 )
             UserRole.SLAVE ->
