@@ -2,61 +2,113 @@ package no.vaccsca.amandman.model.data.config.yaml
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
+import jakarta.validation.Valid
+import jakarta.validation.constraints.*
 
 data class AmanDmanSettingsYaml(
-    val timelines: Map<String, List<TimelineYaml>>, // ICAO -> list of timelines
+    @field:NotEmpty
+    val timelines: Map<
+            @Pattern(regexp = "^[A-Z]{4}$") String,
+            @Valid List<@Valid TimelineYaml>
+            >,
+
+    @field:NotEmpty
+    val arrivalLabelLayouts: Map<
+            @Pattern(regexp = "^[a-zA-Z0-9_-]+$") String,
+            @Valid List<@Valid LabelItemYaml>
+            >,
+
+    @field:Valid
+    @field:NotNull
     val connectionConfig: ConnectionConfigYaml,
-    val arrivalLabelLayouts: Map<String, List<LabelItemYaml>>,
-    val departureLabelLayouts: Map<String, List<LabelItemYaml>>?
+
+    val departureLabelLayouts: Map<
+            @Pattern(regexp = "^[a-zA-Z0-9_-]+$") String,
+            @Valid List<@Valid LabelItemYaml>
+            >? = null
 )
 
 data class TimelineYaml(
+    @field:NotBlank
     val timelineTitle: String,
+
+    @field:Valid
     val left: SideYaml? = null,
+
+    @field:Valid
+    @field:NotNull
     val right: SideYaml,
+
+    @field:NotBlank
     val arrivalLabelLayoutId: String
 )
 
 data class SideYaml(
-    val runways: List<String>,
+    @field:NotEmpty
+    val runways: List<
+            @Pattern(regexp = "^[0-9]{2}[A-Z]?$") String
+            >
 )
 
 data class ConnectionConfigYaml(
-    val atcClient: AtcClientYaml,
-    val api: ApiYaml
+    @field:Valid
+    @field:NotNull
+    val atcClient: AtcClientConnectionParamsYaml,
+
+    @field:Valid
+    @field:NotNull
+    val masterSlaveApi: MasterSlaveApiConnectionParamsYaml
 )
 
-data class AtcClientYaml(
+data class AtcClientConnectionParamsYaml(
+    @field:NotBlank
     val host: String,
+
+    @field:Min(1)
+    @field:Max(65535)
     val port: Int
 )
 
-data class ApiYaml(
+data class MasterSlaveApiConnectionParamsYaml(
+    @field:NotBlank
     val host: String
 )
 
 data class LabelItemYaml(
-    val src: LabelItemSourceYaml,
+    @field:NotNull
+    val src: LabelItemSourceEnumYaml,
+
+    @field:Min(1)
     val w: Int,
-    val align: LabelItemAlignmentYaml? = null,
+
+    val via: Boolean? = null,
+
+    val align: LabelItemAlignmentEnumYaml? = LabelItemAlignmentEnumYaml.LEFT,
+
     val def: String? = null,
-    val maxLen: Int? = null,
+
+    @field:Min(1)
+    val maxLen: Int? = null
 )
 
-enum class LabelItemAlignmentYaml(@JsonValue val value: String) {
+enum class LabelItemAlignmentEnumYaml(@JsonValue val value: String) {
     LEFT("left"),
     CENTER("center"),
     RIGHT("right");
 
     companion object {
-        @JvmStatic
         @JsonCreator
-        fun fromValue(value: String): LabelItemAlignmentYaml? =
+        @JvmStatic
+        fun fromValue(value: String) =
             entries.find { it.value.equals(value, ignoreCase = true) }
+    }
+
+    override fun toString(): String {
+        return value
     }
 }
 
-enum class LabelItemSourceYaml(@JsonValue val value: String) {
+enum class LabelItemSourceEnumYaml(@JsonValue val value: String) {
     CALL_SIGN("callSign"),
     ASSIGNED_RUNWAY("assignedRunway"),
     ASSIGNED_STAR("assignedStar"),
@@ -75,9 +127,13 @@ enum class LabelItemSourceYaml(@JsonValue val value: String) {
     TTL_TTG("timeToLoseOrGain");
 
     companion object {
-        @JvmStatic
         @JsonCreator
-        fun fromValue(value: String): LabelItemSourceYaml? =
+        @JvmStatic
+        fun fromValue(value: String) =
             entries.find { it.value.equals(value, ignoreCase = true) }
+    }
+
+    override fun toString(): String {
+        return value
     }
 }

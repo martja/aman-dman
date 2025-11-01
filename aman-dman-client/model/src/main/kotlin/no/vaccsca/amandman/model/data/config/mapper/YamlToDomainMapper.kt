@@ -3,11 +3,11 @@ package no.vaccsca.amandman.model.data.config.mapper
 import no.vaccsca.amandman.model.data.config.yaml.AircraftPerformanceYaml
 import no.vaccsca.amandman.model.data.config.yaml.AirportJson
 import no.vaccsca.amandman.model.data.config.yaml.AmanDmanSettingsYaml
-import no.vaccsca.amandman.model.data.config.yaml.ApiYaml
-import no.vaccsca.amandman.model.data.config.yaml.AtcClientYaml
+import no.vaccsca.amandman.model.data.config.yaml.MasterSlaveApiConnectionParamsYaml
+import no.vaccsca.amandman.model.data.config.yaml.AtcClientConnectionParamsYaml
 import no.vaccsca.amandman.model.data.config.yaml.ConnectionConfigYaml
-import no.vaccsca.amandman.model.data.config.yaml.LabelItemAlignmentYaml
-import no.vaccsca.amandman.model.data.config.yaml.LabelItemSourceYaml
+import no.vaccsca.amandman.model.data.config.yaml.LabelItemAlignmentEnumYaml
+import no.vaccsca.amandman.model.data.config.yaml.LabelItemSourceEnumYaml
 import no.vaccsca.amandman.model.data.config.yaml.LabelItemYaml
 import no.vaccsca.amandman.model.data.config.yaml.SideYaml
 import no.vaccsca.amandman.model.data.config.yaml.StarYamlEntry
@@ -48,11 +48,11 @@ fun SideYaml.toDomain() = Side(runways)
 
 fun ConnectionConfigYaml.toDomain() = ConnectionConfig(
     atcClient = atcClient.toDomain(),
-    api = api.toDomain()
+    api = masterSlaveApi.toDomain()
 )
 
-fun AtcClientYaml.toDomain() = AtcClientConnectionParameters(host, port)
-fun ApiYaml.toDomain() = SharedStateConnectionParameters(host)
+fun AtcClientConnectionParamsYaml.toDomain() = AtcClientConnectionParameters(host, port)
+fun MasterSlaveApiConnectionParamsYaml.toDomain() = SharedStateConnectionParameters(host)
 fun LabelItemYaml.toDomain() = LabelItem(
     source = src.toDomain(),
     width = w,
@@ -61,29 +61,29 @@ fun LabelItemYaml.toDomain() = LabelItem(
     maxLength = maxLen
 )
 
-fun LabelItemAlignmentYaml.toDomain() = when(this) {
-    LabelItemAlignmentYaml.LEFT -> LabelItemAlignment.LEFT
-    LabelItemAlignmentYaml.CENTER -> LabelItemAlignment.CENTER
-    LabelItemAlignmentYaml.RIGHT -> LabelItemAlignment.RIGHT
+fun LabelItemAlignmentEnumYaml.toDomain() = when(this) {
+    LabelItemAlignmentEnumYaml.LEFT -> LabelItemAlignment.LEFT
+    LabelItemAlignmentEnumYaml.CENTER -> LabelItemAlignment.CENTER
+    LabelItemAlignmentEnumYaml.RIGHT -> LabelItemAlignment.RIGHT
 }
 
-fun LabelItemSourceYaml.toDomain() = when(this) {
-    LabelItemSourceYaml.CALL_SIGN -> LabelItemSource.CALL_SIGN
-    LabelItemSourceYaml.ASSIGNED_RUNWAY -> LabelItemSource.ASSIGNED_RUNWAY
-    LabelItemSourceYaml.ASSIGNED_STAR -> LabelItemSource.ASSIGNED_STAR
-    LabelItemSourceYaml.AIRCRAFT_TYPE -> LabelItemSource.AIRCRAFT_TYPE
-    LabelItemSourceYaml.WAKE_CATEGORY -> LabelItemSource.WAKE_CATEGORY
-    LabelItemSourceYaml.TIME_BEHIND_PRECEDING -> LabelItemSource.TIME_BEHIND_PRECEDING
-    LabelItemSourceYaml.TIME_BEHIND_PRECEDING_ROUNDED -> LabelItemSource.TIME_BEHIND_PRECEDING_ROUNDED
-    LabelItemSourceYaml.REMAINING_DISTANCE -> LabelItemSource.REMAINING_DISTANCE
-    LabelItemSourceYaml.DISTANCE_BEHIND_PRECEDING -> LabelItemSource.DISTANCE_BEHIND_PRECEDING
-    LabelItemSourceYaml.DIRECT_ROUTING -> LabelItemSource.DIRECT_ROUTING
-    LabelItemSourceYaml.SCRATCH_PAD -> LabelItemSource.SCRATCH_PAD
-    LabelItemSourceYaml.ESTIMATED_LANDING_TIME -> LabelItemSource.ESTIMATED_LANDING_TIME
-    LabelItemSourceYaml.GROUND_SPEED -> LabelItemSource.GROUND_SPEED
-    LabelItemSourceYaml.GROUND_SPEED_10 -> LabelItemSource.GROUND_SPEED_10
-    LabelItemSourceYaml.ALTITUDE -> LabelItemSource.ALTITUDE
-    LabelItemSourceYaml.TTL_TTG -> LabelItemSource.TTL_TTG
+fun LabelItemSourceEnumYaml.toDomain() = when(this) {
+    LabelItemSourceEnumYaml.CALL_SIGN -> LabelItemSource.CALL_SIGN
+    LabelItemSourceEnumYaml.ASSIGNED_RUNWAY -> LabelItemSource.ASSIGNED_RUNWAY
+    LabelItemSourceEnumYaml.ASSIGNED_STAR -> LabelItemSource.ASSIGNED_STAR
+    LabelItemSourceEnumYaml.AIRCRAFT_TYPE -> LabelItemSource.AIRCRAFT_TYPE
+    LabelItemSourceEnumYaml.WAKE_CATEGORY -> LabelItemSource.WAKE_CATEGORY
+    LabelItemSourceEnumYaml.TIME_BEHIND_PRECEDING -> LabelItemSource.TIME_BEHIND_PRECEDING
+    LabelItemSourceEnumYaml.TIME_BEHIND_PRECEDING_ROUNDED -> LabelItemSource.TIME_BEHIND_PRECEDING_ROUNDED
+    LabelItemSourceEnumYaml.REMAINING_DISTANCE -> LabelItemSource.REMAINING_DISTANCE
+    LabelItemSourceEnumYaml.DISTANCE_BEHIND_PRECEDING -> LabelItemSource.DISTANCE_BEHIND_PRECEDING
+    LabelItemSourceEnumYaml.DIRECT_ROUTING -> LabelItemSource.DIRECT_ROUTING
+    LabelItemSourceEnumYaml.SCRATCH_PAD -> LabelItemSource.SCRATCH_PAD
+    LabelItemSourceEnumYaml.ESTIMATED_LANDING_TIME -> LabelItemSource.ESTIMATED_LANDING_TIME
+    LabelItemSourceEnumYaml.GROUND_SPEED -> LabelItemSource.GROUND_SPEED
+    LabelItemSourceEnumYaml.GROUND_SPEED_10 -> LabelItemSource.GROUND_SPEED_10
+    LabelItemSourceEnumYaml.ALTITUDE -> LabelItemSource.ALTITUDE
+    LabelItemSourceEnumYaml.TTL_TTG -> LabelItemSource.TTL_TTG
 }
 
 fun AirportJson.toDomain(icao: String, stars: StarYamlFile) =
@@ -99,7 +99,7 @@ fun AirportJson.toDomain(icao: String, stars: StarYamlFile) =
                 ),
                 elevation = value.elevation,
                 trueHeading = value.trueHeading,
-                stars = stars.STARS.filter { it.runway == id }.map { starYaml ->
+                stars = stars.stars.filter { it.runway == id }.map { starYaml ->
                     starYaml.toDomain()
                 }
             )
@@ -111,8 +111,8 @@ fun StarYamlEntry.toDomain() = Star(
     fixes = waypoints.map {
         StarFix(
             id = it.id,
-            typicalAltitude = it.altitude,
-            typicalSpeedIas = it.speed
+            typicalAltitude = it.typicalAltitude,
+            typicalSpeedIas = it.typicalSpeed
         )
     },
 )

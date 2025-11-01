@@ -60,5 +60,5 @@ connectionConfig:
   atcClient:
     host: "localhost"
     port: 12345
-  api:
+  masterSlaveApi:
     host: "https://aman-dman-api.fly.dev"
