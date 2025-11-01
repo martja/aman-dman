@@ -3,6 +3,7 @@ package no.vaccsca.amandman.model.data.integration
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.JsonFactory
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalJson
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalsUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.AssignRunwayMessage
@@ -269,7 +270,8 @@ class AtcClientEuroScope(
             ),
             arrivalAirportIcao = this.arrivalAirportIcao,
             flightPlanTas = this.flightPlanTas,
-            trackingController = this.trackingController
+            trackingController = this.trackingController,
+            recvTimestamp = Clock.System.now()
         )
     }
 
@@ -282,7 +284,8 @@ class AtcClientEuroScope(
             scratchPad = this.scratchPad,
             assignedRunway = this.runway,
             wakeCategory = this.wakeCategory,
-            trackingController = this.trackingController
+            trackingController = this.trackingController,
+            recvTimestamp = Clock.System.now()
         )
     }
 

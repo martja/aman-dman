@@ -11,4 +11,10 @@ sealed class RunwayFlightEvent(
     open val icaoType: String,
     open val wakeCategory: Char,
     open val trackingController: String?,
-) : RunwayEvent(scheduledTime, airportIcao, runway, estimatedTime)
+    open val lastTimestamp: Instant,
+) : RunwayEvent(
+    scheduledTime = scheduledTime,
+    airportIcao = airportIcao,
+    runway = runway,
+    estimatedTime = estimatedTime
+)

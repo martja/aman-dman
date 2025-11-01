@@ -10,4 +10,9 @@ data class RunwayDelayEvent(
     override val airportIcao: String,
     val delay: Duration,
     val name: String,
-) : RunwayEvent(scheduledTime, airportIcao, runway, estimatedTime)
+) : RunwayEvent(
+    scheduledTime = scheduledTime,
+    airportIcao = airportIcao,
+    runway = runway,
+    estimatedTime = estimatedTime
+)

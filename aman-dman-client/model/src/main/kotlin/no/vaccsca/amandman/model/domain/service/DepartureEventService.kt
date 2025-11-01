@@ -27,7 +27,8 @@ object DepartureEventService {
             runway = departure.assignedRunway,
             wakeCategory = departure.wakeCategory,
             trackingController = departure.trackingController,
-            sid = departure.assignedSid
+            sid = departure.assignedSid,
+            lastTimestamp = departure.recvTimestamp
         )
     }
 }

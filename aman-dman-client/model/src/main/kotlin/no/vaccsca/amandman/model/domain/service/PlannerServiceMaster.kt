@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.model.domain.service
 
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.data.integration.AtcClient
@@ -17,6 +18,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEven
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * This is only used in the Master and Local instances of the application
@@ -43,14 +45,25 @@ class PlannerServiceMaster(
     init {
         refreshWeatherData()
 
-        // Run every 10 seconds to keep data fresh
+        // Periodic refresh of CDM data
         Thread {
             while (true) {
-                Thread.sleep(10_000)
+                Thread.sleep(2_000)
                 if (fetchCdmData) {
                     println("Refreshing CDM data for $airportIcao")
                     refreshCdmData()
                 }
+            }
+        }.start()
+
+        // Periodic cleanup of old cached flights
+        Thread {
+            while (true) {
+                Thread.sleep(1_000) // check every second
+                val cutoff = Clock.System.now().minus(5.seconds)
+                arrivalsCache = arrivalsCache.filter { it.lastTimestamp >= cutoff }
+                departuresCache = departuresCache.filter { it.lastTimestamp >= cutoff }
+                onSequenceUpdated()
             }
         }.start()
     }
@@ -73,6 +86,13 @@ class PlannerServiceMaster(
 
     override fun setShowDepartures(showDepartures: Boolean) {
         this.fetchCdmData = showDepartures
+        if (showDepartures) {
+            refreshCdmData()
+        } else {
+            this.cdmDepartures = emptyList()
+            this.departuresCache = emptyList()
+            onSequenceUpdated()
+        }
     }
 
     override fun planArrivals() {

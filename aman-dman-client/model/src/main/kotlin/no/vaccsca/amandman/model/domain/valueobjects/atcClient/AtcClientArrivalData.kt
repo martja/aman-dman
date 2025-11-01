@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.model.domain.valueobjects.atcClient
 
+import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 
@@ -17,6 +18,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
  * @param assignedRunway The runway assigned to the aircraft, if any.
  * @param arrivalAirportIcao The ICAO code of the arrival airport.
  * @param flightPlanTas The true airspeed (TAS) from the flight plan,
+ * @param recvTimestamp The timestamp of when the data was received.
  */
 data class AtcClientArrivalData(
     val callsign: String,
@@ -30,4 +32,5 @@ data class AtcClientArrivalData(
     val assignedRunway: String?,
     val arrivalAirportIcao: String,
     val flightPlanTas: Int?,
+    val recvTimestamp: Instant,
 )

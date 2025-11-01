@@ -72,6 +72,7 @@ object ArrivalEventService {
             landingIas = aircraftPerformance.landingVat,
             scratchPad = arrival.scratchPad,
             assignedDirect = arrival.assignedDirect,
+            lastTimestamp = Clock.System.now()
         )
     }
 

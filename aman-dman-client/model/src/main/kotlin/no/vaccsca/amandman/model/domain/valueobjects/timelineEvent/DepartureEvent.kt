@@ -11,5 +11,16 @@ data class DepartureEvent(
     override val wakeCategory: Char,
     override val airportIcao: String,
     override val trackingController: String?,
+    override val lastTimestamp: Instant,
     val sid: String?
-) : RunwayFlightEvent(scheduledTime, estimatedTime, runway, airportIcao, callsign, icaoType, wakeCategory, trackingController)
+) : RunwayFlightEvent(
+    scheduledTime = scheduledTime,
+    estimatedTime = estimatedTime,
+    runway = runway,
+    airportIcao = airportIcao,
+    callsign = callsign,
+    icaoType = icaoType,
+    wakeCategory = wakeCategory,
+    trackingController = trackingController,
+    lastTimestamp = lastTimestamp
+)

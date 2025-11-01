@@ -7,4 +7,7 @@ sealed class RunwayEvent(
     override val airportIcao: String,
     open val runway: String,
     open val estimatedTime: Instant,
-) : TimelineEvent(scheduledTime, airportIcao)
+) : TimelineEvent(
+    scheduledTime = scheduledTime,
+    airportIcao = airportIcao
+)

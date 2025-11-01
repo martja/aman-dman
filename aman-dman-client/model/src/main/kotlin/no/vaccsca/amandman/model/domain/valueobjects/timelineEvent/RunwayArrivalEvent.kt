@@ -7,6 +7,7 @@ import kotlin.time.Duration
 data class RunwayArrivalEvent(
     override val scheduledTime: Instant,
     override val estimatedTime: Instant,
+    override val lastTimestamp: Instant,
     override val runway: String,
     override val callsign: String,
     override val icaoType: String,
@@ -26,4 +27,14 @@ data class RunwayArrivalEvent(
     val timeToPreceding: Duration? = null,
     val assignedDirect: String?,
     val scratchPad: String?,
-) : RunwayFlightEvent(scheduledTime, estimatedTime, runway, airportIcao, callsign, icaoType, wakeCategory, trackingController)
+) : RunwayFlightEvent(
+    scheduledTime = scheduledTime,
+    estimatedTime = estimatedTime,
+    runway = runway,
+    airportIcao = airportIcao,
+    callsign = callsign,
+    icaoType = icaoType,
+    wakeCategory = wakeCategory,
+    trackingController = trackingController,
+    lastTimestamp = lastTimestamp
+)
