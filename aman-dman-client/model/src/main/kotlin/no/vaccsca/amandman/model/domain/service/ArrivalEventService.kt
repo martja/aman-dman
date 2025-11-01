@@ -70,7 +70,9 @@ object ArrivalEventService {
             assignedStarOk = trajectory.star != null,
             withinActiveAdvisoryHorizon = false,
             sequenceStatus = SequenceStatus.AWAITING_FOR_SEQUENCE,
-            landingIas = aircraftPerformance.landingVat
+            landingIas = aircraftPerformance.landingVat,
+            scratchPad = arrival.scratchPad,
+            assignedDirect = arrival.assignedDirect,
         )
     }
 

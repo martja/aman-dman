@@ -1,9 +1,10 @@
 package no.vaccsca.amandman.model.data.repository
 
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import no.vaccsca.amandman.model.data.config.mapper.toDomain
+import no.vaccsca.amandman.model.data.config.yaml.AircraftPerformanceConfigYaml
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPerformance
 import java.io.File
 import java.io.FileNotFoundException
@@ -29,6 +30,6 @@ object AircraftPerformanceData {
             throw FileNotFoundException("Settings file not found at: $filePath")
         }
 
-        return yamlMapper.readValue(file)
+        return yamlMapper.readValue<AircraftPerformanceConfigYaml>(file).aircraft.mapValues { it.value.toDomain() }
     }
 }

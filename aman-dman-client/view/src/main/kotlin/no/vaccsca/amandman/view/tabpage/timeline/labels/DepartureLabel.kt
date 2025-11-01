@@ -1,17 +1,23 @@
 package no.vaccsca.amandman.view.tabpage.timeline.labels
 
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.model.domain.valueobjects.LabelItem
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import java.awt.Color
 
 class DepartureLabel(
-    departureEvent: DepartureEvent
+    val labelItems: List<LabelItem>,
+    departureEvent: DepartureEvent,
+    hBorder: Int,
+    vBorder: Int,
 ) : TimelineLabel(
     departureEvent,
     defaultBackgroundColor = Color.decode("#83989B"),
     defaultForegroundColor = Color.BLACK,
     hoverBackgroundColor = Color.GRAY,
-    hoverForegroundColor = Color.WHITE
+    hoverForegroundColor = Color.WHITE,
+    hBorder = hBorder,
+    vBorder = vBorder,
 ) {
     override fun paintBorder(g: java.awt.Graphics) {
         super.paintBorder(g)

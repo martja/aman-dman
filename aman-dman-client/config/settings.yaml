@@ -2,42 +2,63 @@
 
 timelines:
   ENGM:
-    - title: "01ALL"
+    - timelineTitle: "01ALL"
+      arrivalLabelLayoutId: osloArr
       right:
         runways: ["01L", "01R"]
 
-    - title: "19ALL"
+    - timelineTitle: "19ALL"
+      arrivalLabelLayoutId: osloArr
       right:
         runways: ["19L", "19R"]
 
-    - title: "19R/19L"
+    - timelineTitle: "19R/19L"
+      arrivalLabelLayoutId: osloArr
       left:
         runways: ["19R"]
       right:
         runways: ["19L"]
 
-    - title: "01L/01R"
+    - timelineTitle: "01L/01R"
+      arrivalLabelLayoutId: osloArr
       left:
         runways: ["01L"]
       right:
         runways: ["01R"]
 
   ENBR:
-    - title: "BR17"
+    - timelineTitle: "BR17"
+      arrivalLabelLayoutId: osloArr
       right:
         runways: ["17"]
 
-    - title: "BR35"
+    - timelineTitle: "BR35"
+      arrivalLabelLayoutId: osloArr
       right:
         runways: ["35"]
 
-    - title: "ENBR ALL"
+    - timelineTitle: "ENBR ALL"
+      arrivalLabelLayoutId: osloArr
       right:
         runways: ["17", "35"]
+
+arrivalLabelLayouts:
+  osloArr:
+    - {src: assignedRunway, w: 4}
+    - {src: assignedStar, w: 4, maxLen: 3}
+    - {src: callSign, w: 8}
+    - {src: aircraftType, w: 5}
+    - {src: wakeCategory, w: 2}
+    - {src: timeToLoseOrGain, w: 4, align: right}
+    - {src: distanceBehindPreceding, w: 5, align: right}
+
+  simpleLayout:
+    - {src: assignedRunway, w: 4}
+    - {src: callSign, w: 8}
 
 connectionConfig:
   atcClient:
     host: "localhost"
     port: 12345
-  api:
+  masterSlaveApi:
     host: "https://aman-dman-api.fly.dev"

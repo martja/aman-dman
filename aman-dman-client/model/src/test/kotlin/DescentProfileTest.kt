@@ -14,8 +14,8 @@ import no.vaccsca.amandman.model.domain.util.NavigationUtils.dmsToDecimal
 import no.vaccsca.amandman.model.domain.util.NavigationUtils.interpolatePositionAlongPath
 import no.vaccsca.amandman.model.domain.util.SpeedConversionUtils
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
+import no.vaccsca.amandman.model.domain.valueobjects.Runway
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 import org.junit.jupiter.api.Test
 import kotlin.collections.listOf
 import kotlin.math.abs
@@ -29,8 +29,6 @@ class DescentProfileTest {
 
     val star01LLunip4L =  Star(
         id = "LUNIP4L",
-        airport = "ENGM",
-        runway = RunwayInfo("01L", latLng = LatLng(60.18501045995491,11.073783755507158), elevation = 681f, trueHeading = 014f),
         fixes = listOf(
             starFix("LUNIP") {
                 speed(250)
@@ -57,13 +55,12 @@ class DescentProfileTest {
         )
     )
 
-    val runway01L = RunwayInfo("01L", latLng = LatLng(60.18501045995491,11.073783755507158), elevation = 681f, trueHeading = 014f)
+    val runway01L = Runway("01L", location = LatLng(60.18501045995491,11.073783755507158), elevation = 681f, stars = listOf(star01LLunip4L), trueHeading = 014f)
 
     val testAirport = Airport(
         icao = "ENGM",
         location = LatLng(0.0, 0.0),
-        runways = listOf(runway01L),
-        stars = listOf(star01LLunip4L),
+        runways = mapOf("01L" to runway01L)
     )
 
     data class TestFlight(

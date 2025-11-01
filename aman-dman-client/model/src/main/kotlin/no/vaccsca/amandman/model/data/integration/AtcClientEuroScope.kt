@@ -14,7 +14,6 @@ import no.vaccsca.amandman.model.data.dto.euroscope.RequestArrivalAndDeparturesM
 import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusJson
 import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusesUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.UnregisterTimelineMessageJson
-import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
@@ -27,7 +26,6 @@ import java.net.Socket
 import java.net.SocketTimeoutException
 
 class AtcClientEuroScope(
-    private val navdataRepository: NavdataRepository,
     private val controllerInfoCallback: ((ControllerInfoData) -> Unit),
     private val host: String = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.host,
     private val port: Int = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.port ?: 12345,

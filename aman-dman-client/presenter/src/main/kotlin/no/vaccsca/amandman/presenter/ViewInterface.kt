@@ -26,8 +26,6 @@ interface ViewInterface {
     fun openNonSequencedWindow()
     fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?)
     fun openDescentProfileWindow()
-    fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig? = null)
-    fun closeTimelineForm()
     fun updateDescentTrajectory(callsign: String, trajectory: List<TrajectoryPoint>)
     fun showTabContextMenu(tabIndex: Int, airportIcao: String)
     fun updateTab(airportIcao: String, tabData: TabData)
@@ -40,4 +38,8 @@ interface ViewInterface {
     fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double)
     fun openSelectRunwayDialog(runwayEvent: RunwayEvent, runwayOptions: Set<String>, onClose: (String) -> Unit)
     fun showTimelineGroup(group: TimelineGroup)
+
+    // Timeline creation and editing
+    fun openTimelineConfigForm(groupId: String, availableTagLayoutsDep: Set<String>, availableTagLayoutsArr: Set<String>, existingConfig: TimelineConfig? = null)
+    fun closeTimelineForm()
 }

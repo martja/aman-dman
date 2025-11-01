@@ -188,7 +188,12 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
             .forEach { it.updateRunwayModes(runwayModes) }
     }
 
-    override fun openTimelineConfigForm(groupId: String, existingConfig: TimelineConfig?) {
+    override fun openTimelineConfigForm(
+        groupId: String,
+        availableTagLayoutsDep: Set<String>,
+        availableTagLayoutsArr: Set<String>,
+        existingConfig: TimelineConfig?
+    ) {
         if (newTimelineForm != null) {
             newTimelineForm?.isVisible = true
         } else {
@@ -200,6 +205,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
                 isVisible = true
             }
         }
+        val timelineForm = newTimelineForm?.contentPane as? NewTimelineForm
+        timelineForm?.update(
+            arrLayouts = availableTagLayoutsArr,
+            depLayouts = availableTagLayoutsDep
+        )
     }
 
     override fun closeTimelineForm() {

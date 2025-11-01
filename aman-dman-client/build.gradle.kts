@@ -40,3 +40,7 @@ allprojects {
 application {
     mainClass = "no.vaccsca.amandman.MainKt"
 }
+
+tasks.named("shadowJar") {
+    dependsOn(":model:generateSchemas")
+}

@@ -5,4 +5,6 @@ data class TimelineConfig(
     val runwaysLeft: List<String>,
     val runwaysRight: List<String>,
     val airportIcao: String,
+    val depLabelLayout: String?,
+    val arrLabelLayout: String?,
 )

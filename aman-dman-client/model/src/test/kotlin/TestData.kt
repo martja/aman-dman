@@ -1,6 +1,6 @@
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPerformance
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
+import no.vaccsca.amandman.model.domain.valueobjects.Runway
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
 
@@ -34,13 +34,9 @@ val b738performance = AircraftPerformance(
     landingAPC = "D" // Approach Category D
 )
 
-val rwy19L = RunwayInfo("19L", latLng = LatLng(60.20116653568569,11.12244616482607), elevation = 681f, trueHeading = 194f)
-
 val star19LEseba4M =
     Star(
         id="ESEBA4M",
-        airport="ENGM",
-        runway=rwy19L,
         fixes= listOf(
             StarFix(id="ESEBA", typicalAltitude=null, typicalSpeedIas=250),
             StarFix(id="GM422", typicalAltitude=10000, typicalSpeedIas=220),
@@ -55,8 +51,6 @@ val star19LEseba4M =
 val star19LAdopi3M =
     Star(
         id="ADOPI3M",
-        airport="ENGM",
-        runway=rwy19L,
         fixes=listOf(
             StarFix(id="ADOPI", typicalAltitude=null, typicalSpeedIas=250),
             StarFix(id="GM428", typicalAltitude=10000, typicalSpeedIas=220),
@@ -70,8 +64,6 @@ val star19LAdopi3M =
 
 val star19LInrex4M = Star(
     id="INREX4M",
-    airport="ENGM",
-    runway=rwy19L,
     fixes= listOf(
         StarFix(id="INREX", typicalAltitude=null, typicalSpeedIas=250),
         StarFix(id="GM418", typicalAltitude=11000, typicalSpeedIas=220),
@@ -79,4 +71,13 @@ val star19LInrex4M = Star(
         StarFix(id="OSPAD", typicalAltitude=4000, typicalSpeedIas=180),
         StarFix(id="XIVTA", typicalAltitude=3500, typicalSpeedIas=170),
         StarFix(id="ENGM", typicalAltitude=700, typicalSpeedIas=null)
-    ))
+    )
+)
+
+val rwy19L = Runway(
+    "19L",
+    location = LatLng(60.20116653568569,11.12244616482607),
+    elevation = 681f,
+    trueHeading = 194f,
+    stars=listOf(star19LInrex4M, star19LEseba4M, star19LAdopi3M)
+)

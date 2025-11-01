@@ -25,13 +25,33 @@ dependencies {
     implementation("edu.ucar:grib:5.7.0")
     implementation("com.squareup.okhttp3:okhttp:5.1.0")
 
+    implementation("com.github.victools:jsonschema-generator:4.38.0")
+    implementation("com.github.victools:jsonschema-module-jackson:4.38.0")
+    implementation("com.github.victools:jsonschema-module-jakarta-validation:4.38.0")
+    implementation("jakarta.validation:jakarta.validation-api:3.0.2")
+
     testImplementation(kotlin("test"))
     testImplementation("io.mockk:mockk:1.14.2")
 }
 
+
 tasks.test {
     useJUnitPlatform()
 }
+
+val generateSchemas by tasks.registering(JavaExec::class) {
+    group = "build"
+    description = "Generate JSON/YAML schemas from Kotlin models"
+    mainClass.set("tools.SchemaGeneratorKt")
+    classpath = sourceSets["main"].runtimeClasspath
+
+    args("${rootProject.projectDir}/config")
+}
+
+tasks.named("build") {
+    dependsOn(generateSchemas)
+}
+
 kotlin {
     jvmToolchain(21)
 }

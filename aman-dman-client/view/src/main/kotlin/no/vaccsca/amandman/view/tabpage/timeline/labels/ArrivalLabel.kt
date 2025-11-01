@@ -1,11 +1,15 @@
 package no.vaccsca.amandman.view.tabpage.timeline.labels
 
-import no.vaccsca.amandman.presenter.PresenterInterface
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.model.domain.valueobjects.LabelItem
+import no.vaccsca.amandman.model.domain.valueobjects.LabelItemAlignment
+import no.vaccsca.amandman.model.domain.valueobjects.LabelItemSource
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
+import no.vaccsca.amandman.presenter.PresenterInterface
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.text.SimpleDateFormat
 import javax.swing.JMenuItem
 import javax.swing.JPopupMenu
 import kotlin.math.ceil
@@ -15,9 +19,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class ArrivalLabel(
+    val labelItems: List<LabelItem>,
     val arrivalEvent: RunwayArrivalEvent,
-    val presenterInterface: PresenterInterface
-) : TimelineLabel(arrivalEvent) {
+    val presenterInterface: PresenterInterface,
+    hBorder: Int,
+    vBorder: Int,
+) : TimelineLabel(arrivalEvent, hBorder = hBorder, vBorder = vBorder) {
 
     private val TTL_TTG_THRESHOLD = 10.seconds
 
@@ -54,53 +61,89 @@ class ArrivalLabel(
 
     override fun updateText() {
         var output = "<html><pre>"
-        val fixInboundEvent = timelineEvent as RunwayArrivalEvent
+        val flight = timelineEvent as RunwayArrivalEvent
 
-        output += fixInboundEvent.runway.padEnd(4)
-        output += (fixInboundEvent.assignedStar?.substring(0, 3) ?: "").padEnd(4)
-        output += fixInboundEvent.callsign.padEnd(9)
-        output += fixInboundEvent.icaoType.padEnd(5)
-        output += wakeCategoryText(fixInboundEvent.wakeCategory)
-        output += ttlTtgText(fixInboundEvent, 4)
-        output += (fixInboundEvent.distanceToPreceding ?: fixInboundEvent.remainingDistance)?.roundToInt().toString().padStart(5)
+        labelItems.forEach { item ->
+            output += when (item.source) {
+                LabelItemSource.CALL_SIGN ->
+                    item.format(flight.callsign)
+                LabelItemSource.ASSIGNED_RUNWAY ->
+                    item.format(flight.runway)
+                LabelItemSource.ASSIGNED_STAR ->
+                    item.format(flight.assignedStar ?: "")
+                LabelItemSource.AIRCRAFT_TYPE ->
+                    item.format(flight.icaoType)
+                LabelItemSource.WAKE_CATEGORY ->
+                    item.format(flight.wakeCategory, wakeCatColor(flight.wakeCategory))
+                LabelItemSource.TTL_TTG ->
+                    item.format(formatTtlTtgValue(flight), ttlTtgColor(flight.scheduledTime - flight.estimatedTime))
+                LabelItemSource.TIME_BEHIND_PRECEDING -> {
+                    val hhmm = flight.timeToPreceding?.toComponents { _, minute, second, _ -> String.format("%02d:%02d", minute, second) } ?: "--:--"
+                    item.format(hhmm)
+                }
+                LabelItemSource.TIME_BEHIND_PRECEDING_ROUNDED -> {
+                    val minutes = flight.timeToPreceding?.let { toNormalizedMinutes(it) } ?: 0
+                    item.format(minutes)
+                }
+                LabelItemSource.REMAINING_DISTANCE ->
+                    item.format(flight.remainingDistance.roundToInt())
+                LabelItemSource.DISTANCE_BEHIND_PRECEDING ->
+                    item.format((flight.distanceToPreceding ?: flight.remainingDistance).roundToInt())
+                LabelItemSource.DIRECT_ROUTING ->
+                    item.format(flight.assignedDirect)
+                LabelItemSource.SCRATCH_PAD ->
+                    item.format(flight.scratchPad ?: "")
+                LabelItemSource.ESTIMATED_LANDING_TIME ->
+                    item.format(SimpleDateFormat("HH:mm").format(flight.estimatedTime.epochSeconds * 1000))
+                LabelItemSource.GROUND_SPEED ->
+                    item.format(flight.groundSpeed)
+                LabelItemSource.GROUND_SPEED_10 ->
+                    item.format((flight.groundSpeed / 10) * 10)
+                LabelItemSource.ALTITUDE ->
+                    item.format(flight.pressureAltitude)
+            }
+        }
+
         output += "</pre></html>"
 
         text = output
     }
 
-    private fun wakeCategoryText(wakeCategory: Char): String {
-        val textStyle = when (wakeCategory) {
+    private fun wakeCatColor(wakeCategory: Char): String? =
+        when (wakeCategory) {
             'L' ->
-                "color: orange;"
+                "orange"
             'H', 'J' ->
-                "color: yellow;"
+                "yellow"
+            else ->
+                null
+        }
+
+    private fun ttlTtgColor(timeToLoseOrGain: Duration): String? =
+        when {
+            timeToLoseOrGain > TTL_TTG_THRESHOLD ->
+                "yellow"
+            timeToLoseOrGain < -TTL_TTG_THRESHOLD ->
+                "#00ff00"
+            else ->
+                null
+        }
+
+    /**
+     * Formats the time to lose or gain in minutes. Positive values are prefixed with a '+' sign,
+     * negative values are shown as is, and values within the threshold are shown as blank.
+     */
+    private fun formatTtlTtgValue(fixInboundEvent: RunwayArrivalEvent): String {
+        val timeToLoseOrGain = (fixInboundEvent.scheduledTime - fixInboundEvent.estimatedTime)
+        val minutesToLoseOrGain = toNormalizedMinutes(timeToLoseOrGain)
+        return when {
+            timeToLoseOrGain > TTL_TTG_THRESHOLD ->
+                "+$minutesToLoseOrGain"
+            timeToLoseOrGain < -TTL_TTG_THRESHOLD ->
+                minutesToLoseOrGain.toString()
             else ->
                 ""
         }
-        return "<span style='$textStyle'>${wakeCategory.toString().padEnd(2)}</span>"
-    }
-
-    /**
-     * Formats the time to lose or gain in minutes, with special formatting for positive and negative values.
-     * Positive values are shown in yellow with a '+' sign, negative values in green, and zero is shown as blank.
-     */
-    private fun ttlTtgText(fixInboundEvent: RunwayArrivalEvent, leftPadding: Int): String {
-        val timeToLoseOrGain = (fixInboundEvent.scheduledTime - fixInboundEvent.estimatedTime)
-        var minutesToLoseOrGainFormatted = toNormalizedMinutes(timeToLoseOrGain).toString()
-
-        when {
-            timeToLoseOrGain > TTL_TTG_THRESHOLD -> {
-                minutesToLoseOrGainFormatted = "+$minutesToLoseOrGainFormatted"
-                minutesToLoseOrGainFormatted = "<span style='color: yellow;'>${minutesToLoseOrGainFormatted.padStart(leftPadding, ' ')}</span>"
-            }
-            timeToLoseOrGain < -TTL_TTG_THRESHOLD -> {
-                minutesToLoseOrGainFormatted = "<span style='color: #00ff00;'>${minutesToLoseOrGainFormatted.padStart(leftPadding, ' ')}</span>"
-            }
-            else -> {
-                minutesToLoseOrGainFormatted = "".padStart(leftPadding)
-            }
-        }
-        return minutesToLoseOrGainFormatted
     }
 
     override fun getBorderColor(): Color {
@@ -121,6 +164,29 @@ class ArrivalLabel(
             minutes > 0 -> ceil(minutes).toInt()
             minutes < 0 -> floor(minutes).toInt()
             else -> 0
+        }
+    }
+
+    private fun LabelItem.format(value: Any?, color: String? = null): String {
+        val originalValueAsString = value?.toString() ?: defaultValue ?: ""
+        val maxCharacters = this.width.coerceAtMost(this.maxLength ?: Int.MAX_VALUE)
+        val truncatedValue =
+            if (originalValueAsString.length > maxCharacters) {
+                originalValueAsString.substring(0, maxCharacters)
+            } else {
+                originalValueAsString
+            }
+
+        val paddedValue = when (this.alignment) {
+            null, LabelItemAlignment.LEFT -> truncatedValue.padEnd(width)
+            LabelItemAlignment.CENTER -> truncatedValue.padStart(((width - truncatedValue.length) / 2) + truncatedValue.length).padEnd(width)
+            LabelItemAlignment.RIGHT -> truncatedValue.padStart(width)
+        }
+
+        return if (color != null) {
+            "<span style='color: $color;'>${paddedValue}</span>"
+        } else {
+            paddedValue
         }
     }
 }

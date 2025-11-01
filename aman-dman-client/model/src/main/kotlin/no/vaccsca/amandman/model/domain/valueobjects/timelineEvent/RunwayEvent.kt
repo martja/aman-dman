@@ -1,7 +1,6 @@
 package no.vaccsca.amandman.model.domain.valueobjects.timelineEvent
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayInfo
 
 sealed class RunwayEvent(
     override val timelineId: Int,
