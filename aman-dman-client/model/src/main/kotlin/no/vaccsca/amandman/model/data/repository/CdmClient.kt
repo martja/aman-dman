@@ -3,11 +3,17 @@ package no.vaccsca.amandman.model.data.repository
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import no.vaccsca.amandman.model.domain.valueobjects.CdmData
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.time.ZonedDateTime
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 
 
 class CdmClient {
@@ -60,23 +66,38 @@ class CdmClient {
     }
 
     /**
-     * Parses a timestamp in "HHMMSS" format to an Instant (UTC)
+     * Parses a UTC "HHMMSS" timestamp into an Instant,
+     * assuming today's date in UTC (or tomorrow if already passed >1h ago).
      */
     private fun parseHhMmSsTimestamp(value: String): Instant? {
         return try {
-            val hours = value.substring(0, 2).toInt()
-            val minutes = value.substring(2, 4).toInt()
-            val seconds = value.substring(4, 6).toInt()
+            val hour = value.substring(0, 2).toInt()
+            val minute = value.substring(2, 4).toInt()
+            val second = value.substring(4, 6).toInt()
 
-            val now = ZonedDateTime.now()
-            var dateTime = now.withHour(hours).withMinute(minutes).withSecond(seconds).withNano(0)
+            val nowUtc = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+            val todayDate = nowUtc.date
 
-            // If the time was already passed an hour ago, assume it's for the next day
-            if (dateTime.isBefore(now.minusHours(1))) {
-                dateTime = dateTime.plusDays(1)
+            val parsed = LocalDateTime(
+                year = todayDate.year,
+                monthNumber = todayDate.monthNumber,
+                dayOfMonth = todayDate.dayOfMonth,
+                hour = hour,
+                minute = minute,
+                second = second,
+                nanosecond = 0
+            )
+
+            // If the time is more than 1 hour in the past, assume it's tomorrow UTC
+            var parsedInstant = parsed.toInstant(TimeZone.UTC)
+            val nowInstant = Clock.System.now()
+
+            if (parsedInstant < nowInstant.minus(1.hours)) {
+                parsedInstant = parsedInstant.plus(1.days)
             }
-            Instant.parse(dateTime.toInstant().toString())
-        } catch (e: Exception) {
+
+            parsedInstant
+        } catch (_: Throwable) {
             null
         }
     }

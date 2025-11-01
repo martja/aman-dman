@@ -2,8 +2,8 @@ package no.vaccsca.amandman.view.tabpage.timeline
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.common.*
+import no.vaccsca.amandman.model.domain.valueobjects.LabelItem
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.*

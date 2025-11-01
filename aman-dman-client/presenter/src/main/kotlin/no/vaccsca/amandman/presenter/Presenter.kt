@@ -9,7 +9,6 @@ import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.data.integration.AtcClientEuroScope
 import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
 import no.vaccsca.amandman.model.data.repository.CdmClient
-import no.vaccsca.amandman.model.data.repository.NavdataRepository
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.domain.PlannerManager
