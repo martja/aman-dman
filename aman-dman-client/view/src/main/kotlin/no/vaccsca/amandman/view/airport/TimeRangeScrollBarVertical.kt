@@ -2,6 +2,8 @@ package no.vaccsca.amandman.view.airport
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.*
@@ -51,7 +53,13 @@ class TimeRangeScrollBarVertical(
         g2.drawRect(0, barStart, width - 1, barEnd - barStart - 1)
 
         timelineEvents.forEach { occurrence ->
-            drawEvent(g2, occurrence.scheduledTime, Color.WHITE)
+            when (occurrence) {
+                is DepartureEvent ->
+                    // Hex
+                    drawEvent(g2, occurrence.scheduledTime, Color(0x51BAB7))
+                else ->
+                    drawEvent(g2, occurrence.scheduledTime, Color.WHITE)
+            }
         }
 
         val handleLeft = scrollHandleMargin
