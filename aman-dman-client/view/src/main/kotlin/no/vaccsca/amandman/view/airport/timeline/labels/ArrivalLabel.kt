@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.tabpage.timeline.labels
+package no.vaccsca.amandman.view.airport.timeline.labels
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.LabelItem

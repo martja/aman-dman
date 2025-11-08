@@ -1,9 +1,8 @@
-package no.vaccsca.amandman.view.tabpage.timeline.labels
+package no.vaccsca.amandman.view.airport.timeline.labels
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import java.awt.Color
-import java.awt.Dimension
 import javax.swing.JLabel
 import javax.swing.border.EmptyBorder
 

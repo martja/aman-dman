@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.tabpage
+package no.vaccsca.amandman.view.airport
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant

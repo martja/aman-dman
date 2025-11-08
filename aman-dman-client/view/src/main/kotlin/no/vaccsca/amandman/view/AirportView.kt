@@ -9,10 +9,10 @@ import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.tabpage.TimeRangeScrollBarVertical
-import no.vaccsca.amandman.view.tabpage.TimelineScrollPane
-import no.vaccsca.amandman.view.tabpage.TopBar
-import no.vaccsca.amandman.view.tabpage.timeline.TimelineView
+import no.vaccsca.amandman.view.airport.TimeRangeScrollBarVertical
+import no.vaccsca.amandman.view.airport.TimelineScrollPane
+import no.vaccsca.amandman.view.airport.TopBar
+import no.vaccsca.amandman.view.airport.timeline.TimelineView
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.BorderLayout
 import javax.swing.JPanel
@@ -21,7 +21,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class TabView(
+class AirportView(
     presenter: PresenterInterface,
     val airportIcao: String,
 ) : JPanel(BorderLayout()) {
@@ -44,7 +44,7 @@ class TabView(
     )
 
     val timeWindowScrollbar = TimeRangeScrollBarVertical(selectedTimeRange, availableTimeRange)
-    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, presenter)
+    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, presenter, airportIcao)
     val topBar = TopBar(presenter, airportIcao)
 
     init {

@@ -9,6 +9,7 @@ import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import java.awt.Point
 
 /**
  * Interface for the View in the MVP architecture.
@@ -27,17 +28,15 @@ interface ViewInterface {
     fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?)
     fun openDescentProfileWindow()
     fun updateDescentTrajectory(callsign: String, trajectory: List<TrajectoryPoint>)
-    fun showTabContextMenu(tabIndex: Int, airportIcao: String)
     fun updateTab(airportIcao: String, tabData: TabData)
-    fun removeTab(airportIcao: String)
-    fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>)
+    fun showAirportContextMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point)
     fun updateDraggedLabel(timelineEvent: TimelineEvent, newInstant: Instant, isAvailable: Boolean)
     fun updateRunwayModes(airportIcao: String, runwayModes: List<Pair<String, Boolean>>)
     fun showErrorMessage(message: String)
     fun openWindow()
     fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double)
     fun openSelectRunwayDialog(runwayEvent: RunwayEvent, runwayOptions: Set<String>, onClose: (String) -> Unit)
-    fun showTimelineGroup(group: TimelineGroup)
+    fun showTimelineGroup(airportIcao: String)
 
     // Timeline creation and editing
     fun openTimelineConfigForm(groupId: String, availableTagLayoutsDep: Set<String>, availableTagLayoutsArr: Set<String>, existingConfig: TimelineConfig? = null)

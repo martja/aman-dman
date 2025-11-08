@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.tabpage
+package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
@@ -20,7 +20,7 @@ class Footer(
     private val metButton = JButton("MET")
     private val profileButton = JButton("Profile")
     private val reloadButton = JButton("Reload settings")
-    private val newTabButton = JButton("New tab")
+    private val newTabButton = JButton("New group")
     private val spacingSelector = JSpinner(SpinnerNumberModel(3.0, 0.0, 20.0, 1))
     private var spacingChangeListener: javax.swing.event.ChangeListener? = null
 

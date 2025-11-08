@@ -6,6 +6,7 @@ import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import java.awt.Point
 
 /**
  * Interface defining the contract for the Presenter in the MVP architecture.
@@ -31,7 +32,7 @@ interface PresenterInterface {
     fun onToggleShowDepartures(airportIcao: String, selected: Boolean)
     
     // Tab context menu actions
-    fun onTabMenu(tabIndex: Int, airportIcao: String)
+    fun onTabMenu(airportIcao: String, screenPos: Point)
     fun onCreateNewTimelineClicked(groupId: String)
     fun onRemoveTab(airportIcao: String)
 

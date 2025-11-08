@@ -4,7 +4,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.tabpage.TimeRangeScrollBarHorizontal
+import no.vaccsca.amandman.view.airport.TimeRangeScrollBarHorizontal
 import no.vaccsca.amandman.view.util.SharedValue
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartPanel

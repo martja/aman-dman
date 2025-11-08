@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.tabpage.timeline.utils
+package no.vaccsca.amandman.view.airport.timeline.utils
 
 import java.awt.Color
 import java.awt.Graphics

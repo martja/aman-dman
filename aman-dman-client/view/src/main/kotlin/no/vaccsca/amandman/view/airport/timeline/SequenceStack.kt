@@ -1,8 +1,8 @@
-package no.vaccsca.amandman.view.tabpage.timeline
+package no.vaccsca.amandman.view.airport.timeline
 
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.view.tabpage.timeline.enums.TimelineAlignment
+import no.vaccsca.amandman.view.airport.timeline.enums.TimelineAlignment
 import java.awt.Color
 import java.awt.Graphics
 import javax.swing.JPanel
@@ -16,10 +16,6 @@ class SequenceStack(
     private val lineToLabel = 10
 
     private var timelineEvents: List<TimelineEvent> = emptyList()
-
-    init {
-        background = Color.decode("#323232")
-    }
 
     fun updateTimelineEvents(occurrences: List<TimelineEvent>) {
         this.timelineEvents = occurrences

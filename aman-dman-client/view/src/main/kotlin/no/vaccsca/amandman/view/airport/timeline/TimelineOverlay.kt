@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.tabpage.timeline
+package no.vaccsca.amandman.view.airport.timeline
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -8,10 +8,10 @@ import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.*
 import no.vaccsca.amandman.presenter.PresenterInterface
-import no.vaccsca.amandman.view.tabpage.timeline.labels.ArrivalLabel
-import no.vaccsca.amandman.view.tabpage.timeline.labels.DepartureLabel
-import no.vaccsca.amandman.view.tabpage.timeline.labels.TimelineLabel
-import no.vaccsca.amandman.view.tabpage.timeline.utils.GraphicUtils.drawStringAdvanced
+import no.vaccsca.amandman.view.airport.timeline.labels.ArrivalLabel
+import no.vaccsca.amandman.view.airport.timeline.labels.DepartureLabel
+import no.vaccsca.amandman.view.airport.timeline.labels.TimelineLabel
+import no.vaccsca.amandman.view.airport.timeline.utils.GraphicUtils.drawStringAdvanced
 import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -72,6 +72,10 @@ class TimelineOverlay(
         repaint()
     }
 
+    private fun isDualTimeline(): Boolean {
+        return timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
+    }
+
     private fun computedLabelWidth(): Int {
         val maxLabelLength = Math.max(
             arrivalLabelLayout.sumOf { it.width },
@@ -84,10 +88,9 @@ class TimelineOverlay(
     }
 
     override fun getPreferredSize(): Dimension {
-        val dual = timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
         val scaleW = timelineView.getScaleWidth()
         val labelWidth = computedLabelWidth()
-        val width = if (dual) {
+        val width = if (isDualTimeline()) {
             scaleW + 2 * (labelWidth + scaleMargin) + timelinePadding * 2
         } else {
             scaleW + labelWidth + scaleMargin + timelinePadding
@@ -187,8 +190,12 @@ class TimelineOverlay(
     private fun drawHourglasses(g: Graphics) {
         val scaleBounds = timelineView.getScaleBounds()
         val now = Clock.System.now()
-        paintHourglass(g, scaleBounds.x, now)
-        paintHourglass(g, scaleBounds.x + scaleBounds.width, now)
+        if (timelineConfig.runwaysLeft.size > 0) {
+            paintHourglass(g, scaleBounds.x, now)
+        }
+        if (timelineConfig.runwaysRight.size > 0) {
+            paintHourglass(g, scaleBounds.x + scaleBounds.width, now)
+        }
     }
 
     private fun drawProposedTime(g: Graphics) {

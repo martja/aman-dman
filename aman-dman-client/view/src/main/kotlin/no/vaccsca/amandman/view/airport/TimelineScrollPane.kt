@@ -1,10 +1,10 @@
-package no.vaccsca.amandman.view.tabpage
+package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.tabpage.timeline.TimelineView
+import no.vaccsca.amandman.view.airport.timeline.TimelineView
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -19,7 +19,8 @@ import kotlin.time.Duration.Companion.seconds
 class TimelineScrollPane(
     val selectedTimeRange: SharedValue<TimeRange>,
     val availableTimeRange: SharedValue<TimeRange>,
-    val presenterInterface: PresenterInterface
+    val presenterInterface: PresenterInterface,
+    val airportIcao: String,
 ) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
     init {
         val items = JPanel(GridBagLayout())
@@ -29,6 +30,18 @@ class TimelineScrollPane(
         gbc.anchor = GridBagConstraints.WEST
         gbc.fill = GridBagConstraints.VERTICAL
         viewport.add(items)
+
+        viewport.view.addMouseListener(object : java.awt.event.MouseAdapter() {
+            override fun mousePressed(e: java.awt.event.MouseEvent) = maybeShowPopup(e)
+            override fun mouseReleased(e: java.awt.event.MouseEvent) = maybeShowPopup(e)
+
+            private fun maybeShowPopup(e: java.awt.event.MouseEvent) {
+                if (e.isPopupTrigger) {
+                    val converted = javax.swing.SwingUtilities.convertPoint(e.component, e.point, viewport)
+                    presenterInterface.onTabMenu(airportIcao, converted)
+                }
+            }
+        })
     }
 
     fun insertTimeline(timelineConfig: TimelineConfig) {
@@ -80,18 +93,28 @@ class TimelineScrollPane(
 
     // Zoom when using scrollwheel
     override fun processMouseWheelEvent(e: java.awt.event.MouseWheelEvent) {
-        val currentRange = selectedTimeRange.value
-        val rangeDuration = currentRange.end - currentRange.start
-        val zoomFactor = 1.1.pow(e.wheelRotation.toDouble())
-        val newDuration = (rangeDuration * zoomFactor).coerceAtLeast(1.seconds)
-        val centerTime = currentRange.start + rangeDuration / 2
-        val newEnd = centerTime + newDuration / 2
+        // Check if Shift is down -> horizontal scroll
+        if (e.isShiftDown) {
+            // Horizontal scroll
+            val hBar = horizontalScrollBar
+            val increment = hBar.unitIncrement * e.wheelRotation
+            hBar.value += increment
+        } else {
+            // Vertical scroll -> zoom
+            val currentRange = selectedTimeRange.value
+            val rangeDuration = currentRange.end - currentRange.start
+            val zoomFactor = 1.1.pow(e.wheelRotation.toDouble())
+            val newDuration = (rangeDuration * zoomFactor).coerceAtLeast(1.seconds)
+            val centerTime = currentRange.start + rangeDuration / 2
+            val newEnd = centerTime + newDuration / 2
 
-        if (newEnd > availableTimeRange.value.end || newEnd < currentRange.start + 1.seconds || newDuration < 10.minutes) {
-            return
+            if (newEnd > availableTimeRange.value.end || newEnd < currentRange.start + 1.seconds || newDuration < 10.minutes) {
+                return
+            }
+
+            selectedTimeRange.value = TimeRange(currentRange.start, newEnd)
         }
 
-        selectedTimeRange.value = TimeRange(currentRange.start, newEnd)
         e.consume()
     }
 }

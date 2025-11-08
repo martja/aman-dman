@@ -10,7 +10,7 @@ import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.view.tabpage.Footer
+import no.vaccsca.amandman.view.airport.Footer
 import no.vaccsca.amandman.view.windows.LandingRatesGraph
 import no.vaccsca.amandman.view.windows.NewTimelineForm
 import no.vaccsca.amandman.view.windows.NonSeqView
@@ -20,16 +20,15 @@ import java.awt.Dimension
 import javax.swing.*
 import kotlin.math.roundToInt
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import java.awt.Point
 
 class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
     override lateinit var presenterInterface: PresenterInterface
 
-    private val tabPane = JTabbedPane()
-
     private val nonSeqView = NonSeqView()
     private val verticalWindView = VerticalWindView()
-    private val descentProfileVisualizationView = no.vaccsca.amandman.view.DescentProfileVisualization()
+    private val descentProfileVisualizationView = DescentProfileVisualization()
     private val landingRatesGraph = LandingRatesGraph()
 
     private var newTimelineForm: JDialog? = null
@@ -38,6 +37,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     private var landingRatesDialog: JDialog? = null
     private var nonSequencedDialog: JDialog? = null
     private var footer: Footer? = null
+    private var airportViewsPanel: AirportViewsPanel? = null
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -48,34 +48,14 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
         presenterInterface.onReloadSettingsRequested()
         footer = Footer(presenterInterface)
+        airportViewsPanel = AirportViewsPanel(presenterInterface)
 
         setSize(1000, 800)
         setLocationRelativeTo(null) // Center the window
-        add(tabPane, BorderLayout.CENTER)
+        add(airportViewsPanel, BorderLayout.CENTER)
         add(footer, BorderLayout.SOUTH)
 
         isVisible = true // Show the frame
-
-        tabPane.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mousePressed(e: java.awt.event.MouseEvent) {
-                maybeShowPopup(e)
-            }
-
-            override fun mouseReleased(e: java.awt.event.MouseEvent) {
-                maybeShowPopup(e)
-            }
-
-            private fun maybeShowPopup(e: java.awt.event.MouseEvent) {
-                if (e.isPopupTrigger) {
-                    val tabIndex = tabPane.indexAtLocation(e.x, e.y)
-                    if (tabIndex >= 0) {
-                        val airportIcao = (tabPane.getComponentAt(tabIndex) as TabView).airportIcao
-                        presenterInterface.onTabMenu(tabIndex, airportIcao)
-                    }
-                }
-            }
-        })
-        //isAlwaysOnTop = true
     }
 
     override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
@@ -119,73 +99,57 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         dialog.isVisible = true
     }
 
-    override fun showTimelineGroup(group: TimelineGroup) {
-        val theIndex = tabPane.components.indexOfFirst { (it as TabView).airportIcao == group.airportIcao }
-        this.tabPane.selectedIndex = theIndex
+    override fun showTimelineGroup(airportIcao: String) {
+        airportViewsPanel?.changeVisibleGroup(airportIcao)
     }
 
-    override fun showTabContextMenu(tabIndex: Int, availableTimelines: List<TimelineConfig>) {
+    override fun showAirportContextMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point) {
         val popup = JPopupMenu()
-        val tab = tabPane.getComponentAt(tabIndex) as TabView
 
-        val loadTimelineMenu = JMenu("Add timeline")
-        if (availableTimelines.isEmpty()) {
-            loadTimelineMenu.isEnabled = false
-        } else {
-            availableTimelines.sortedBy { it.title }.forEach { timeline ->
-                val item = JMenuItem(timeline.title)
-                item.addActionListener {
-                    presenterInterface.onAddTimelineButtonClicked(tab.airportIcao, timeline)
-                }
-                loadTimelineMenu.add(item)
+        val timelinesMenu = JMenu("Add timeline")
+        availableTimelines.sortedBy { it.title }.forEach { timeline ->
+            val item = JMenuItem(timeline.title)
+            item.addActionListener {
+                presenterInterface.onAddTimelineButtonClicked(airportIcao, timeline)
             }
+            timelinesMenu.add(item)
         }
 
-        val addTimelineItem = JMenuItem("Create timeline ...")
-        addTimelineItem.addActionListener {
-            presenterInterface.onCreateNewTimelineClicked(tab.airportIcao)
+        val customTimelineItem = JMenuItem("Custom ...")
+        customTimelineItem.addActionListener {
+            presenterInterface.onCreateNewTimelineClicked(airportIcao)
+        }
+        timelinesMenu.add(customTimelineItem)
+
+        val closeItem = JMenuItem("Close airport view")
+        closeItem.addActionListener {
+            presenterInterface.onRemoveTab(airportIcao)
         }
 
-        val removeItem = JMenuItem("Remove tab")
-        removeItem.addActionListener {
-            presenterInterface.onRemoveTab(tab.airportIcao)
-        }
-
-        popup.add(loadTimelineMenu)
-        popup.add(addTimelineItem)
-        popup.add(removeItem)
-        popup.show(tabPane, tab.x, tab.y)
+        popup.add(timelinesMenu)
+        popup.add(closeItem)
+        popup.show(contentPane, screenPos.x, screenPos.y)
     }
 
     override fun updateTab(airportIcao: String, tabData: TabData) {
-        tabPane.components.filterIsInstance<TabView>()
-            .filter { it.airportIcao == airportIcao }
-            .forEach { it.updateAmanData(tabData) }
-
+        airportViewsPanel?.updateTab(airportIcao, tabData)
         val allArrivalEvents = tabData.timelinesData.flatMap { it.left + it.right }
         landingRatesGraph.updateData(airportIcao, allArrivalEvents)
         nonSeqView.updateNonSeqData(
             tabData.timelinesData.flatMap { it.left + it.right }
         )
-
     }
 
-    override fun removeTab(airportIcao: String) {
-        val tabIndex = tabPane.components.indexOfFirst { (it as TabView).airportIcao == airportIcao }
-        if (tabIndex >= 0) {
-            tabPane.removeTabAt(tabIndex)
-        }
+    override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) {
+        airportViewsPanel?.updateTimelineGroups(timelineGroups)
     }
 
     override fun updateDraggedLabel(timelineEvent: TimelineEvent, newInstant: Instant, isAvailable: Boolean) {
-        tabPane.components.filterIsInstance<TabView>()
-            .forEach { it.updateDraggedLabel(timelineEvent, newInstant, isAvailable) }
+        airportViewsPanel?.updateDraggedLabel(timelineEvent, newInstant, isAvailable)
     }
 
     override fun updateRunwayModes(airportIcao: String, runwayModes: List<Pair<String, Boolean>>) {
-        tabPane.components.filterIsInstance<TabView>()
-            .filter { it.airportIcao == airportIcao }
-            .forEach { it.updateRunwayModes(runwayModes) }
+        airportViewsPanel?.updateRunwayModes(airportIcao, runwayModes)
     }
 
     override fun openTimelineConfigForm(
@@ -222,11 +186,6 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         val currentFlightLevel = (trajectory.first().altitude / 100.0).roundToInt() // Convert to FL
         descentProfileDialog?.title = "$callsign - calculated descent profile from FL$currentFlightLevel"
         descentProfileVisualizationView.setDescentSegments(trajectory)
-    }
-
-    override fun showTabContextMenu(tabIndex: Int, airportIcao: String) {
-        val tab = tabPane.getComponentAt(tabIndex) as TabView
-        presenterInterface.onTabMenu(tabIndex, airportIcao)
     }
 
     override fun openMetWindow() {
@@ -291,33 +250,6 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
                 preferredSize = Dimension(800, 600)
                 isVisible = true
                 pack()
-            }
-        }
-    }
-
-    override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) {
-        // Close tabs that are not in the groups
-        for (i in tabPane.tabCount - 1 downTo 0) {
-            val tab = tabPane.getComponentAt(i) as TabView
-            if (timelineGroups.none { it.airportIcao == tab.airportIcao }) {
-                tabPane.removeTabAt(i)
-            }
-        }
-
-        // Add new tabs for groups that are not already present
-        for (group in timelineGroups) {
-            if (tabPane.components.none { (it as TabView).airportIcao == group.airportIcao }) {
-                val tabView = TabView(presenterInterface, group.airportIcao)
-                tabPane.addTab(group.name + " " + group.userRole, tabView)
-            }
-        }
-
-        // Update existing tabs with new data
-        for (i in 0 until tabPane.tabCount) {
-            val tab = tabPane.getComponentAt(i) as TabView
-            val group = timelineGroups.find { it.airportIcao == tab.airportIcao }
-            if (group != null) {
-                tab.updateTimelines(group)
             }
         }
     }

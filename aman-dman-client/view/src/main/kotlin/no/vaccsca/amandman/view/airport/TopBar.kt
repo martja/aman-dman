@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.tabpage
+package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.presenter.PresenterInterface
 import java.awt.*

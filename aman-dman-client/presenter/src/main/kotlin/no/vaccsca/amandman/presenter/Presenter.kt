@@ -26,6 +26,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayFlightEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import java.awt.Point
 import kotlin.time.Duration.Companion.seconds
 
 class Presenter(
@@ -205,14 +206,14 @@ class Presenter(
         }
     }
 
-    override fun onTabMenu(tabIndex: Int, airportIcao: String) {
+    override fun onTabMenu(airportIcao: String, screenPos: Point) {
         val availableTimelinesForIcao =
             timelineConfigs.values
                 .filter { it.airportIcao == airportIcao }
                 .toSet()
                 .toList()
 
-        view.showTabContextMenu(tabIndex, availableTimelinesForIcao)
+        view.showAirportContextMenu(airportIcao, availableTimelinesForIcao, screenPos)
     }
 
     override fun onNewTimelineGroup(airportIcao: String, userRole: UserRole) =
@@ -259,9 +260,9 @@ class Presenter(
         val serviceToRemove = plannerManager.getServiceForAirport(airportIcao)
 
         // Remove from view and unregister service (this calls service.stop())
-        view.removeTab(airportIcao)
         plannerManager.unregisterService(airportIcao)
         timelineGroups.removeAll { it.airportIcao == airportIcao }
+        view.updateTimelineGroups(timelineGroups)
 
         // Check if we need to clean up the shared AtcClient
         // Only close it if no more Master/Local services are using it
@@ -423,7 +424,7 @@ class Presenter(
         plannerManager.getServiceForAirport(timelineGroup.airportIcao).planArrivals()
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
-        view.showTimelineGroup(timelineGroup)
+        view.showTimelineGroup(timelineGroup.airportIcao)
 
         plannerService.start()
     }

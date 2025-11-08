@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.tabpage.timeline
+package no.vaccsca.amandman.view.airport.timeline
 
 import no.vaccsca.amandman.presenter.PresenterInterface
 import kotlinx.datetime.*
@@ -7,7 +7,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEv
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.tabpage.timeline.utils.GraphicUtils.drawStringAdvanced
+import no.vaccsca.amandman.view.airport.timeline.utils.GraphicUtils.drawStringAdvanced
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.*
 import java.awt.event.MouseEvent
