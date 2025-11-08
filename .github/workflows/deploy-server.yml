@@ -1,23 +1,43 @@
 name: Deploy Simple Server to Fly.io
 
 on:
-  push:
-    branches: [main, shared-state]
-    paths:
-      - 'server/**'
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
   deploy:
     name: Deploy to Fly.io
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      
+
+      - name: Check if server folder changed
+        id: changes
+        run: |
+          # Compare against the previous release tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "first release"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Comparing with $PREV_TAG"
+            if git diff --quiet "$PREV_TAG"...HEAD -- server; then
+              echo "No changes in server/"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in server/"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
       - name: Setup Fly.io
+        if: steps.changes.outputs.changed == 'true'
         uses: superfly/flyctl-actions/setup-flyctl@master
-        
+
       - name: Deploy to Fly.io
+        if: steps.changes.outputs.changed == 'true'
         run: flyctl deploy --remote-only
         working-directory: ./server
         env:
