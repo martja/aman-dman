@@ -23,6 +23,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.UUID.randomUUID
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
+import kotlin.time.toKotlinDuration
 
 class SharedStateHttpClient : SharedState {
     private val clientUuid = randomUUID().toString()
@@ -158,6 +161,7 @@ class SharedStateHttpClient : SharedState {
 
     object KotlinxInstantModule : SimpleModule("KotlinxInstantModule") {
         init {
+            // Instant serializer/deserializer using ISO-8601 format
             addSerializer(Instant::class.java, object : JsonSerializer<Instant>() {
                 override fun serialize(
                     value: Instant,
@@ -172,6 +176,19 @@ class SharedStateHttpClient : SharedState {
                     p: JsonParser,
                     ctxt: DeserializationContext
                 ): Instant = Instant.Companion.parse(p.text)
+            })
+            // Duration serializer/deserializer using ISO-8601 format
+            addSerializer(Duration::class.java, object : JsonSerializer<Duration>() {
+                override fun serialize(value: Duration, gen: JsonGenerator, serializers: SerializerProvider) {
+                    val isoString = value.toJavaDuration().toString() // Convert to Java Duration and then ISO string
+                    gen.writeString(isoString)
+                }
+            })
+            addDeserializer(Duration::class.java, object : JsonDeserializer<Duration>() {
+                override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Duration {
+                    val isoString = p.text
+                    return java.time.Duration.parse(isoString).toKotlinDuration() // Java Duration -> Kotlin Duration
+                }
             })
         }
     }
