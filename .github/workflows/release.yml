@@ -36,7 +36,8 @@ jobs:
       - name: Build Gradle Project
         run: |
           cd aman-dman-client
-          .\gradlew.bat -Pversion=${{ env.VERSION }} shadowJar
+          $version = "${{ env.VERSION }}" -replace '^v', ''
+          .\gradlew.bat -Pversion="$version" shadowJar
 
       - name: Package artifacts
         shell: bash
