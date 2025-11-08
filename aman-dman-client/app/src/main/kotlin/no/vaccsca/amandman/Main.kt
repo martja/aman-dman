@@ -19,6 +19,7 @@ fun main() {
     try {
         HiFiLookAndFeel.setCurrentTheme(Properties().apply {
             put("logoString", "") // Removes "JTattoo"-attribution from all popup menus
+            put("backgroundPattern", "off")
         })
         UIManager.setLookAndFeel("com.jtattoo.plaf.hifi.HiFiLookAndFeel")
         //UIManager.setLookAndFeel("com.sun.java.swing.plaf.motif.MotifLookAndFeel")
