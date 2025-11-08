@@ -26,6 +26,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySe
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import java.io.*
 import java.net.Socket
+import java.net.SocketException
 import java.net.SocketTimeoutException
 
 class AtcClientEuroScope(
@@ -53,9 +54,15 @@ class AtcClientEuroScope(
 
     override fun start(onControllerInfoData: (ControllerInfoData) -> Unit) {
         if (isRunning) return
+
+        // Reset state and create a new scope if needed
+        if (scope.isActive.not()) {
+            scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        }
+
         isRunning = true
         scope.launch {
-            while (true) {
+            while (isRunning) {
                 if (!isConnected) {
                     println("Attempting to connect to $host:$port")
                     try {
@@ -118,19 +125,41 @@ class AtcClientEuroScope(
 
     override fun close() {
         try {
-            isConnected = false
+            println("Closing AtcClientEuroScope...")
             isRunning = false
+            isConnected = false
+
+            // Cancel all coroutines in the scope
             scope.cancel()
 
-            socket?.close()
-            writer?.close()
-            reader?.close()
+            // Synchronized block to safely close the socket and streams
+            synchronized(this) {
+                try {
+                    socket?.close()
+                } catch (e: Exception) {
+                    println("Error closing socket: ${e.message}")
+                } finally {
+                    socket = null
+                }
+
+                try {
+                    writer?.close()
+                } catch (e: Exception) {
+                    println("Error closing writer: ${e.message}")
+                } finally {
+                    writer = null
+                }
+
+                try {
+                    reader?.close()
+                } catch (e: Exception) {
+                    println("Error closing reader: ${e.message}")
+                } finally {
+                    reader = null
+                }
+            }
         } catch (e: Exception) {
             println("Error closing connection: ${e.message}")
-        } finally {
-            socket = null
-            writer = null
-            reader = null
         }
     }
 
@@ -159,10 +188,11 @@ class AtcClientEuroScope(
     }
 
     private suspend fun receiveMessages() {
+        var bufferedReader: BufferedReader? = null
         try {
             // Use larger buffer for reading large messages (256KB buffer)
-            val bufferedReader = BufferedReader(reader, 256 * 1024)
-            
+            bufferedReader = BufferedReader(reader, 256 * 1024)
+
             // Set socket timeout for read operations (60 seconds for better stability)
             socket?.soTimeout = 60000
 
@@ -170,7 +200,7 @@ class AtcClientEuroScope(
             var messageCount = 0
             var lastMessageTime = System.currentTimeMillis()
 
-            while (isConnected) {
+            while (isConnected && isRunning) {
                 try {
                     val message = bufferedReader.readLine()
                     if (message == null) {
@@ -201,6 +231,14 @@ class AtcClientEuroScope(
                         break
                     }
                     continue
+                } catch (e: SocketException) {
+                    if (isRunning && isConnected) {
+                        println("Socket exception while reading: ${e.message}")
+                        e.printStackTrace()
+                    } else {
+                        println("Socket closed during shutdown (expected)")
+                    }
+                    break
                 } catch (e: IOException) {
                     println("IOException while reading: ${e.message}")
                     e.printStackTrace()
@@ -216,8 +254,15 @@ class AtcClientEuroScope(
             e.printStackTrace()
         } finally {
             println("Disconnected from server.")
-            close()
+            // Only mark as disconnected, don't call close() to avoid recursion
             isConnected = false
+
+            // Clean up the buffered reader
+            try {
+                bufferedReader?.close()
+            } catch (e: Exception) {
+                // Ignore errors during cleanup
+            }
         }
     }
 
