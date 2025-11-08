@@ -6,12 +6,11 @@ import no.vaccsca.amandman.model.domain.valueobjects.LabelItemAlignment
 import no.vaccsca.amandman.model.domain.valueobjects.LabelItemSource
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.view.AmanPopupMenu
 import java.awt.Color
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.text.SimpleDateFormat
-import javax.swing.JMenuItem
-import javax.swing.JPopupMenu
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -47,14 +46,11 @@ class ArrivalLabel(
     }
 
     private fun showPopupMenu(e: MouseEvent) {
-        val popup = JPopupMenu()
-
-        val rescheduleItem = JMenuItem("Re-schedule")
-        rescheduleItem.addActionListener {
-            presenterInterface.onRecalculateSequenceClicked(arrivalEvent.airportIcao, arrivalEvent.callsign)
+        val popup = AmanPopupMenu("Flight Options") {
+            item("Re-schedule") {
+                presenterInterface.onRecalculateSequenceClicked(arrivalEvent.airportIcao, arrivalEvent.callsign)
+            }
         }
-
-        popup.add(rescheduleItem)
         popup.show(e.component, e.x, e.y)
     }
 

@@ -1,18 +1,20 @@
 package no.vaccsca.amandman.view.airport.timeline
 
-import no.vaccsca.amandman.presenter.PresenterInterface
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.util.NumberUtils.format
+import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
-import no.vaccsca.amandman.view.entity.TimeRange
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.view.AmanPopupMenu
 import no.vaccsca.amandman.view.airport.timeline.utils.GraphicUtils.drawStringAdvanced
+import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
-import java.awt.*
+import java.awt.Color
+import java.awt.Graphics
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
-import javax.swing.JPopupMenu
 
 class TimeScale(
     private val timelineView: TimelineView,
@@ -109,18 +111,14 @@ class TimeScale(
     }
 
     private fun showPopupMenu(e: MouseEvent) {
-        val popup = JPopupMenu()
-        popup.add("Re-calculate full sequence").apply {
-            addActionListener {
-                presenterInterface.onRecalculateSequenceClicked(timelineView.timelineConfig.airportIcao)
-            }
-        }
+        val airportIcao = timelineView.timelineConfig.airportIcao
 
-        popup.add("Remove timeline").apply {
-            addActionListener {
-                presenterInterface.onRemoveTimelineClicked(
-                    timelineView.timelineConfig,
-                )
+        val popup = AmanPopupMenu("Timeline Actions") {
+            item("Re-calculate full sequence") {
+                presenterInterface.onRecalculateSequenceClicked(airportIcao)
+            }
+            item("Remove timeline") {
+                presenterInterface.onRemoveTimelineClicked(timelineView.timelineConfig)
             }
         }
 

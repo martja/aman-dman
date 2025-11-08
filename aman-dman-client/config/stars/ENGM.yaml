@@ -253,7 +253,7 @@ stars:
       - { id: ENGM, typicalAltitude: 700 }
 
   - runway: 01L
-    name: ELVUN-RNP-W
+    name: ELVUN·RNP·W
     waypoints:
       - { id: ELVUN, typicalAltitude: 5000, typicalSpeed: 200 }
       - { id: GM551, typicalAltitude: 3000, typicalSpeed: 180 }
