@@ -34,21 +34,22 @@ class SpeedConversionTest {
         )
     }
 
-    @Ignore
     @Test
     fun `Convert MACH to IAS`() {
         val ias = SpeedConversionUtils.machToIAS(mach = 0.783f, altitudeFt = 37000, satCelsius = -57).toDouble()
-        assertEquals(254.0, ias, 5.0)
+        assertEquals(254.0, ias, 3.0)
 
         val ias2 = SpeedConversionUtils.machToIAS(mach = 0.416f, altitudeFt = 7000, satCelsius = -6).toDouble()
-        assertEquals(240.0, ias2, 5.0)
+        assertEquals(240.0, ias2, 3.0)
+
+        val ias3 = SpeedConversionUtils.machToIAS(mach = 0.78f, altitudeFt = 39000, satCelsius = -58).toDouble()
+        assertEquals(241.0, ias3, 3.0)
     }
 
-    @Ignore
     @Test
     fun `Convert TAS to CAS at sea level with standard temp`() {
         val cas = SpeedConversionUtils.tasToCAS(tasKts = 450.0, altitudeFt = 35000, satCelsius = -56)
-        assertEquals(268.0, cas, 1.0) // Allow small tolerance
+        assertEquals(265.0, cas, 1.0)
     }
 
     @Test

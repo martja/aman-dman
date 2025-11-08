@@ -1,10 +1,12 @@
 package no.vaccsca.amandman.model.domain.util
 
 import no.vaccsca.amandman.model.domain.valueobjects.weather.WindVector
+import kotlin.div
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import kotlin.times
 
 object SpeedConversionUtils {
     /**
@@ -52,35 +54,35 @@ object SpeedConversionUtils {
 
     /**
      * Convert True Airspeed (TAS) to Calibrated Airspeed (CAS)
-     *
-     *  TODO: Improve accuracy
      */
     fun tasToCAS(tasKts: Double, altitudeFt: Int, satCelsius: Int): Double {
+        // Constants
         val gamma = 1.4
-        val R = 287.05
-        val P0 = 101325.0     // Sea-level pressure (Pa)
-        val T0 = 288.15       // Sea-level temp (K)
+        val R = 287.05            // J/(kg·K)
+        val P0 = 101325.0         // sea-level standard pressure, Pa
+        val T0 = 288.15           // sea-level standard temperature, K
+        val rho0 = P0 / (R * T0)  // sea-level density, kg/m³
 
-        val tas = tasKts / 1.94384 // knots → m/s
-        val altitudeM = altitudeFt * 0.3048
+        // Convert inputs
+        val tas = tasKts / 1.94384           // knots → m/s
+        val altitudeM = altitudeFt * 0.3048  // ft → m
+        val T = satCelsius + 273.15          // SAT in Kelvin
 
-        val satKelvin = satCelsius + 273.15
-
-        val L = 0.0065
-        val T = satKelvin
+        // Pressure at altitude (ISA)
+        val L = 0.0065  // lapse rate K/m
         val P = P0 * (1 - (L * altitudeM) / T0).pow(5.2561)
 
-        val rho = P / (R * T)
-        val rho0 = P0 / (R * T0)
+        // Speed of sound at altitude
+        val a = sqrt(gamma * R * T)
 
-        val eas = tas * sqrt(rho / rho0)
+        // Mach number from TAS (not EAS)
+        val M = tas / a
 
-        val a0 = sqrt(gamma * R * T0) // speed of sound at sea level standard
-        val M_eas = eas / a0
+        // Impact pressure q_c using ambient pressure P
+        val qc = P * ((1 + (gamma - 1) / 2 * M * M).pow(gamma / (gamma - 1)) - 1)
 
-        val q_c = P0 * ((1 + (gamma - 1) / 2 * M_eas * M_eas).pow(gamma / (gamma - 1)) - 1)
-
-        val cas = sqrt((2 * P0 / (gamma - 1)) * ((q_c / P0 + 1).pow((gamma - 1) / gamma) - 1))
+        // Calibrated Airspeed from impact pressure (using P0)
+        val cas = sqrt((2 * gamma * P0) / ((gamma - 1) * rho0) * ((qc / P0 + 1).pow((gamma - 1) / gamma) - 1))
 
         return cas * 1.94384 // m/s → knots
     }
