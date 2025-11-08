@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "no.vaccsca.amandman"
-version = "1.0-SNAPSHOT"
+version = property("version") as String
 
 dependencies {
     implementation(project(":app"))
