@@ -1,3 +1,4 @@
+import kotlinx.datetime.Clock
 import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
 import no.vaccsca.amandman.model.domain.valueobjects.*
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
@@ -47,7 +48,8 @@ class DescentTrajectoryServiceTest {
                 Waypoint(id="19L", latLng=rwy19L.location),
             ),
             arrivalAirportIcao="ENGM",
-            flightPlanTas=450
+            flightPlanTas=450,
+            recvTimestamp = Clock.System.now(),
         )
 
     val testArrival2 =
@@ -84,7 +86,8 @@ class DescentTrajectoryServiceTest {
                 Waypoint(id="19L", latLng=rwy19L.location),
             ),
             arrivalAirportIcao="ENGM",
-            flightPlanTas=450
+            flightPlanTas=450,
+            recvTimestamp = Clock.System.now(),
         )
 
 
@@ -111,7 +114,8 @@ class DescentTrajectoryServiceTest {
             Waypoint(id="19L", latLng=rwy19L.location),
         ),
         arrivalAirportIcao="ENGM",
-        flightPlanTas = 450
+        flightPlanTas = 450,
+        recvTimestamp = Clock.System.now(),
     )
 
     val testAirport = Airport(
