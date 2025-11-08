@@ -2,19 +2,21 @@ package no.vaccsca.amandman.view
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.domain.TimelineGroup
-import no.vaccsca.amandman.presenter.PresenterInterface
-import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
+import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.domain.TimelineGroup
+import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.view.entity.TimeRange
+import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.airport.TimeRangeScrollBarVertical
 import no.vaccsca.amandman.view.airport.TimelineScrollPane
 import no.vaccsca.amandman.view.airport.TopBar
 import no.vaccsca.amandman.view.airport.timeline.TimelineView
+import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.BorderLayout
+import java.awt.Point
 import javax.swing.JPanel
 import javax.swing.Timer
 import kotlin.time.Duration.Companion.hours
@@ -22,7 +24,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class AirportView(
-    presenter: PresenterInterface,
+    private val presenter: PresenterInterface,
     val airportIcao: String,
 ) : JPanel(BorderLayout()) {
 
@@ -89,14 +91,13 @@ class AirportView(
         }
     }
 
-    fun updateTimelines(timelineGroup: TimelineGroup) {
+    fun updateVisibleTimelines(timelineGroup: TimelineGroup) {
         // Clear existing timelines
         val items = timelineScrollPane.viewport.view as JPanel
-        items.components.forEach { component ->
-            if (component is TimelineView) {
-                items.remove(component)
-            }
-        }
+        items.components
+            .filterIsInstance<TimelineView>()
+            .forEach { component -> items.remove(component) }
+
         // Add the current timelines
         timelineGroup.timelines.forEach { timelineConfig ->
             timelineScrollPane.insertTimeline(timelineConfig)
@@ -106,5 +107,9 @@ class AirportView(
 
     fun updateRunwayModes(runwayModes: List<Pair<String, Boolean>>) {
         topBar.setRunwayModes(runwayModes)
+    }
+
+    fun openPopupMenu(availableTimelines: List<TimelineConfig>, screenPos: Point) {
+        timelineScrollPane.openPopupMenu(availableTimelines, screenPos)
     }
 }

@@ -104,31 +104,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     }
 
     override fun showAirportContextMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point) {
-        val popup = JPopupMenu()
-
-        val timelinesMenu = JMenu("Add timeline")
-        availableTimelines.sortedBy { it.title }.forEach { timeline ->
-            val item = JMenuItem(timeline.title)
-            item.addActionListener {
-                presenterInterface.onAddTimelineButtonClicked(airportIcao, timeline)
-            }
-            timelinesMenu.add(item)
-        }
-
-        val customTimelineItem = JMenuItem("Custom ...")
-        customTimelineItem.addActionListener {
-            presenterInterface.onCreateNewTimelineClicked(airportIcao)
-        }
-        timelinesMenu.add(customTimelineItem)
-
-        val closeItem = JMenuItem("Close airport view")
-        closeItem.addActionListener {
-            presenterInterface.onRemoveTab(airportIcao)
-        }
-
-        popup.add(timelinesMenu)
-        popup.add(closeItem)
-        popup.show(contentPane, screenPos.x, screenPos.y)
+        airportViewsPanel?.openPopupMenu(airportIcao, availableTimelines, screenPos)
     }
 
     override fun updateTab(airportIcao: String, tabData: TabData) {

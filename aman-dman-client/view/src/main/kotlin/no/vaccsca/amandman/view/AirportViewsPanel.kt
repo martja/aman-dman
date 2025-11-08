@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.view
 
+import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.presenter.PresenterInterface
@@ -30,34 +31,43 @@ class AirportViewsPanel(
         }
 
     /** Updates or adds tabs according to the groups */
-    fun updateTimelineGroups(groups: List<TimelineGroup>) {
-        // If we have multiple groups and tabPane is not currently added, add it back
-        if (groups.size > 1 && !components.contains(tabPane)) {
-            // Remove the single AirportView currently displayed
-            components.filterIsInstance<AirportView>().forEach { remove(it) }
-            add(tabPane, BorderLayout.CENTER)
+    fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) {
+        // Collect all existing AirportViews (either in tabPane or directly in this panel)
+        val existingViews = if (components.contains(tabPane)) {
+            tabPane.components.filterIsInstance<AirportView>()
+        } else {
+            components.filterIsInstance<AirportView>()
         }
 
-        // Remove old tabs
-        val currentTabs = tabPane.components.filterIsInstance<AirportView>()
-        currentTabs.forEach { tab ->
-            if (groups.none { it.airportIcao == tab.airportIcao }) {
-                tabPane.remove(tab)
+        // Close tabs that are not in the groups
+        for (i in tabPane.tabCount - 1 downTo 0) {
+            val tab = tabPane.getComponentAt(i) as AirportView
+            if (timelineGroups.none { it.airportIcao == tab.airportIcao }) {
+                tabPane.removeTabAt(i)
             }
         }
 
-        // Add new tabs
-        for (group in groups) {
-            if (tabPane.components.filterIsInstance<AirportView>().none { it.airportIcao == group.airportIcao }) {
-                val airportView = AirportView(presenterInterface, group.airportIcao)
-                tabPane.addTab("${group.name} ${group.userRole}", airportView)
+        // Add new tabs for groups that are not already present
+        for (group in timelineGroups) {
+            if (existingViews.none { it.airportIcao == group.airportIcao }) {
+                val tabView = AirportView(presenterInterface, group.airportIcao)
+                tabPane.addTab(group.name + " " + group.userRole, tabView)
+            } else {
+                // If the view exists but is not in tabPane, add it back
+                val existingView = existingViews.find { it.airportIcao == group.airportIcao }
+                if (existingView != null && !tabPane.components.contains(existingView)) {
+                    tabPane.addTab(group.name + " " + group.userRole, existingView)
+                }
             }
         }
 
-        // Update existing tabs
-        tabPane.components.filterIsInstance<AirportView>().forEach { tab ->
-            val group = groups.find { it.airportIcao == tab.airportIcao }
-            group?.let { tab.updateTimelines(it) }
+        // Update existing tabs with new data
+        for (i in 0 until tabPane.tabCount) {
+            val tab = tabPane.getComponentAt(i) as AirportView
+            val group = timelineGroups.find { it.airportIcao == tab.airportIcao }
+            if (group != null) {
+                tab.updateVisibleTimelines(group)
+            }
         }
 
         updateTabVisibility()
@@ -126,5 +136,9 @@ class AirportViewsPanel(
 
         revalidate()
         repaint()
+    }
+
+    fun openPopupMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point) {
+        visibleTabs.find { it.airportIcao == airportIcao }?.openPopupMenu(availableTimelines, screenPos)
     }
 }

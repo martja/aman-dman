@@ -8,8 +8,12 @@ import no.vaccsca.amandman.view.airport.timeline.TimelineView
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.Point
 import javax.swing.JLabel
+import javax.swing.JMenu
+import javax.swing.JMenuItem
 import javax.swing.JPanel
+import javax.swing.JPopupMenu
 import javax.swing.JScrollPane
 import kotlin.math.pow
 import kotlin.time.Duration.Companion.minutes
@@ -116,5 +120,33 @@ class TimelineScrollPane(
         }
 
         e.consume()
+    }
+
+    fun openPopupMenu(availableTimelines: List<TimelineConfig>, screenPos: Point) {
+        val popup = JPopupMenu()
+
+        val timelinesMenu = JMenu("Add timeline")
+        availableTimelines.sortedBy { it.title }.forEach { timeline ->
+            val item = JMenuItem(timeline.title)
+            item.addActionListener {
+                presenterInterface.onAddTimelineButtonClicked(airportIcao, timeline)
+            }
+            timelinesMenu.add(item)
+        }
+
+        val customTimelineItem = JMenuItem("Custom ...")
+        customTimelineItem.addActionListener {
+            presenterInterface.onCreateNewTimelineClicked(airportIcao)
+        }
+        timelinesMenu.add(customTimelineItem)
+
+        val closeItem = JMenuItem("Close airport view")
+        closeItem.addActionListener {
+            presenterInterface.onRemoveTab(airportIcao)
+        }
+
+        popup.add(timelinesMenu)
+        popup.add(closeItem)
+        popup.show(this, screenPos.x, screenPos.y)
     }
 }
