@@ -34,7 +34,13 @@ class TopBar(
         rightPanel.add(nonSequencedButton)
         rightPanel.add(landingRatesButton)
 
-        add(runwayModeList, BorderLayout.WEST)
+        // Wrap runwayModeList in a container to center it vertically
+        val runwayModeContainer = JPanel(GridBagLayout())
+        val gbc = GridBagConstraints()
+        gbc.anchor = GridBagConstraints.WEST
+        runwayModeContainer.add(runwayModeList, gbc)
+
+        add(runwayModeContainer, BorderLayout.WEST)
         add(rightPanel, BorderLayout.EAST)
     }
 
