@@ -62,7 +62,7 @@ abstract class TimeRangeScrollBarAbstract(
 
         g2.color = Color.DARK_GRAY
         g2.fillRect(0, 0, width, height)
-        g2.color = Color.WHITE
+        g2.color = Color.GRAY
         g2.drawRect(0, 0, width - 1, height - 1)
 
         drawNowIndicator(g2)
