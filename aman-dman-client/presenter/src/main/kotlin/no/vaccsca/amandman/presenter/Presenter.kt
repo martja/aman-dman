@@ -293,7 +293,7 @@ class Presenter(
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
-                    else -> view.showErrorMessage("Failed to move aircraft")
+                    else -> view.showErrorMessage("Failed to move aircraft: ${it.message}")
                 }
             }
     }
@@ -303,7 +303,7 @@ class Presenter(
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
-                    else -> view.showErrorMessage("Failed to re-schedule")
+                    else -> view.showErrorMessage("Failed to re-schedule: ${it.message}")
                 }
             }
     }
@@ -315,7 +315,7 @@ class Presenter(
                     is UnsupportedInSlaveModeException -> {
                         view.showErrorMessage(it.msg)
                     }
-                    else -> view.showErrorMessage("Failed to set minimum spacing")
+                    else -> view.showErrorMessage("Failed to set minimum spacing: ${it.message}")
                 }
             }
     }
@@ -347,7 +347,7 @@ class Presenter(
             .onFailure {
                 when (it) {
                     is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
-                    else -> view.showErrorMessage("Failed to check time slot availability")
+                    else -> view.showErrorMessage("Failed to check time slot availability: ${it.message}")
                 }
             }
     }
