@@ -124,20 +124,21 @@ class TimelineScrollPane(
         val sorted = availableTimelines.sortedBy { it.title }
 
         val popup = AmanPopupMenu("Airport Actions") {
-            section("Add timeline") {
+            item("Add timeline") {
                 sorted.forEach { timeline ->
-                    item(timeline.title) {
+                    item(timeline.title, action = {
                         presenterInterface.onAddTimelineButtonClicked(airportIcao, timeline)
-                    }
+                    })
                 }
-                item("Custom ...") {
+                separator()
+                item("Custom ...", action = {
                     presenterInterface.onCreateNewTimelineClicked(airportIcao)
-                }
+                })
             }
 
-            item("Close airport view") {
+            item("Close airport view", action = {
                 presenterInterface.onRemoveTab(airportIcao)
-            }
+            })
         }
 
         popup.show(this, screenPos.x, screenPos.y)
