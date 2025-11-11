@@ -35,7 +35,6 @@ class TimelineOverlay(
     private val pointDiameter = 6       // Diameter of the dot on the timescale
     private val scaleMargin = 30        // Distance between timescale and labels
     private val timelinePadding = 10   // Padding between timeline edge and labels
-    private val labelHeight = 15         // Fixed height for labels
     private val timeFormat = SimpleDateFormat("HH:mm")
 
     // --- State ---
@@ -111,20 +110,20 @@ class TimelineOverlay(
 
         leftLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
-            val centerY = dotY - labelHeight / 2
+            val centerY = dotY - label.preferredSize.height / 2
             val labelX = timelineView.getScaleBounds().x - labelWidth - scaleMargin
             val labelY = previousTopLeft?.let { kotlin.math.min(it - 3, centerY) } ?: centerY
-            label.setBounds(labelX, labelY, labelWidth, labelHeight)
-            previousTopLeft = label.y - labelHeight
+            label.setBounds(labelX, labelY, labelWidth, label.preferredSize.height)
+            previousTopLeft = label.y - label.preferredSize.height
         }
 
         rightLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
-            val centerY = dotY - labelHeight / 2
+            val centerY = dotY - label.preferredSize.height / 2
             val labelX = timelineView.getScaleBounds().x + timelineView.getScaleBounds().width + scaleMargin
             val labelY = previousTopRight?.let { kotlin.math.min(it - 3, centerY) } ?: centerY
-            label.setBounds(labelX, labelY, labelWidth, labelHeight)
-            previousTopRight = label.y - labelHeight
+            label.setBounds(labelX, labelY, labelWidth, label.preferredSize.height)
+            previousTopRight = label.y - label.preferredSize.height
         }
     }
 
@@ -167,7 +166,7 @@ class TimelineOverlay(
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
             val event = label.timelineEvent
             g.color = if (event is RunwayArrivalEvent && event.sequenceStatus == SequenceStatus.OK) Color.WHITE else Color.GRAY
-            g.drawLine(labelX, label.y + labelHeight / 2, dotX, dotY)
+            g.drawLine(labelX, label.y + label.preferredSize.height / 2, dotX, dotY)
             g.fillOval(dotX - pointDiameter / 2, dotY - pointDiameter / 2, pointDiameter, pointDiameter)
         }
     }
@@ -178,7 +177,7 @@ class TimelineOverlay(
             val isOnRightSide = copy.x > scaleBounds.x
             val labelX = if (isOnRightSide) copy.x else copy.x + copy.width
             val dotX = if (isOnRightSide) scaleBounds.x + scaleBounds.width else scaleBounds.x
-            val labelCenterY = copy.y + copy.height / 2
+            val labelCenterY = copy.y + copy.preferredSize.height / 2
             proposedTime?.takeIf { proposedTimeIsAvailable }?.let { time ->
                 g.color = Color.WHITE
                 paintHourglass(g, dotX, time)
@@ -301,7 +300,7 @@ class TimelineOverlay(
             isDraggingLabel = true
             draggedLabelCopy?.let { copy ->
                 val pointInOverlay = SwingUtilities.convertPoint(e.component, e.point, this@TimelineOverlay)
-                copy.setLocation(copy.x, pointInOverlay.y - copy.height / 2)
+                copy.setLocation(copy.x, pointInOverlay.y - copy.preferredSize.height / 2)
                 repaint()
             }
             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)

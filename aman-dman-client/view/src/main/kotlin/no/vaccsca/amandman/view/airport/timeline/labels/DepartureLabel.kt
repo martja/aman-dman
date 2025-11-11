@@ -2,11 +2,13 @@ package no.vaccsca.amandman.view.airport.timeline.labels
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.LabelItem
+import no.vaccsca.amandman.model.domain.valueobjects.LabelItemSource
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import java.awt.Color
 
 class DepartureLabel(
-    val labelItems: List<LabelItem>,
+    override val labelItems: List<LabelItem>,
     departureEvent: DepartureEvent,
     hBorder: Int,
     vBorder: Int,
@@ -18,26 +20,35 @@ class DepartureLabel(
     hoverForegroundColor = Color.WHITE,
     hBorder = hBorder,
     vBorder = vBorder,
+    labelItems = labelItems,
 ) {
     override fun paintBorder(g: java.awt.Graphics) {
         super.paintBorder(g)
-        g.color = java.awt.Color.GRAY
+        g.color = Color.GRAY
         g.drawRoundRect(this.visibleRect.x, visibleRect.y, visibleRect.width - 1, visibleRect.height - 1, 4, 4)
     }
 
-    override fun updateText() {
-        var output = "<html><pre>"
-        val departureEvent = timelineEvent as DepartureEvent
+    override fun decideLabelItemStyle(
+        item: LabelItem,
+        event: TimelineEvent
+    ): LabelStyleOptions {
+        val departure = event as DepartureEvent
+        return when (item.source) {
+            LabelItemSource.CALL_SIGN ->
+                LabelStyleOptions(text = departure.callsign)
 
-        output += departureEvent.callsign.padEnd(8)
-        output += departureEvent.runway.padEnd(5)
-        output += (departureEvent.sid ?: "").padEnd(9)
-        output += departureEvent.icaoType.padEnd(5)
-        output += departureEvent.wakeCategory.toString().padEnd(2)
+            LabelItemSource.ASSIGNED_RUNWAY ->
+                LabelStyleOptions(text = departure.runway)
 
-        output += "</pre></html>"
+            LabelItemSource.AIRCRAFT_TYPE ->
+                LabelStyleOptions(text = departure.icaoType)
 
-        text = output
+            LabelItemSource.WAKE_CATEGORY ->
+                LabelStyleOptions(text = departure.wakeCategory.toString())
+
+            else ->
+                LabelStyleOptions(text = "------")
+        }
     }
 
     override fun getTimelinePlacement(): Instant {
