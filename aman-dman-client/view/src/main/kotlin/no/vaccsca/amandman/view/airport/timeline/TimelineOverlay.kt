@@ -66,6 +66,14 @@ class TimelineOverlay(
     }
 
     fun updateDraggedLabel(timelineEvent: TimelineEvent, proposedTime: Instant, available: Boolean) {
+        if (draggedLabelCopy == null) {
+            draggedLabelCopy = labels.values.find { it.timelineEvent == timelineEvent }?.let { createLabelCopy(it) }
+            draggedLabelCopy?.let {
+                add(it)
+                setComponentZOrder(it, 0)
+                it.onDragStart()
+            }
+        }
         this.proposedTime = proposedTime
         this.proposedTimeIsAvailable = available
         repaint()
@@ -266,12 +274,6 @@ class TimelineOverlay(
     private fun labelMouseAdapter(label: TimelineLabel) = object : MouseAdapter() {
         override fun mousePressed(e: MouseEvent) {
             draggedLabelOriginalX = label.x
-            draggedLabelCopy = createLabelCopy(label)
-            draggedLabelCopy?.let {
-                add(it)
-                setComponentZOrder(it, 0)
-            }
-            label.onDragStart()
         }
 
         override fun mouseClicked(e: MouseEvent?) {
