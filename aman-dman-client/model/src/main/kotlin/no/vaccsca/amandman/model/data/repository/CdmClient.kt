@@ -25,7 +25,6 @@ class CdmClient {
     private data class CdmJson(
         val callsign: String,
         val cdmData: CdmDataJson,
-        val timeStamp: String,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
