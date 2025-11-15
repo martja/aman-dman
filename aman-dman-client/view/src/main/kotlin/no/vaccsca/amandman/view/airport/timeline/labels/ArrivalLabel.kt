@@ -99,9 +99,9 @@ class ArrivalLabel(
 
     private fun showPopupMenu(e: MouseEvent) {
         val popup = AmanPopupMenu("Flight Options") {
-            item("Re-schedule") {
+            item("Re-schedule", action = {
                 presenterInterface.onRecalculateSequenceClicked(arrivalEvent.airportIcao, arrivalEvent.callsign)
-            }
+            })
         }
         popup.show(e.component, e.x, e.y)
     }
