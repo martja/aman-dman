@@ -111,12 +111,7 @@ class TimeScale(
     }
 
     private fun showPopupMenu(e: MouseEvent) {
-        val airportIcao = timelineView.timelineConfig.airportIcao
-
         val popup = AmanPopupMenu("Timeline Actions") {
-            item("Re-calculate full sequence", action = {
-                presenterInterface.onRecalculateSequenceClicked(airportIcao)
-            })
             item("Remove timeline", action = {
                 presenterInterface.onRemoveTimelineClicked(timelineView.timelineConfig)
             })

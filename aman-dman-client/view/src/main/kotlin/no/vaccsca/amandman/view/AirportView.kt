@@ -16,7 +16,12 @@ import no.vaccsca.amandman.view.airport.timeline.TimelineView
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.Font
+import java.awt.Insets
 import java.awt.Point
+import javax.swing.BorderFactory
+import javax.swing.JButton
 import javax.swing.JPanel
 import javax.swing.Timer
 import kotlin.time.Duration.Companion.hours
@@ -46,12 +51,27 @@ class AirportView(
     )
 
     val timeWindowScrollbar = TimeRangeScrollBarVertical(selectedTimeRange, availableTimeRange)
+    val reloadButton = JButton("⟳").apply {
+        font = Font(font.name, Font.BOLD, 20)
+        toolTipText = "Recalculate sequence for all arrivals"
+        margin = Insets(0,0,5,0)
+        preferredSize = Dimension(0, 22)
+        border = BorderFactory.createEmptyBorder(1,1,6,1)
+        addActionListener {
+            presenter.onRecalculateSequenceClicked(airportIcao)
+        }
+    }
+    val westPanel = JPanel(BorderLayout()).apply {
+        add(timeWindowScrollbar, BorderLayout.CENTER)
+        add(reloadButton, BorderLayout.SOUTH)
+    }
+
     val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, presenter, airportIcao)
     val topBar = TopBar(presenter, airportIcao)
 
     init {
         add(topBar, BorderLayout.NORTH)
-        add(timeWindowScrollbar, BorderLayout.WEST)
+        add(westPanel, BorderLayout.WEST)
         add(timelineScrollPane, BorderLayout.CENTER)
 
         val timer = Timer(1000) {
