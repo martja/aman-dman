@@ -279,7 +279,9 @@ class TimelineOverlay(
         override fun mouseClicked(e: MouseEvent?) {
             label.onDragEnd()
             cleanupDraggedLabelCopy()
-            handleLabelClick(label)
+            if (e?.button == MouseEvent.BUTTON1) { // Left click
+                handleLabelClick(label)
+            }
         }
 
         override fun mouseReleased(e: MouseEvent) {
