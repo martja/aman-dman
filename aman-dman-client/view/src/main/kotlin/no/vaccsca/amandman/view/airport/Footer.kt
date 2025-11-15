@@ -14,7 +14,8 @@ import java.time.Instant
 import javax.swing.*
 
 class Footer(
-    private val presenterInterface: PresenterInterface
+    private val presenterInterface: PresenterInterface,
+    private val mainWindow: JFrame
 ) : JPanel(FlowLayout(FlowLayout.RIGHT)) {
     private val timeLabel = JLabel("10:00:22")
     private val metButton = JButton("MET")
@@ -99,7 +100,7 @@ class Footer(
                 }
 
                 val result = JOptionPane.showConfirmDialog(
-                    null,
+                    mainWindow,
                     panel,
                     "New Timeline Group",
                     JOptionPane.OK_CANCEL_OPTION,

@@ -47,7 +47,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     override fun openWindow() {
 
         presenterInterface.onReloadSettingsRequested()
-        footer = Footer(presenterInterface)
+        footer = Footer(presenterInterface, this)
         airportViewsPanel = AirportViewsPanel(presenterInterface)
 
         setSize(1000, 800)
@@ -56,6 +56,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         add(footer, BorderLayout.SOUTH)
 
         isVisible = true // Show the frame
+        isAlwaysOnTop = true
     }
 
     override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
