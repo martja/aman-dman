@@ -2,6 +2,7 @@ package no.vaccsca.amandman.view.windows
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.airport.TimeRangeScrollBarHorizontal
@@ -47,15 +48,15 @@ class LandingRatesGraph : JPanel() {
 
     private val availableTimeRange = SharedValue(
         initialValue = TimeRange(
-            Clock.System.now() - 1.hours,
-            Clock.System.now() + 3.hours,
+            NtpClock.now() - 1.hours,
+            NtpClock.now() + 3.hours,
         )
     )
 
     private val selectedTimeRange = SharedValue(
         initialValue = TimeRange(
-            Clock.System.now() - 10.minutes,
-            Clock.System.now() + 60.minutes,
+            NtpClock.now() - 10.minutes,
+            NtpClock.now() + 60.minutes,
         )
     )
 

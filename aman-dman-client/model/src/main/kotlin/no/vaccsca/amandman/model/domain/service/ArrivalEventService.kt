@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Clock
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
 import no.vaccsca.amandman.model.domain.exception.DescentTrajectoryException
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
@@ -50,7 +51,7 @@ object ArrivalEventService {
             throw DescentTrajectoryException("The descent trajectory is empty")
         }
 
-        val estimatedTime = Clock.System.now() + (trajectory.trajectoryPoints.firstOrNull()?.remainingTime ?: 0.seconds)
+        val estimatedTime = NtpClock.now() + (trajectory.trajectoryPoints.firstOrNull()?.remainingTime ?: 0.seconds)
 
         return RunwayArrivalEvent(
             callsign = arrival.callsign,
@@ -72,7 +73,7 @@ object ArrivalEventService {
             landingIas = aircraftPerformance.landingVat,
             scratchPad = arrival.scratchPad,
             assignedDirect = arrival.assignedDirect,
-            lastTimestamp = Clock.System.now()
+            lastTimestamp = NtpClock.now()
         )
     }
 

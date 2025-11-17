@@ -1,5 +1,6 @@
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.service.AircraftSequenceCandidate
 import no.vaccsca.amandman.model.domain.service.AmanDmanSequenceService
 import no.vaccsca.amandman.model.domain.service.Sequence
@@ -17,7 +18,7 @@ class AmanDmanSequenceServiceTest {
     @Test
     fun `Aircraft entering AAH should be added to sequence`() {
         val sequence = Sequence(emptyList())
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft = makeAircraft(
             callsign = "TEST123",
@@ -34,7 +35,7 @@ class AmanDmanSequenceServiceTest {
     @Test
     fun `Aircraft outside sequencing horizon should not be added to sequence`() {
         val sequence = Sequence(emptyList())
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft = makeAircraft(
             callsign = "TEST123",
@@ -50,7 +51,7 @@ class AmanDmanSequenceServiceTest {
     @Test
     fun `Aircraft with no conflicts should keep preferred time`() {
         val sequence = Sequence(emptyList())
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft = makeAircraft(
             callsign = "TEST123",
@@ -66,7 +67,7 @@ class AmanDmanSequenceServiceTest {
     // Test 4: Scheduled time assigned when there's a spacing conflict
     @Test
     fun `Aircraft should get delayed scheduled time when spacing conflict exists`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         // First aircraft already in sequence
         val firstAircraft = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'H')
@@ -95,7 +96,7 @@ class AmanDmanSequenceServiceTest {
     // Test 5: Wake category spacing rules
     @Test
     fun `Wake category spacing should be correctly applied`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         val sequence = Sequence(emptyList())
 
         val heavy = makeAircraft("HEAVY", now + 10.minutes, wakeCategory = 'H')
@@ -126,7 +127,7 @@ class AmanDmanSequenceServiceTest {
     // Test 6: Existing aircraft should preserve their scheduled times when no conflicts
     @Test
     fun `Existing aircraft should keep scheduled times when no conflicts exist`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         val scheduledTime = now + 12.minutes
 
         val aircraft = makeAircraft("TEST123", now + 15.minutes)
@@ -150,7 +151,7 @@ class AmanDmanSequenceServiceTest {
     // Test 7: Manually assigned aircraft should stick to their slots
     @Test
     fun `Manually assigned aircraft should preserve their scheduled times`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         val manualTime = now + 8.minutes
 
         val aircraft = makeAircraft("MANUAL123", now + 15.minutes)
@@ -170,7 +171,7 @@ class AmanDmanSequenceServiceTest {
     // Test 8: Manual movement should update following aircraft spacing
     @Test
     fun `Manual movement should adjust following aircraft when spacing conflict occurs`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft1 = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'M')
         val aircraft2 = makeAircraft("SECOND", now + 20.minutes, wakeCategory = 'L')
@@ -201,7 +202,7 @@ class AmanDmanSequenceServiceTest {
     // Test 9: Aircraft should go back to preferred time when conflict is resolved
     @Test
     fun `Aircraft should return to preferred time when conflict is resolved`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft1 = makeAircraft("FIRST", now + 10.minutes)
         val aircraft2 = makeAircraft("SECOND", now + 10.minutes + 30.seconds) // Initially too close
@@ -230,7 +231,7 @@ class AmanDmanSequenceServiceTest {
     // Test 10: Frozen horizon should prevent reordering
     @Test
     fun `Aircraft in frozen horizon should maintain their order`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         // Aircraft in frozen horizon (within 10 minutes)
         val frozenAircraft = makeAircraft("FROZEN", now + 5.minutes)
@@ -260,7 +261,7 @@ class AmanDmanSequenceServiceTest {
     // Test 11: Sequence stability - maintain relative order
     @Test
     fun `Existing aircraft should maintain relative order when possible`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft1 = makeAircraft("FIRST", now + 10.minutes)
         val aircraft2 = makeAircraft("SECOND", now + 15.minutes)
@@ -290,7 +291,7 @@ class AmanDmanSequenceServiceTest {
     // Test 12: TTL/TTG calculation (difference between preferred and scheduled)
     @Test
     fun `Should be able to calculate TTL when aircraft is delayed`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft1 = makeAircraft("LEADER", now + 10.minutes, wakeCategory = 'H')
         val aircraft2 = makeAircraft("FOLLOWER", now + 10.minutes + 30.seconds, wakeCategory = 'L')
@@ -315,7 +316,7 @@ class AmanDmanSequenceServiceTest {
     // Test 13: Remove aircraft from sequence
     @Test
     fun `Should remove aircraft from sequence`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft1 = makeAircraft("KEEP", now + 10.minutes)
         val aircraft2 = makeAircraft("REMOVE", now + 15.minutes)
@@ -336,7 +337,7 @@ class AmanDmanSequenceServiceTest {
     // Test 14: Multiple aircraft entering AAH simultaneously
     @Test
     fun `Multiple aircraft entering AAH should be properly spaced`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         val sequence = Sequence(emptyList())
 
         // Create aircraft with slightly different preferred times to ensure deterministic ordering
@@ -376,7 +377,7 @@ class AmanDmanSequenceServiceTest {
     // Test 15: Clear sequence
     @Test
     fun `Should clear all aircraft from sequence`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft1 = makeAircraft("FIRST", now + 10.minutes)
         val aircraft2 = makeAircraft("SECOND", now + 15.minutes)
@@ -396,7 +397,7 @@ class AmanDmanSequenceServiceTest {
     // Test 16: Aircraft on different runways should use minimum separation
     @Test
     fun `Aircraft on different runways should use minimum separation instead of wake spacing`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         val sequence = Sequence(emptyList())
 
         // Heavy aircraft on runway 09L
@@ -423,7 +424,7 @@ class AmanDmanSequenceServiceTest {
     // Test 17: Aircraft on same runway should use wake category spacing
     @Test
     fun `Aircraft on same runway should use wake category spacing`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         val sequence = Sequence(emptyList())
 
         // Heavy and light aircraft both on runway 09L (same runway)
@@ -446,7 +447,7 @@ class AmanDmanSequenceServiceTest {
     // Test 18: Aircraft without runway assignment should use wake category spacing
     @Test
     fun `Aircraft without runway assignment should use wake category spacing`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         val sequence = Sequence(emptyList())
 
         // Aircraft without runway assignments
@@ -469,7 +470,7 @@ class AmanDmanSequenceServiceTest {
     // Test 19: Mixed runway assignments should handle spacing correctly
     @Test
     fun `Mixed runway assignments should handle spacing correctly`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         val sequence = Sequence(emptyList())
 
         // First aircraft with runway assignment
@@ -493,7 +494,7 @@ class AmanDmanSequenceServiceTest {
     // Test 20: Manual movement should respect runway-based spacing
     @Test
     fun `Manual movement should respect runway-based spacing rules`() {
-        val now = Clock.System.now()
+        val now = NtpClock.now()
 
         val aircraft1 = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
         val aircraft2 = makeAircraft("SECOND", now + 20.minutes, wakeCategory = 'L', assignedRunway = "09R")

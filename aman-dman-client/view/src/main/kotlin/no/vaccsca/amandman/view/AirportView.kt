@@ -2,6 +2,7 @@ package no.vaccsca.amandman.view
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.TimelineGroup
@@ -15,18 +16,13 @@ import no.vaccsca.amandman.view.airport.TopBar
 import no.vaccsca.amandman.view.airport.timeline.TimelineView
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
-import java.awt.BorderLayout
-import java.awt.Dimension
-import java.awt.Font
-import java.awt.Insets
-import java.awt.Point
+import java.awt.*
 import javax.swing.BorderFactory
 import javax.swing.JButton
 import javax.swing.JPanel
-import javax.swing.Timer
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 class AirportView(
     private val presenter: PresenterInterface,
@@ -38,15 +34,15 @@ class AirportView(
 
     private val availableTimeRange = SharedValue(
         initialValue = TimeRange(
-            Clock.System.now() - maxHistory,
-            Clock.System.now() + maxFuture,
+            NtpClock.now() - maxHistory,
+            NtpClock.now() + maxFuture,
         )
     )
 
     private val selectedTimeRange = SharedValue(
         initialValue = TimeRange(
-            Clock.System.now() - 10.minutes,
-            Clock.System.now() + 60.minutes,
+            NtpClock.now() - 10.minutes,
+            NtpClock.now() + 60.minutes,
         )
     )
 
@@ -73,19 +69,17 @@ class AirportView(
         add(topBar, BorderLayout.NORTH)
         add(westPanel, BorderLayout.WEST)
         add(timelineScrollPane, BorderLayout.CENTER)
+    }
 
-        val timer = Timer(1000) {
-            selectedTimeRange.value = TimeRange(
-                selectedTimeRange.value.start + 1.seconds,
-                selectedTimeRange.value.end + 1.seconds,
-            )
-            availableTimeRange.value = TimeRange(
-                Clock.System.now() - maxHistory,
-                Clock.System.now() + maxFuture,
-            )
-        }
-
-        timer.start()
+    fun updateTime(currentTime: Instant, delta: Duration) {
+        selectedTimeRange.value = TimeRange(
+            selectedTimeRange.value.start + delta,
+            selectedTimeRange.value.end + delta,
+        )
+        availableTimeRange.value = TimeRange(
+            currentTime - maxHistory,
+            currentTime + maxFuture,
+        )
     }
 
     fun updateAmanData(tabData: TabData) {

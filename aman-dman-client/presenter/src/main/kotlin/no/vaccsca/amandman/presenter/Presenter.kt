@@ -2,6 +2,7 @@ package no.vaccsca.amandman.presenter
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
@@ -76,10 +77,10 @@ class Presenter(
         view.presenterInterface = this
 
         javax.swing.Timer(1000) {
-            updateViewFromCachedData()
-        }.start()
+            view.updateTime(NtpClock.now())
 
-        javax.swing.Timer(1000) {
+            updateViewFromCachedData()
+
             myMasterRoles.forEach { airport ->
                 if (!sharedState.checkMasterRoleStatus(airport)) {
                     view.showErrorMessage("Lost master role for $airport")
@@ -135,13 +136,13 @@ class Presenter(
         synchronized(lock) {
             timelineEvents.filterIsInstance<RunwayFlightEvent>().forEach {
                 cachedAmanData[it.callsign] = CachedEvent(
-                    lastTimestamp = Clock.System.now(),
+                    lastTimestamp = NtpClock.now(),
                     timelineEvent = it
                 )
             }
 
             // Delete stale data
-            val cutoffTime = Clock.System.now() - 5.seconds
+            val cutoffTime = NtpClock.now() - 5.seconds
             cachedAmanData.entries.removeIf { entry ->
                 entry.value.lastTimestamp < cutoffTime
             }

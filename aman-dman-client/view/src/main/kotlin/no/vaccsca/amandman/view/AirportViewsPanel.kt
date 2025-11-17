@@ -6,6 +6,7 @@ import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.presenter.PresenterInterface
 import java.awt.*
 import javax.swing.*
+import kotlin.time.Duration
 
 /**
  * Panel that holds multiple AirportView(s).
@@ -71,6 +72,10 @@ class AirportViewsPanel(
         }
 
         updateTabVisibility()
+    }
+
+    fun updateTime(currentTime: kotlinx.datetime.Instant, delta: Duration) {
+        visibleTabs.forEach { it.updateTime(currentTime, delta) }
     }
 
     /** Updates data in a specific tab */

@@ -196,7 +196,7 @@ class TimelineOverlay(
 
     private fun drawHourglasses(g: Graphics) {
         val scaleBounds = timelineView.getScaleBounds()
-        val now = Clock.System.now()
+        val now = NtpClock.now()
         if (timelineConfig.runwaysLeft.size > 0) {
             paintHourglass(g, scaleBounds.x, now)
         }

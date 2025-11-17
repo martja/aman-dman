@@ -1,4 +1,5 @@
 import kotlinx.datetime.Clock
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
 import no.vaccsca.amandman.model.domain.valueobjects.*
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
@@ -49,7 +50,7 @@ class DescentTrajectoryServiceTest {
             ),
             arrivalAirportIcao="ENGM",
             flightPlanTas=450,
-            recvTimestamp = Clock.System.now(),
+            recvTimestamp = NtpClock.now(),
         )
 
     val testArrival2 =
@@ -87,7 +88,7 @@ class DescentTrajectoryServiceTest {
             ),
             arrivalAirportIcao="ENGM",
             flightPlanTas=450,
-            recvTimestamp = Clock.System.now(),
+            recvTimestamp = NtpClock.now(),
         )
 
 
@@ -115,7 +116,7 @@ class DescentTrajectoryServiceTest {
         ),
         arrivalAirportIcao="ENGM",
         flightPlanTas = 450,
-        recvTimestamp = Clock.System.now(),
+        recvTimestamp = NtpClock.now(),
     )
 
     val testAirport = Airport(

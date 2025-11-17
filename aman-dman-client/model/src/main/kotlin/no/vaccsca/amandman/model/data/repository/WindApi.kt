@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.model.data.repository
 
 import kotlinx.datetime.*
+import no.vaccsca.amandman.common.NtpClock
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Files
@@ -111,7 +112,7 @@ class WindApi {
     }
 
     private fun fetchMostRecentForecast(bbox: BoundingBox): Pair<Instant, NetcdfFile>? {
-        val timeNow = Clock.System.now()
+        val timeNow = NtpClock.now()
 
         // Truncate fractional seconds by constructing a new Instant at whole seconds precision:
         val timeNowTruncated = Instant.fromEpochSeconds(timeNow.epochSeconds)

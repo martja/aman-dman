@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.JsonFactory
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalJson
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalsUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.AssignRunwayMessage
@@ -28,6 +29,7 @@ import java.io.*
 import java.net.Socket
 import java.net.SocketException
 import java.net.SocketTimeoutException
+import kotlin.time.Duration.Companion.minutes
 
 class AtcClientEuroScope(
     private val controllerInfoCallback: ((ControllerInfoData) -> Unit),
@@ -198,7 +200,7 @@ class AtcClientEuroScope(
 
             println("Starting message receive loop...")
             var messageCount = 0
-            var lastMessageTime = System.currentTimeMillis()
+            var lastMessageTime = NtpClock.now()
 
             while (isConnected && isRunning) {
                 try {
@@ -209,7 +211,7 @@ class AtcClientEuroScope(
                     }
                     
                     messageCount++
-                    lastMessageTime = System.currentTimeMillis()
+                    lastMessageTime = NtpClock.now()
 
                     try {
                         val dataPackage = objectMapper.readValue(message, MessageFromServerJson::class.java)
@@ -222,11 +224,11 @@ class AtcClientEuroScope(
                         continue
                     }
                 } catch (e: SocketTimeoutException) {
-                    val timeSinceLastMessage = System.currentTimeMillis() - lastMessageTime
+                    val timeSinceLastMessage = NtpClock.now() - lastMessageTime
                     println("Socket read timeout after ${timeSinceLastMessage}ms - checking connection...")
 
                     // If no message for more than 2 minutes, consider connection dead
-                    if (timeSinceLastMessage > 120000) {
+                    if (timeSinceLastMessage > 2.minutes) {
                         println("No messages received for over 2 minutes - connection may be dead")
                         break
                     }
@@ -316,7 +318,7 @@ class AtcClientEuroScope(
             arrivalAirportIcao = this.arrivalAirportIcao,
             flightPlanTas = this.flightPlanTas,
             trackingController = this.trackingController,
-            recvTimestamp = Clock.System.now()
+            recvTimestamp = NtpClock.now()
         )
     }
 
@@ -330,7 +332,7 @@ class AtcClientEuroScope(
             assignedRunway = this.runway,
             wakeCategory = this.wakeCategory,
             trackingController = this.trackingController,
-            recvTimestamp = Clock.System.now()
+            recvTimestamp = NtpClock.now()
         )
     }
 

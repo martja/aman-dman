@@ -2,6 +2,7 @@ package no.vaccsca.amandman.view.airport
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.view.entity.TimeRange
@@ -94,7 +95,7 @@ class TimeRangeScrollBarVertical(
     }
 
     override fun drawNowIndicator(g: Graphics2D) {
-        val relNow = 1 - (Clock.System.now().epochSeconds - availableRange.value.start.epochSeconds).toFloat() / availableTimelineSeconds()
+        val relNow = 1 - (NtpClock.now().epochSeconds - availableRange.value.start.epochSeconds).toFloat() / availableTimelineSeconds()
         val pos = (relNow * getScrollbarLength()).toInt()
         g.color = Color.WHITE
         drawAxisLine(g, pos)

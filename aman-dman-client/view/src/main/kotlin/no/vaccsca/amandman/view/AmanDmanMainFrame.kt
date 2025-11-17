@@ -21,6 +21,7 @@ import javax.swing.*
 import kotlin.math.roundToInt
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import java.awt.Point
+import kotlin.time.Duration.Companion.seconds
 
 class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
@@ -38,6 +39,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     private var nonSequencedDialog: JDialog? = null
     private var footer: Footer? = null
     private var airportViewsPanel: AirportViewsPanel? = null
+    private var currentTime: Instant? = null
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -102,6 +104,17 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
     override fun showTimelineGroup(airportIcao: String) {
         airportViewsPanel?.changeVisibleGroup(airportIcao)
+    }
+
+    override fun updateTime(currentTime: Instant) {
+        val previousTime = this.currentTime
+        this.currentTime = currentTime
+        val delta = if (previousTime != null) {
+            currentTime - previousTime
+        } else {
+            0.seconds
+        }
+        airportViewsPanel?.updateTime(currentTime, delta)
     }
 
     override fun showAirportContextMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point) {

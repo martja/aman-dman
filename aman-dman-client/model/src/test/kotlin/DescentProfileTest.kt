@@ -1,4 +1,5 @@
 import kotlinx.datetime.Clock
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.Star
@@ -278,7 +279,7 @@ class DescentProfileTest {
         )
 
         val weatherProfile = VerticalWeatherProfile(
-            Clock.System.now(),
+            NtpClock.now(),
             testFlight.currentPosition.latLng,
             weatherData.toMutableList()
         )

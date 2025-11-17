@@ -37,6 +37,7 @@ interface ViewInterface {
     fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double)
     fun openSelectRunwayDialog(runwayEvent: RunwayEvent, runwayOptions: Set<String>, onClose: (String) -> Unit)
     fun showTimelineGroup(airportIcao: String)
+    fun updateTime(currentTime: Instant)
 
     // Timeline creation and editing
     fun openTimelineConfigForm(groupId: String, availableTagLayoutsDep: Set<String>, availableTagLayoutsArr: Set<String>, existingConfig: TimelineConfig? = null)

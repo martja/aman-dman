@@ -2,6 +2,7 @@ package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import kotlin.time.Duration
@@ -457,7 +458,7 @@ object AmanDmanSequenceService {
      * Checks if the aircraft is within the Sequencing Horizon.
      */
     private fun SequenceCandidate.isInSequencingHorizon(): Boolean {
-        val remainingTime = this.preferredTime - Clock.System.now()
+        val remainingTime = this.preferredTime - NtpClock.now()
         return remainingTime < SEQUENCING_HORIZON
     }
 
@@ -465,7 +466,7 @@ object AmanDmanSequenceService {
      * Checks if the aircraft is within the Locked Horizon where order cannot be changed.
      */
     private fun SequenceCandidate.isInLockedHorizon(): Boolean {
-        val remainingTime = this.preferredTime - Clock.System.now()
+        val remainingTime = this.preferredTime - NtpClock.now()
         return remainingTime < LOCKED_HORIZON
     }
 

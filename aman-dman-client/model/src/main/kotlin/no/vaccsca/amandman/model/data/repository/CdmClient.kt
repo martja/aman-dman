@@ -9,6 +9,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.valueobjects.CdmData
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -74,7 +75,7 @@ class CdmClient {
             val minute = value.substring(2, 4).toInt()
             val second = value.substring(4, 6).toInt()
 
-            val nowUtc = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+            val nowUtc = NtpClock.now().toLocalDateTime(TimeZone.UTC)
             val todayDate = nowUtc.date
 
             val parsed = LocalDateTime(
@@ -89,7 +90,7 @@ class CdmClient {
 
             // If the time is more than 1 hour in the past, assume it's tomorrow UTC
             var parsedInstant = parsed.toInstant(TimeZone.UTC)
-            val nowInstant = Clock.System.now()
+            val nowInstant = NtpClock.now()
 
             if (parsedInstant < nowInstant.minus(1.hours)) {
                 parsedInstant = parsedInstant.plus(1.days)

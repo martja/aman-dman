@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateEventJson
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateJson
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
@@ -96,7 +97,7 @@ class SharedStateHttpClient : SharedState {
         }
 
         val sharedState = SharedStateJson(
-            lastUpdate = Clock.System.now(),
+            lastUpdate = NtpClock.now(),
             data = events
         )
 
@@ -125,7 +126,7 @@ class SharedStateHttpClient : SharedState {
 
     override fun sendRunwayStatuses(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>) {
         val sharedStateJson = SharedStateJson(
-            lastUpdate = Clock.System.now(),
+            lastUpdate = NtpClock.now(),
             data = runwayStatuses
         )
         sendStateJson(airportIcao, "runway-modes", sharedStateJson)
@@ -133,7 +134,7 @@ class SharedStateHttpClient : SharedState {
 
     override fun sendWeatherData(airportIcao: String, weatherData: VerticalWeatherProfile?) {
         val sharedStateJson = SharedStateJson(
-            lastUpdate = Clock.System.now(),
+            lastUpdate = NtpClock.now(),
             data = weatherData
         )
         sendStateJson(airportIcao, "weather", sharedStateJson)
@@ -153,7 +154,7 @@ class SharedStateHttpClient : SharedState {
 
     override fun sendMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
         val sharedStateJson = SharedStateJson(
-            lastUpdate = Clock.System.now(),
+            lastUpdate = NtpClock.now(),
             data = minimumSpacingNm
         )
         sendStateJson(airportIcao, "minimum-spacing", sharedStateJson)

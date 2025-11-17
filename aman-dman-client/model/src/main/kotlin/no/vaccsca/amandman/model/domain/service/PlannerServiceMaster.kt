@@ -2,6 +2,7 @@ package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.data.integration.AtcClient
 import no.vaccsca.amandman.model.data.repository.CdmClient
@@ -60,7 +61,7 @@ class PlannerServiceMaster(
         Thread {
             while (true) {
                 Thread.sleep(1_000) // check every second
-                val cutoff = Clock.System.now().minus(5.seconds)
+                val cutoff = NtpClock.now().minus(5.seconds)
                 arrivalsCache = arrivalsCache.filter { it.lastTimestamp >= cutoff }
                 departuresCache = departuresCache.filter { it.lastTimestamp >= cutoff }
                 onSequenceUpdated()

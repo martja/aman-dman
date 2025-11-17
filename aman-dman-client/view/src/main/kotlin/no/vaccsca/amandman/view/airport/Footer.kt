@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.view.airport
 
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.presenter.PresenterInterface
@@ -10,7 +11,6 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
 import java.awt.event.MouseEvent
-import java.time.Instant
 import javax.swing.*
 
 class Footer(
@@ -140,6 +140,6 @@ class Footer(
 
     override fun paintComponent(g: Graphics?) {
         super.paintComponent(g)
-        timeLabel.text = Instant.now().toString().substring(11, 19)
+        timeLabel.text = NtpClock.now().toString().substring(11, 19)
     }
 }

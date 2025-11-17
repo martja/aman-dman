@@ -2,6 +2,7 @@ package no.vaccsca.amandman.view.airport.timeline
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.common.util.NumberUtils.format
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
@@ -57,7 +58,7 @@ class TimeScale(
 
         val timespanSeconds = selectedRange.value.end.epochSeconds - selectedRange.value.start.epochSeconds
 
-        val timeNow = Clock.System.now()
+        val timeNow = NtpClock.now()
 
         // Set background color of time that has passed
         val currentTimeYpos = timelineView.calculateYPositionForInstant(timeNow)

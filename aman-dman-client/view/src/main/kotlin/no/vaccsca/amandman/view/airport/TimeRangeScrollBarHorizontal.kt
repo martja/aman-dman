@@ -2,6 +2,7 @@ package no.vaccsca.amandman.view.airport
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.*
@@ -82,7 +83,7 @@ class TimeRangeScrollBarHorizontal(
     }
 
     override fun drawNowIndicator(g: Graphics2D) {
-        val relNow = (Clock.System.now().epochSeconds - availableRange.value.start.epochSeconds).toFloat() / availableTimelineSeconds()
+        val relNow = (NtpClock.now().epochSeconds - availableRange.value.start.epochSeconds).toFloat() / availableTimelineSeconds()
         val pos = (relNow * getScrollbarLength()).toInt()
         g.color = Color.WHITE
         drawAxisLine(g, pos)
