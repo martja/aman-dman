@@ -1,9 +1,13 @@
 package no.vaccsca.amandman.model.domain.service
 
+import kotlinx.datetime.Instant
+import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.integration.SharedState
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Responsible for notifying the presenter about data updates from the service.
@@ -35,8 +39,16 @@ class DataUpdatesServerSender(
     private val sharedState: SharedState
 ) : DataUpdateListener {
 
+    val sendUpdateMem = mutableMapOf<String, Instant>()
+
     override fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>) {
-        sharedState.sendTimelineEvents(airportIcao, timelineEvents)
+        val now = NtpClock.now()
+        sendUpdateMem[airportIcao]
+            ?.takeIf { now - it <= 2.seconds }
+            ?: run {
+                sharedState.sendTimelineEvents(airportIcao, timelineEvents)
+                sendUpdateMem[airportIcao] = now
+            }
     }
 
     override fun onRunwayModesUpdated(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>) {
