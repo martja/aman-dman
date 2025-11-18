@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.model.data.config.yaml
 
+import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotEmpty
@@ -19,7 +20,11 @@ data class AirportJson(
 
     @field:NotNull
     @field:Valid
-    val runwayThresholds: Map<@NotEmpty String, @Valid RunwayThresholdJson>
+    val runwayThresholds: Map<@NotEmpty String, @Valid RunwayThresholdJson>,
+
+    @field:Valid
+    @field:JsonPropertyDescription("The possible spacing options (in NM) between arrivals on final approach")
+    val spacingOptionsNm: List<Number>? = null
 )
 
 data class LocationJson(

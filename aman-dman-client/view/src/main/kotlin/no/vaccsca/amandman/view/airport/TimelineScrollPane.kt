@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.common.TimelineConfig
+import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.AmanPopupMenu
@@ -22,7 +23,7 @@ class TimelineScrollPane(
     val selectedTimeRange: SharedValue<TimeRange>,
     val availableTimeRange: SharedValue<TimeRange>,
     val presenterInterface: PresenterInterface,
-    val airportIcao: String,
+    val airport: Airport,
 ) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
 
     private var minSpacingSelectionNm: Double? = null
@@ -43,7 +44,7 @@ class TimelineScrollPane(
             private fun maybeShowPopup(e: java.awt.event.MouseEvent) {
                 if (e.isPopupTrigger) {
                     val converted = javax.swing.SwingUtilities.convertPoint(e.component, e.point, viewport)
-                    presenterInterface.onTabMenu(airportIcao, converted)
+                    presenterInterface.onTabMenu(airport.icao, converted)
                 }
             }
         })
@@ -130,36 +131,36 @@ class TimelineScrollPane(
     fun openPopupMenu(availableTimelines: List<TimelineConfig>, screenPos: Point) {
         val sorted = availableTimelines.sortedBy { it.title }
 
-        val popup = AmanPopupMenu("$airportIcao Actions") {
+        val popup = AmanPopupMenu("${airport.icao} Actions") {
             item("Add timeline") {
                 sorted.forEach { timeline ->
                     item(timeline.title, action = {
-                        presenterInterface.onAddTimelineButtonClicked(airportIcao, timeline)
+                        presenterInterface.onAddTimelineButtonClicked(airport.icao, timeline)
                     })
                 }
                 separator()
                 item("Custom ...", action = {
-                    presenterInterface.onCreateNewTimelineClicked(airportIcao)
+                    presenterInterface.onCreateNewTimelineClicked(airport.icao)
                 })
             }
 
-            item("Set minimum spacing") {
-                (0..10).map { i ->
-                    val title = if (minSpacingSelectionNm == i.toDouble()) "$i NM ✓" else "$i NM"
+            item("Set spacing") {
+                airport.spacingOptionsNm?.map { option ->
+                    val title = if (minSpacingSelectionNm == option) "$option NM ✓" else "$option NM"
                     item(title, action = {
-                        presenterInterface.onMinimumSpacingDistanceSet(airportIcao, i.toDouble())
+                        presenterInterface.onMinimumSpacingDistanceSet(airport.icao, option)
                     })
                 }
             }
 
-            item("View winds", action = {
-                presenterInterface.onOpenMetWindowClicked(airportIcao)
+            item("Show winds", action = {
+                presenterInterface.onOpenMetWindowClicked(airport.icao)
             })
 
             separator()
 
             item("Close airport view", action = {
-                presenterInterface.onRemoveTab(airportIcao)
+                presenterInterface.onRemoveTab(airport.icao)
             })
         }
 

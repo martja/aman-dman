@@ -30,6 +30,7 @@ airports:
           longitude: 11.091636783048877
         elevation: 681
         trueHeading: 196
+    spacingOptionsNm: [3, 4, 5.5, 6, 8, 11, 12, 18]
 
   ENBR:
     location:
@@ -48,3 +49,4 @@ airports:
           longitude: 5.214462654076689
         elevation: 166
         trueHeading: 350
+    spacingOptionsNm: [3, 4, 5.5, 6, 8, 11, 12, 18]

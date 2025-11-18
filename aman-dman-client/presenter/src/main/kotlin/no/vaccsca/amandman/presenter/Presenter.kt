@@ -19,6 +19,7 @@ import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
 import no.vaccsca.amandman.model.domain.service.PlannerServiceMaster
 import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
+import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
@@ -81,15 +82,15 @@ class Presenter(
 
             updateViewFromCachedData()
 
-            myMasterRoles.forEach { airport ->
-                if (!sharedState.checkMasterRoleStatus(airport)) {
-                    view.showErrorMessage("Lost master role for $airport")
-                    plannerManager.unregisterService(airport)
-                    runwayModeStateManager.cleanupAirportState(airport)
-                    timelineGroups.removeAll { it.airportIcao == airport }
+            myMasterRoles.forEach { airportIcao ->
+                if (!sharedState.checkMasterRoleStatus(airportIcao)) {
+                    view.showErrorMessage("Lost master role for $airportIcao")
+                    plannerManager.unregisterService(airportIcao)
+                    runwayModeStateManager.cleanupAirportState(airportIcao)
+                    timelineGroups.removeAll { it.airport.icao == airportIcao }
                     view.updateTimelineGroups(timelineGroups)
-                    sharedState.releaseMasterRole(airport)
-                    myMasterRoles.remove(airport)
+                    sharedState.releaseMasterRole(airportIcao)
+                    myMasterRoles.remove(airportIcao)
                 }
             }
         }.start()
@@ -178,7 +179,7 @@ class Presenter(
             val relevantDataForTab = snapshot.filter { occurrence ->
                 group.timelines.any { it.airportIcao == occurrence.airportIcao }
             }
-            view.updateTab(group.airportIcao, TabData(
+            view.updateTab(group.airport.icao, TabData(
                 timelinesData = group.timelines.map { timeline ->
                     TimelineData(
                         timelineId = timeline.title,
@@ -217,17 +218,24 @@ class Presenter(
         view.showAirportContextMenu(airportIcao, availableTimelinesForIcao, screenPos)
     }
 
-    override fun onNewTimelineGroup(airportIcao: String, userRole: UserRole) =
+    override fun onNewTimelineGroup(airportIcao: String, userRole: UserRole) {
+        val airport = SettingsRepository.getAirportData().find { it.icao == airportIcao }
+
+        if (airport == null) {
+            view.showErrorMessage("Airport $airportIcao not found in navdata")
+            return
+        }
+
         registerNewTimelineGroup(
             TimelineGroup(
-                airportIcao = airportIcao,
-                name = airportIcao,
+                airport = airport,
+                name = airport.icao,
                 timelines = mutableListOf(),
                 userRole = userRole
             )
-        ).also {
-            view.closeTimelineForm()
-        }
+        )
+        view.closeTimelineForm()
+    }
 
     override fun onAddTimelineButtonClicked(airportIcao: String, timelineConfig: TimelineConfig) {
         registerTimeline(
@@ -262,7 +270,7 @@ class Presenter(
 
         // Remove from view and unregister service (this calls service.stop())
         plannerManager.unregisterService(airportIcao)
-        timelineGroups.removeAll { it.airportIcao == airportIcao }
+        timelineGroups.removeAll { it.airport.icao == airportIcao }
         view.updateTimelineGroups(timelineGroups)
 
         // Check if we need to clean up the shared AtcClient
@@ -376,14 +384,14 @@ class Presenter(
     }
 
     private fun registerNewTimelineGroup(timelineGroup: TimelineGroup) {
-        if (timelineGroups.any { it.airportIcao == timelineGroup.airportIcao }) {
+        if (timelineGroups.any { it.airport == timelineGroup.airport }) {
             return // Group already exists
         }
 
-        val airport = SettingsRepository.getAirportData().find { it.icao == timelineGroup.airportIcao }
+        val airport = SettingsRepository.getAirportData().find { it == timelineGroup.airport }
 
         if (airport == null) {
-            view.showErrorMessage("Airport ${timelineGroup.airportIcao} not found in navdata")
+            view.showErrorMessage("Airport ${timelineGroup.airport} not found in navdata")
             return
         }
 
@@ -415,23 +423,23 @@ class Presenter(
                 )
             UserRole.SLAVE ->
                 PlannerServiceSlave(
-                    airportIcao = timelineGroup.airportIcao,
+                    airportIcao = timelineGroup.airport.icao,
                     sharedState = sharedState,
                     dataUpdateListener = guiUpdater,
                 )
         }
 
         plannerManager.registerService(plannerService)
-        plannerManager.getServiceForAirport(timelineGroup.airportIcao).planArrivals()
+        plannerManager.getServiceForAirport(timelineGroup.airport.icao).planArrivals()
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
-        view.showTimelineGroup(timelineGroup.airportIcao)
+        view.showTimelineGroup(timelineGroup.airport.icao)
 
         plannerService.start()
     }
 
     private fun registerTimeline(airportIcao: String, timelineConfig: TimelineConfig) {
-        val group = timelineGroups.find { it.airportIcao == airportIcao }
+        val group = timelineGroups.find { it.airport.icao == airportIcao }
         if (group != null) {
             group.timelines += timelineConfig
             view.updateTimelineGroups(timelineGroups)
@@ -440,7 +448,7 @@ class Presenter(
     }
 
     override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {
-        val group = timelineGroups.find { it.airportIcao == groupId }
+        val group = timelineGroups.find { it.airport.icao == groupId }
         if (group != null) {
             val existingConfig = group.timelines.find { it.title == timelineTitle }
             if (existingConfig != null) {

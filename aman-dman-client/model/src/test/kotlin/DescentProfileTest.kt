@@ -1,4 +1,3 @@
-import kotlinx.datetime.Clock
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
@@ -19,7 +18,6 @@ import no.vaccsca.amandman.model.domain.valueobjects.Runway
 import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 import org.junit.jupiter.api.Test
 import kotlin.collections.listOf
-import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -61,7 +59,8 @@ class DescentProfileTest {
     val testAirport = Airport(
         icao = "ENGM",
         location = LatLng(0.0, 0.0),
-        runways = mapOf("01L" to runway01L)
+        runways = mapOf("01L" to runway01L),
+        spacingOptionsNm = listOf()
     )
 
     data class TestFlight(

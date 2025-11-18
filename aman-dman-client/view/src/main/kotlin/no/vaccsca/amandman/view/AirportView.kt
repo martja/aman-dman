@@ -1,11 +1,11 @@
 package no.vaccsca.amandman.view
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.TimelineGroup
+import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.minutes
 
 class AirportView(
     private val presenter: PresenterInterface,
-    val airportIcao: String,
+    val airport: Airport,
 ) : JPanel(BorderLayout()) {
 
     private val maxHistory = 20.minutes
@@ -54,7 +54,7 @@ class AirportView(
         preferredSize = Dimension(0, 22)
         border = BorderFactory.createEmptyBorder(1,1,6,1)
         addActionListener {
-            presenter.onRecalculateSequenceClicked(airportIcao)
+            presenter.onRecalculateSequenceClicked(airport.icao)
         }
     }
     val westPanel = JPanel(BorderLayout()).apply {
@@ -62,8 +62,8 @@ class AirportView(
         add(reloadButton, BorderLayout.SOUTH)
     }
 
-    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, presenter, airportIcao)
-    val topBar = TopBar(presenter, airportIcao)
+    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, presenter, airport)
+    val topBar = TopBar(presenter, airport.icao)
 
     init {
         add(topBar, BorderLayout.NORTH)

@@ -203,7 +203,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
                 add(landingRatesGraph)
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
-                preferredSize = Dimension(800, 600)
+                preferredSize = Dimension(500, 300)
                 isVisible = true
                 pack()
             }

@@ -4,6 +4,7 @@ data class Airport(
     val icao: String,
     val location: LatLng,
     val runways: Map<String, Runway>,
+    val spacingOptionsNm: List<Double>,
 )
 
 data class Runway(

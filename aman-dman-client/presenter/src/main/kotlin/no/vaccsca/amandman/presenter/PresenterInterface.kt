@@ -4,6 +4,7 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
+import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import java.awt.Point

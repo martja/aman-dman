@@ -1,4 +1,3 @@
-import kotlinx.datetime.Clock
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.service.DescentTrajectoryService
 import no.vaccsca.amandman.model.domain.valueobjects.*
@@ -125,6 +124,7 @@ class DescentTrajectoryServiceTest {
         runways=mapOf(
             "19L" to rwy19L,
         ),
+        spacingOptionsNm = listOf()
     )
 
     @Test

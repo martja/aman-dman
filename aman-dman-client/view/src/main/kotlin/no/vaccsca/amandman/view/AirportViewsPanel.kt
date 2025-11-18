@@ -43,19 +43,19 @@ class AirportViewsPanel(
         // Close tabs that are not in the groups
         for (i in tabPane.tabCount - 1 downTo 0) {
             val tab = tabPane.getComponentAt(i) as AirportView
-            if (timelineGroups.none { it.airportIcao == tab.airportIcao }) {
+            if (timelineGroups.none { it.airport == tab.airport }) {
                 tabPane.removeTabAt(i)
             }
         }
 
         // Add new tabs for groups that are not already present
         for (group in timelineGroups) {
-            if (existingViews.none { it.airportIcao == group.airportIcao }) {
-                val tabView = AirportView(presenterInterface, group.airportIcao)
+            if (existingViews.none { it.airport == group.airport }) {
+                val tabView = AirportView(presenterInterface, group.airport)
                 tabPane.addTab(group.name + " " + group.userRole, tabView)
             } else {
                 // If the view exists but is not in tabPane, add it back
-                val existingView = existingViews.find { it.airportIcao == group.airportIcao }
+                val existingView = existingViews.find { it.airport == group.airport }
                 if (existingView != null && !tabPane.components.contains(existingView)) {
                     tabPane.addTab(group.name + " " + group.userRole, existingView)
                 }
@@ -65,7 +65,7 @@ class AirportViewsPanel(
         // Update existing tabs with new data
         for (i in 0 until tabPane.tabCount) {
             val tab = tabPane.getComponentAt(i) as AirportView
-            val group = timelineGroups.find { it.airportIcao == tab.airportIcao }
+            val group = timelineGroups.find { it.airport == tab.airport }
             if (group != null) {
                 tab.updateVisibleTimelines(group)
             }
@@ -81,13 +81,13 @@ class AirportViewsPanel(
     /** Updates data in a specific tab */
     fun updateTab(airportIcao: String, tabData: TabData) {
         visibleTabs
-            .firstOrNull { it.airportIcao == airportIcao }
+            .firstOrNull { it.airport.icao == airportIcao }
             ?.updateAmanData(tabData)
     }
 
     fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
         visibleTabs
-            .firstOrNull { it.airportIcao == airportIcao }
+            .firstOrNull { it.airport.icao == airportIcao }
             ?.updateMinSpacingNM(minimumSpacingNm)
     }
 
@@ -98,14 +98,14 @@ class AirportViewsPanel(
         isAvailable: Boolean,
     ) {
         visibleTabs
-            .firstOrNull { it.airportIcao == timelineEvent.airportIcao }
+            .firstOrNull { it.airport.icao == timelineEvent.airportIcao }
             ?.updateDraggedLabel(timelineEvent, proposedTime, isAvailable)
     }
 
     /** Updates runway mode information for the airport */
     fun updateRunwayModes(airportIcao: String, runwayModes: List<Pair<String, Boolean>>) {
         visibleTabs
-            .firstOrNull { it.airportIcao == airportIcao }
+            .firstOrNull { it.airport.icao == airportIcao }
             ?.updateRunwayModes(runwayModes)
     }
 
@@ -114,7 +114,7 @@ class AirportViewsPanel(
         if (components.contains(tabPane)) {
             for (i in 0 until tabPane.tabCount) {
                 val tab = tabPane.getComponentAt(i) as AirportView
-                if (tab.airportIcao == airportIcao) {
+                if (tab.airport.icao == airportIcao) {
                     tabPane.selectedIndex = i
                     return
                 }
@@ -150,6 +150,6 @@ class AirportViewsPanel(
     }
 
     fun openPopupMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point) {
-        visibleTabs.find { it.airportIcao == airportIcao }?.openPopupMenu(availableTimelines, screenPos)
+        visibleTabs.find { it.airport.icao == airportIcao }?.openPopupMenu(availableTimelines, screenPos)
     }
 }
