@@ -16,8 +16,8 @@ import java.awt.Point
  */
 interface PresenterInterface {
     fun onReloadSettingsRequested()
-    fun onOpenMetWindowClicked()
-    fun onOpenVerticalProfileWindowClicked()
+    fun onOpenMetWindowClicked(airportIcao: String)
+    fun onOpenVerticalProfileWindowClicked(callsign: String)
     fun onAircraftSelected(callsign: String)
     fun onEditTimelineRequested(groupId: String, timelineTitle: String)
     fun onNewTimelineGroup(airportIcao: String, userRole: UserRole)

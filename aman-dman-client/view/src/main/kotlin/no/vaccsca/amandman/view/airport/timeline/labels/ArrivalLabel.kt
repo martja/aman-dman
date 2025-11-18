@@ -102,6 +102,9 @@ class ArrivalLabel(
             item("Re-schedule", action = {
                 presenterInterface.onRecalculateSequenceClicked(arrivalEvent.airportIcao, arrivalEvent.callsign)
             })
+            item("Show vertical profile", action = {
+                presenterInterface.onOpenVerticalProfileWindowClicked(arrivalEvent.callsign)
+            })
         }
         popup.show(e.component, e.x, e.y)
     }

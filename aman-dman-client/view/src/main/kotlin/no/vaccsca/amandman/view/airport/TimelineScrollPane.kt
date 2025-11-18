@@ -152,6 +152,10 @@ class TimelineScrollPane(
                 }
             }
 
+            item("View winds", action = {
+                presenterInterface.onOpenMetWindowClicked(airportIcao)
+            })
+
             separator()
 
             item("Close airport view", action = {

@@ -22,11 +22,11 @@ interface ViewInterface {
 
     fun updateControllerInfo(controllerInfoData: ControllerInfoData)
     fun updateTimelineGroups(timelineGroups: List<TimelineGroup>)
-    fun openMetWindow()
+    fun openMetWindow(airportIcao: String)
     fun openLandingRatesWindow()
     fun openNonSequencedWindow()
     fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?)
-    fun openDescentProfileWindow()
+    fun openDescentProfileWindow(callsign: String)
     fun updateDescentTrajectory(callsign: String, trajectory: List<TrajectoryPoint>)
     fun updateTab(airportIcao: String, tabData: TabData)
     fun showAirportContextMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point)

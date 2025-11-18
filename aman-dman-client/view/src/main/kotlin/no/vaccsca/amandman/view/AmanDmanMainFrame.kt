@@ -178,7 +178,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         descentProfileVisualizationView.setDescentSegments(trajectory)
     }
 
-    override fun openMetWindow() {
+    override fun openMetWindow(airportIcao: String) {
         if (windDialog != null) {
             windDialog?.isVisible = true
         } else {
@@ -191,6 +191,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
                 pack()
             }
         }
+        verticalWindView.showAirport(airportIcao)
     }
 
     override fun openLandingRatesWindow() {
@@ -228,7 +229,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         verticalWindView.update(airportIcao, weather)
     }
 
-    override fun openDescentProfileWindow() {
+    override fun openDescentProfileWindow(callsign: String) {
         if (descentProfileDialog != null) {
             descentProfileDialog?.isVisible = true
         } else {
@@ -241,6 +242,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
                 pack()
             }
         }
+        presenterInterface.onAircraftSelected(callsign)
     }
 
     override fun showErrorMessage(message: String) {

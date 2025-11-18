@@ -120,12 +120,12 @@ class Presenter(
         }
     }
 
-    override fun onOpenMetWindowClicked() {
-        view.openMetWindow()
+    override fun onOpenMetWindowClicked(airportIcao: String) {
+        view.openMetWindow(airportIcao)
     }
 
-    override fun onOpenVerticalProfileWindowClicked() {
-        view.openDescentProfileWindow()
+    override fun onOpenVerticalProfileWindowClicked(callsign: String) {
+        view.openDescentProfileWindow(callsign)
     }
 
     override fun onAircraftSelected(callsign: String) {

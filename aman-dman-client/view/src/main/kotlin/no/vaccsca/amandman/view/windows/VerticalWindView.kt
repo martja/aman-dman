@@ -72,6 +72,11 @@ class VerticalWindView: JPanel(BorderLayout()) {
         }
     }
 
+    fun showAirport(airportIcao: String) {
+        airportSelector.selectedItem = airportIcao
+        updateSelector()
+    }
+
     private inner class ContentPanel : JPanel() {
         init {
             background = Color.DARK_GRAY

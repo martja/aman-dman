@@ -17,17 +17,11 @@ class Footer(
     private val presenterInterface: PresenterInterface,
     private val mainWindow: JFrame
 ) : JPanel(FlowLayout(FlowLayout.RIGHT)) {
-    private val timeLabel = JLabel("10:00:22")
-    private val metButton = JButton("MET")
-    private val profileButton = JButton("Profile")
-    private val reloadButton = JButton("Reload settings")
-    private val newTabButton = JButton("New group")
+    private val timeLabel = JLabel("--:--:--")
+    private val startButton = JButton("Start")
 
     init {
-        add(reloadButton)
-        add(metButton)
-        add(profileButton)
-        add(newTabButton)
+        add(startButton)
         add(JSeparator(SwingConstants.VERTICAL).apply {
             preferredSize = Dimension(2, 20)
         })
@@ -38,28 +32,7 @@ class Footer(
             repaint()
         }.start()
 
-        metButton.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mousePressed(e: MouseEvent?) {
-                super.mousePressed(e)
-                presenterInterface.onOpenMetWindowClicked()
-            }
-        })
-
-        reloadButton.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mousePressed(e: MouseEvent?) {
-                super.mousePressed(e)
-                presenterInterface.onReloadSettingsRequested()
-            }
-        })
-
-        profileButton.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mousePressed(e: MouseEvent?) {
-                super.mousePressed(e)
-                presenterInterface.onOpenVerticalProfileWindowClicked()
-            }
-        })
-
-        newTabButton.addMouseListener(object : java.awt.event.MouseAdapter() {
+        startButton.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent?) {
                 super.mousePressed(e)
 
