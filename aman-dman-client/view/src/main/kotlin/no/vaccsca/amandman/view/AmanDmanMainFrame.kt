@@ -62,7 +62,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     }
 
     override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
-        footer?.updateMinimumSpacingSelector(minimumSpacingNm)
+        airportViewsPanel?.updateMinimumSpacing(airportIcao, minimumSpacingNm)
     }
 
     override fun openSelectRunwayDialog(

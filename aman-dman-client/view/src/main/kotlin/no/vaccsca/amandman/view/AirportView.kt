@@ -119,6 +119,10 @@ class AirportView(
         repaint()
     }
 
+    fun updateMinSpacingNM(minSpacingNm: Double) {
+        timelineScrollPane.updateMinimumSpacingSelection(minSpacingNm)
+    }
+
     fun updateRunwayModes(runwayModes: List<Pair<String, Boolean>>) {
         topBar.setRunwayModes(runwayModes)
     }

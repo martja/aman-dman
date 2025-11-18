@@ -85,6 +85,12 @@ class AirportViewsPanel(
             ?.updateAmanData(tabData)
     }
 
+    fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
+        visibleTabs
+            .firstOrNull { it.airportIcao == airportIcao }
+            ?.updateMinSpacingNM(minimumSpacingNm)
+    }
+
     /** Updates dragged label for a flight */
     fun updateDraggedLabel(
         timelineEvent: no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent,

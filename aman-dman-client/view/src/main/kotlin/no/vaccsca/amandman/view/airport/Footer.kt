@@ -22,11 +22,8 @@ class Footer(
     private val profileButton = JButton("Profile")
     private val reloadButton = JButton("Reload settings")
     private val newTabButton = JButton("New group")
-    private val spacingSelector = JSpinner(SpinnerNumberModel(3.0, 0.0, 20.0, 1))
-    private var spacingChangeListener: javax.swing.event.ChangeListener? = null
 
     init {
-        add(spacingSelector)
         add(reloadButton)
         add(metButton)
         add(profileButton)
@@ -116,26 +113,6 @@ class Footer(
                 }
             }
         })
-
-
-        spacingSelector.apply {
-            toolTipText = "Minimum spacing on final"
-            (editor as JSpinner.NumberEditor).textField.apply {
-                isEditable = false
-                isFocusable = false
-            }
-            spacingChangeListener = javax.swing.event.ChangeListener {
-                presenterInterface.onMinimumSpacingDistanceSet("ENGM", value as Double)
-            }
-            addChangeListener(spacingChangeListener)
-        }
-    }
-
-    fun updateMinimumSpacingSelector(value: Double) {
-        // Temporarily remove listener to avoid feedback loop
-        spacingChangeListener?.let { spacingSelector.removeChangeListener(it) }
-        spacingSelector.value = value
-        spacingChangeListener?.let { spacingSelector.addChangeListener(it) }
     }
 
     override fun paintComponent(g: Graphics?) {

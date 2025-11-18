@@ -24,6 +24,9 @@ class TimelineScrollPane(
     val presenterInterface: PresenterInterface,
     val airportIcao: String,
 ) : JScrollPane(VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_AS_NEEDED) {
+
+    private var minSpacingSelectionNm: Double? = null
+
     init {
         val items = JPanel(GridBagLayout())
         val gbc = GridBagConstraints()
@@ -120,10 +123,14 @@ class TimelineScrollPane(
         e.consume()
     }
 
+    fun updateMinimumSpacingSelection(distanceNm: Double) {
+        minSpacingSelectionNm = distanceNm
+    }
+
     fun openPopupMenu(availableTimelines: List<TimelineConfig>, screenPos: Point) {
         val sorted = availableTimelines.sortedBy { it.title }
 
-        val popup = AmanPopupMenu("Airport Actions") {
+        val popup = AmanPopupMenu("$airportIcao Actions") {
             item("Add timeline") {
                 sorted.forEach { timeline ->
                     item(timeline.title, action = {
@@ -135,6 +142,17 @@ class TimelineScrollPane(
                     presenterInterface.onCreateNewTimelineClicked(airportIcao)
                 })
             }
+
+            item("Set minimum spacing") {
+                (0..10).map { i ->
+                    val title = if (minSpacingSelectionNm == i.toDouble()) "$i NM ✓" else "$i NM"
+                    item(title, action = {
+                        presenterInterface.onMinimumSpacingDistanceSet(airportIcao, i.toDouble())
+                    })
+                }
+            }
+
+            separator()
 
             item("Close airport view", action = {
                 presenterInterface.onRemoveTab(airportIcao)

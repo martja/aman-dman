@@ -74,6 +74,11 @@ class PlannerServiceMaster(
     }
 
     override fun start() {
+        // Notify listeners of the initial spacing
+        dataUpdateListeners.forEach {
+            it.onMinimumSpacingUpdated(airportIcao, minimumSpacingNm)
+        }
+        // Start the ATC client data collection
         atcClient.start(
             onControllerInfoData = {
                 controllerInfo = it
