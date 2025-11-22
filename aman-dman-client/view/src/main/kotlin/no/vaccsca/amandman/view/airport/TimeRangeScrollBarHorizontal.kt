@@ -41,24 +41,24 @@ class TimeRangeScrollBarHorizontal(
         val barStart = getBarStart()
         val barEnd = getBarEnd()
 
-        g2.color = Color.LIGHT_GRAY
+        g2.color = background
         g2.fillRect(barEnd, 0, barStart - barEnd, height)
-        g2.color = Color.WHITE
+        g2.color = foreground
         g2.drawRect(barEnd, 0, barStart - barEnd - 1, height - 1)
 
         timelineEvents.forEach { occurrence ->
-            drawEvent(g2, occurrence.scheduledTime, Color.WHITE)
+            drawEvent(g2, occurrence.scheduledTime, foreground)
         }
 
         val handleTop = scrollHandleMargin
 
         val gradient = GradientPaint(
-            barStart.toFloat(), handleTop.toFloat(), Color(0, 0, 0, 50),
-            barStart.toFloat(), (handleTop + scrollHandleThickness).toFloat(), Color(0, 0, 0, 100)
+            barStart.toFloat(), handleTop.toFloat(), Color(255, 255, 255, 40),
+            barStart.toFloat(), (handleTop + scrollHandleThickness).toFloat(), Color(255, 255, 255, 20)
         )
         g2.paint = gradient
         g2.fillRoundRect(barStart, handleTop, barEnd - barStart, scrollHandleThickness, cornerRadius, cornerRadius)
-        g2.color = Color.WHITE
+        g2.color = foreground
         g2.drawRoundRect(barStart, handleTop, barEnd - barStart, scrollHandleThickness, cornerRadius, cornerRadius)
 
         // Draw resize handles
@@ -85,7 +85,7 @@ class TimeRangeScrollBarHorizontal(
     override fun drawNowIndicator(g: Graphics2D) {
         val relNow = (NtpClock.now().epochSeconds - availableRange.value.start.epochSeconds).toFloat() / availableTimelineSeconds()
         val pos = (relNow * getScrollbarLength()).toInt()
-        g.color = Color.WHITE
+        g.color = foreground
         drawAxisLine(g, pos)
     }
 

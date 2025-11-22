@@ -60,9 +60,9 @@ abstract class TimeRangeScrollBarAbstract(
         val g2 = g as Graphics2D
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
 
-        g2.color = Color.DARK_GRAY
+        g2.color = background
         g2.fillRect(0, 0, width, height)
-        g2.color = Color.GRAY
+        g2.color = foreground
         g2.drawRect(0, 0, width - 1, height - 1)
 
         drawNowIndicator(g2)

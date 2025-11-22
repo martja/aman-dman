@@ -21,8 +21,6 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     private val BARB_SPACING = 40
 
     init {
-        background = Color(40, 40, 40)
-
         addMouseMotionListener(object : java.awt.event.MouseMotionAdapter() {
             override fun mouseMoved(e: MouseEvent) {
                 val point = findClosestTrajectoryPointAlongXAxis(e.x)

@@ -21,9 +21,6 @@ class VerticalWindView: JPanel(BorderLayout()) {
     private val contentPanel = ContentPanel()
 
     init {
-        background = Color.DARK_GRAY
-        contentPanel.background = Color.DARK_GRAY
-
         airportSelector.addActionListener {
             selectedAirport = airportSelector.selectedItem as? String
             contentPanel.repaint()
@@ -31,9 +28,7 @@ class VerticalWindView: JPanel(BorderLayout()) {
 
         // Create bottom panel with label and dropdown
         val bottomPanel = JPanel(FlowLayout(FlowLayout.LEFT, 5, 5))
-        bottomPanel.background = Color.DARK_GRAY
         val airportLabel = JLabel("Airport:")
-        airportLabel.foreground = Color.WHITE
         bottomPanel.add(airportLabel)
         bottomPanel.add(airportSelector)
 
@@ -78,10 +73,6 @@ class VerticalWindView: JPanel(BorderLayout()) {
     }
 
     private inner class ContentPanel : JPanel() {
-        init {
-            background = Color.DARK_GRAY
-        }
-
         override fun paintComponent(g: Graphics) {
             super.paintComponent(g)
 
@@ -95,7 +86,7 @@ class VerticalWindView: JPanel(BorderLayout()) {
 
                 currentProfile.weatherLayers.forEach {
                     val yPos = (height - pxPerFl * it.flightLevelFt).roundToInt() - diagramMargin
-                    g.color = Color.WHITE
+                    g.color = foreground
                     g.drawLine(0, yPos, 10, yPos)
 
                     WindBarbs.drawWindBarb(

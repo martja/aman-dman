@@ -73,11 +73,8 @@ class LandingRatesGraph : JPanel() {
 
         chart = createChart()
         val chartPanel = ChartPanel(chart)
-        chartPanel.background = Color.DARK_GRAY
 
         val controlPanel = JPanel().apply {
-            background = Color.DARK_GRAY
-            foreground = Color.WHITE
             add(icaoComboBox)
             add(bucketSelector)
         }
@@ -127,27 +124,27 @@ class LandingRatesGraph : JPanel() {
         plot!!.isOutlineVisible = false
 
         plot!!.backgroundAlpha = 0.0f
-        plot!!.domainGridlinePaint = Color.GRAY
-        plot!!.rangeGridlinePaint = Color.GRAY
+        plot!!.domainGridlinePaint = background
+        plot!!.rangeGridlinePaint = background
         plot!!.isRangeGridlinesVisible = false
         plot!!.isDomainGridlinesVisible = false
 
-        baseChart.backgroundPaint = Color(50, 50, 50)
-        baseChart.title.paint = Color.WHITE
+        baseChart.backgroundPaint = background
+        baseChart.title.paint = foreground
         baseChart.removeLegend()
 
         val domainAxis = plot!!.domainAxis as DateAxis
         domainAxis.timeZone = TimeZone.getTimeZone("UTC") // <- Add this line
-        domainAxis.labelPaint = Color.WHITE
-        domainAxis.tickLabelPaint = Color.WHITE
+        domainAxis.labelPaint = foreground
+        domainAxis.tickLabelPaint = foreground
         domainAxis.tickUnit = DateTickUnit(DateTickUnitType.MINUTE, 15)
         domainAxis.dateFormatOverride = SimpleDateFormat("HH:mm").apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }
 
         val rangeAxis = plot!!.rangeAxis as NumberAxis
-        rangeAxis.labelPaint = Color.WHITE
-        rangeAxis.tickLabelPaint = Color.WHITE
+        rangeAxis.labelPaint = foreground
+        rangeAxis.tickLabelPaint = foreground
         rangeAxis.standardTickUnits = NumberAxis.createIntegerTickUnits()
         rangeAxis.isAutoRange = true
         rangeAxis.autoRangeMinimumSize = 10.0
@@ -161,7 +158,7 @@ class LandingRatesGraph : JPanel() {
         renderer.barPainter = StandardXYBarPainter()
 
         renderer.isDrawBarOutline = true
-        renderer.setSeriesOutlinePaint(0, Color.GRAY)
+        renderer.setSeriesOutlinePaint(0, background)
         renderer.setSeriesOutlineStroke(0, BasicStroke(1.0f))
         val baseGradient = GradientPaint(
             0f, 100f, Color(75, 243, 98),
@@ -174,7 +171,7 @@ class LandingRatesGraph : JPanel() {
 
         renderer.defaultItemLabelsVisible = true
         renderer.defaultItemLabelGenerator = StandardXYItemLabelGenerator()
-        renderer.defaultItemLabelPaint = Color.WHITE
+        renderer.defaultItemLabelPaint = foreground
         renderer.defaultItemLabelFont = Font("SansSerif", Font.BOLD, 12)
         renderer.defaultPositiveItemLabelPosition = ItemLabelPosition(ItemLabelAnchor.INSIDE12, TextAnchor.TOP_CENTER)
 
