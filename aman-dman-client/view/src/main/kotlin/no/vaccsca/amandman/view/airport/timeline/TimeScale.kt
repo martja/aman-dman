@@ -15,6 +15,7 @@ import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.event.MouseEvent
+import javax.swing.BorderFactory
 import javax.swing.JPanel
 
 class TimeScale(
@@ -34,6 +35,8 @@ class TimeScale(
 
     init {
         background = Color.decode("#646464")
+        border = BorderFactory.createMatteBorder(0, 1, 0, 1, lineColor)
+
         addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mousePressed(e: MouseEvent) {
                 if (e.isPopupTrigger) {
@@ -65,11 +68,7 @@ class TimeScale(
         g.color = pastColor
         g.fillRect(0, currentTimeYpos, width, height - currentTimeYpos)
 
-        // Draw left and right border
         g.color = lineColor
-        g.drawLine(0, 0, 0, height)
-        g.drawLine(width, 0, width, height)
-
         for (timestep in 0 .. timespanSeconds) {
             val accInstant = Instant.fromEpochSeconds(selectedRange.value.start.epochSeconds + timestep)
             val accSeconds = accInstant.epochSeconds

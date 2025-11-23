@@ -11,6 +11,7 @@ import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
+import javax.swing.BorderFactory
 import javax.swing.JComponent
 import kotlin.math.max
 import kotlin.math.min
@@ -42,6 +43,7 @@ abstract class TimeRangeScrollBarAbstract(
 
         selectedRange.addListener { repaint() }
         availableRange.addListener { repaint() }
+        border = BorderFactory.createLineBorder(foreground)
 
         setupMouseListeners()
     }
@@ -62,9 +64,8 @@ abstract class TimeRangeScrollBarAbstract(
 
         g2.color = background
         g2.fillRect(0, 0, width, height)
-        g2.color = foreground
-        g2.drawRect(0, 0, width - 1, height - 1)
 
+        g.color = foreground
         drawNowIndicator(g2)
         timelineEvents.toSet().forEach { item ->
             when (item) {

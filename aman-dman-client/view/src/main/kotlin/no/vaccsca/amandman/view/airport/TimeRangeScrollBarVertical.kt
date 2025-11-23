@@ -46,10 +46,6 @@ class TimeRangeScrollBarVertical(
     override fun drawScrollBar(g2: Graphics2D) {
         val barStart = getBarStart()
         val barEnd = getBarEnd()
-        //g2.color = Color.LIGHT_GRAY
-        g2.fillRect(0, barStart, width, barEnd - barStart)
-        g2.color = foreground
-        g2.drawRect(0, barStart, width, barEnd - barStart)
 
         timelineEvents.forEach { occurrence ->
             when (occurrence) {
