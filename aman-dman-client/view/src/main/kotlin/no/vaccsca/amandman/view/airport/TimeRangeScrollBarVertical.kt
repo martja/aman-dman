@@ -1,10 +1,8 @@
 package no.vaccsca.amandman.view.airport
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.util.SharedValue
 import java.awt.*
@@ -18,7 +16,7 @@ class TimeRangeScrollBarVertical(
 ) : TimeRangeScrollBarAbstract(selectedRange, availableRange) {
 
     override fun getInitialSize(): Dimension {
-        return Dimension(thickness, 0) // Default height, can be adjusted
+        return Dimension(scrollbarWidth, 0) // Default height, can be adjusted
     }
 
     override fun getBarStart(): Int {
@@ -51,7 +49,7 @@ class TimeRangeScrollBarVertical(
         //g2.color = Color.LIGHT_GRAY
         g2.fillRect(0, barStart, width, barEnd - barStart)
         g2.color = foreground
-        g2.drawRect(0, barStart, width - 1, barEnd - barStart - 1)
+        g2.drawRect(0, barStart, width, barEnd - barStart)
 
         timelineEvents.forEach { occurrence ->
             when (occurrence) {
@@ -64,19 +62,24 @@ class TimeRangeScrollBarVertical(
         }
 
         val handleLeft = scrollHandleMargin
-        val handleRight = handleLeft + scrollHandleThickness
+        val handleRight = handleLeft + scrollHandleWidth
 
         val gradient = GradientPaint(
             handleLeft.toFloat(), barEnd.toFloat(), Color(255, 255, 255, 40),
             handleRight.toFloat(), barEnd.toFloat(), Color(255, 255, 255, 20)
         )
+
+        // Handle fill
         g2.paint = gradient
-        // g2.color = Color(0, 0, 0, 50)
-        g2.fillRoundRect(handleLeft, barEnd, scrollHandleThickness, barStart - barEnd, cornerRadius, cornerRadius)
+        g2.fillRoundRect(handleLeft, barEnd, scrollHandleWidth, barStart - barEnd, cornerRadius, cornerRadius)
+
+        // Handle border
         g2.color = foreground
-        g2.drawRoundRect(handleLeft, barEnd, scrollHandleThickness, barStart - barEnd, cornerRadius, cornerRadius)
-        g2.fillRoundRect(handleLeft, barEnd, scrollHandleThickness, resizeHandleThickness, cornerRadius, cornerRadius)
-        g2.fillRoundRect(handleLeft, barStart - resizeHandleThickness, scrollHandleThickness, resizeHandleThickness, cornerRadius, cornerRadius)
+        g2.drawRoundRect(handleLeft, barEnd, scrollHandleWidth - 1, barStart - barEnd, cornerRadius, cornerRadius)
+
+        // Resize handles
+        g2.fillRoundRect(handleLeft, barEnd, scrollHandleWidth - 1, resizeHandleThickness, cornerRadius, cornerRadius)
+        g2.fillRoundRect(handleLeft, barStart - resizeHandleThickness, scrollHandleWidth - 1, resizeHandleThickness, cornerRadius, cornerRadius)
     }
 
     override fun drawEvent(g: Graphics, instant: Instant, color: Color) {

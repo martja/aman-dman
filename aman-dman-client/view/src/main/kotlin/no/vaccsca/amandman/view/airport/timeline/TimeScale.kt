@@ -68,7 +68,7 @@ class TimeScale(
         // Draw left and right border
         g.color = lineColor
         g.drawLine(0, 0, 0, height)
-        g.drawLine(width-1, 0, width-1, height)
+        g.drawLine(width, 0, width, height)
 
         for (timestep in 0 .. timespanSeconds) {
             val accInstant = Instant.fromEpochSeconds(selectedRange.value.start.epochSeconds + timestep)

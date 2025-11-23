@@ -22,7 +22,7 @@ import kotlin.time.Duration.Companion.seconds
 abstract class TimeRangeScrollBarAbstract(
     protected val selectedRange: SharedValue<TimeRange>,
     protected val availableRange: SharedValue<TimeRange>,
-    protected val thickness: Int = 28,
+    protected val scrollbarWidth: Int = 28,
     protected val inverted: Boolean = true
 ) : JComponent() {
 
@@ -33,8 +33,8 @@ abstract class TimeRangeScrollBarAbstract(
     protected var timelineEvents: List<TimelineEvent> = emptyList()
 
     protected val scrollHandleMargin = 5
-    protected val scrollHandleThickness = thickness - scrollHandleMargin * 2
-    protected val cornerRadius = 10
+    protected val scrollHandleWidth = scrollbarWidth - scrollHandleMargin * 2
+    protected val cornerRadius = 8
     protected val resizeHandleThickness = 4
 
     init {

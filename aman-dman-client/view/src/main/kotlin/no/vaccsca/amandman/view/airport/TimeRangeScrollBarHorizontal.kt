@@ -1,6 +1,5 @@
 package no.vaccsca.amandman.view.airport
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.view.entity.TimeRange
@@ -16,7 +15,7 @@ class TimeRangeScrollBarHorizontal(
 ) : TimeRangeScrollBarAbstract(selectedRange, availableRange, inverted = false) {
 
     override fun getInitialSize(): Dimension {
-        return Dimension(0, thickness)
+        return Dimension(0, scrollbarWidth)
     }
 
     override fun getBarStart(): Int {
@@ -54,16 +53,16 @@ class TimeRangeScrollBarHorizontal(
 
         val gradient = GradientPaint(
             barStart.toFloat(), handleTop.toFloat(), Color(255, 255, 255, 40),
-            barStart.toFloat(), (handleTop + scrollHandleThickness).toFloat(), Color(255, 255, 255, 20)
+            barStart.toFloat(), (handleTop + scrollHandleWidth).toFloat(), Color(255, 255, 255, 20)
         )
         g2.paint = gradient
-        g2.fillRoundRect(barStart, handleTop, barEnd - barStart, scrollHandleThickness, cornerRadius, cornerRadius)
+        g2.fillRoundRect(barStart, handleTop, barEnd - barStart, scrollHandleWidth, cornerRadius, cornerRadius)
         g2.color = foreground
-        g2.drawRoundRect(barStart, handleTop, barEnd - barStart, scrollHandleThickness, cornerRadius, cornerRadius)
+        g2.drawRoundRect(barStart, handleTop, barEnd - barStart, scrollHandleWidth, cornerRadius, cornerRadius)
 
         // Draw resize handles
-        g2.fillRoundRect(barStart, handleTop, resizeHandleThickness, scrollHandleThickness, cornerRadius, cornerRadius)
-        g2.fillRoundRect(barEnd - resizeHandleThickness, handleTop, resizeHandleThickness, scrollHandleThickness, cornerRadius, cornerRadius)
+        g2.fillRoundRect(barStart, handleTop, resizeHandleThickness, scrollHandleWidth, cornerRadius, cornerRadius)
+        g2.fillRoundRect(barEnd - resizeHandleThickness, handleTop, resizeHandleThickness, scrollHandleWidth, cornerRadius, cornerRadius)
     }
 
     override fun drawEvent(g: Graphics, instant: Instant, color: Color) {
