@@ -41,6 +41,12 @@ application {
     mainClass = "no.vaccsca.amandman.MainKt"
 }
 
-tasks.named("shadowJar") {
+tasks.named<Jar>("shadowJar") {
     dependsOn(":model:generateSchemas")
+    manifest {
+        attributes(
+            "Implementation-Version" to project.version,
+            "Implementation-Title" to project.name
+        )
+    }
 }

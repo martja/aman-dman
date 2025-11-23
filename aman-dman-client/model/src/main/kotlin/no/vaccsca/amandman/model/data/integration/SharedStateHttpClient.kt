@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateEventJson
@@ -39,12 +38,13 @@ class SharedStateHttpClient : SharedState {
     }
 
     private val SESSION_ID_HEADER = "x-session-uuid"
+    private val CLIENT_VERSION_HEADER = "x-client-version"
     private val JSON = "application/json".toMediaType()
     private val BASE_URL: String = SettingsRepository.getSettings(reload = true).connectionConfig.api.host
+    private val clientVersion = object {}.javaClass.`package`.implementationVersion ?: "DEV-SNAPSHOT"
 
     override fun checkMasterRoleStatus(airportIcao: String): Boolean {
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/master-role")
+        val request = baseApiRequest(airportIcao, "master-role")
             .header(SESSION_ID_HEADER, clientUuid)
             .get()
             .build()
@@ -64,9 +64,7 @@ class SharedStateHttpClient : SharedState {
     }
 
     override fun acquireMasterRole(airportIcao: String): Boolean {
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/master-role")
-            .header(SESSION_ID_HEADER, clientUuid)
+        val request = baseApiRequest(airportIcao, "master-role")
             .post("".toRequestBody()) // Empty body
             .build()
 
@@ -76,9 +74,7 @@ class SharedStateHttpClient : SharedState {
     }
 
     override fun releaseMasterRole(airportIcao: String) {
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/master-role")
-            .header(SESSION_ID_HEADER, clientUuid)
+        val request = baseApiRequest(airportIcao, "master-role")
             .delete()
             .build()
 
@@ -195,10 +191,8 @@ class SharedStateHttpClient : SharedState {
     }
 
     // Primary fetchStateJson method that uses TypeReference for complete type safety
-    private fun <T> fetchStateJson(airportIcao: String, dataType: String, typeRef: TypeReference<SharedStateJson<T>>): SharedStateJson<T> {
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/$dataType")
-            .header(SESSION_ID_HEADER, clientUuid)
+    private fun <T> fetchStateJson(airportIcao: String, resource: String, typeRef: TypeReference<SharedStateJson<T>>): SharedStateJson<T> {
+        val request = baseApiRequest(airportIcao, resource)
             .get()
             .build()
 
@@ -215,12 +209,10 @@ class SharedStateHttpClient : SharedState {
         return fetchStateJson(airportIcao, dataType, typeRef)
     }
 
-    private fun sendStateJson(airportIcao: String, dataType: String, sharedStateJson: SharedStateJson<*>) {
+    private fun sendStateJson(airportIcao: String, resource: String, sharedStateJson: SharedStateJson<*>) {
         val json = objectMapper.writeValueAsString(sharedStateJson)
 
-        val request = Request.Builder()
-            .url("$BASE_URL/api/v1/airports/$airportIcao/$dataType")
-            .header(SESSION_ID_HEADER, clientUuid)
+        val request = baseApiRequest(airportIcao, resource)
             .post(json.toRequestBody(JSON))
             .build()
 
@@ -236,4 +228,11 @@ class SharedStateHttpClient : SharedState {
         val currentMaster: String? = null,
         val sessionId: String? = null
     )
+
+    private fun baseApiRequest(airportIcao: String, resource: String): Request.Builder {
+        return Request.Builder()
+            .url("$BASE_URL/api/v1/airports/$airportIcao/$resource")
+            .header(SESSION_ID_HEADER, clientUuid)
+            .header(CLIENT_VERSION_HEADER, clientVersion)
+    }
 }
