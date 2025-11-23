@@ -1,17 +1,13 @@
 package no.vaccsca.amandman.model.domain.service
 
-import kotlinx.datetime.Clock
+import kotlinx.coroutines.*
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
-import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.data.integration.AtcClient
 import no.vaccsca.amandman.model.data.repository.CdmClient
+import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.domain.exception.DescentTrajectoryException
-import no.vaccsca.amandman.model.domain.valueobjects.Airport
-import no.vaccsca.amandman.model.domain.valueobjects.CdmData
-import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
-import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
-import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
+import no.vaccsca.amandman.model.domain.valueobjects.*
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientDepartureData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
@@ -19,6 +15,8 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEven
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -43,33 +41,34 @@ class PlannerServiceMaster(
     private var controllerInfo: ControllerInfoData? = null
     private var fetchCdmData = false
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     init {
-        refreshWeatherData()
-
         // Periodic refresh of CDM data
-        Thread {
-            while (true) {
-                Thread.sleep(2_000)
-                if (fetchCdmData) {
-                    println("Refreshing CDM data for $airportIcao")
-                    refreshCdmData()
-                }
+        scope.runEvery(2.minutes) {
+            if (fetchCdmData) {
+                println("Refreshing CDM data for $airportIcao")
+                refreshCdmData()
             }
-        }.start()
+        }
 
-        // Periodic cleanup of old cached flights
-        Thread {
-            while (true) {
-                Thread.sleep(1_000) // check every second
-                val cutoff = NtpClock.now().minus(5.seconds)
-                arrivalsCache = arrivalsCache.filter { it.lastTimestamp >= cutoff }
-                departuresCache = departuresCache.filter { it.lastTimestamp >= cutoff }
-                onSequenceUpdated()
-            }
-        }.start()
+        // Periodic refresh of weather data
+        scope.runEvery(15.minutes) {
+            println("Refreshing weather data for $airportIcao")
+            refreshWeatherData()
+        }
+
+        // Periodic cleanup of old cached weather data
+        scope.runEvery(1.seconds) {
+            val cutoff = NtpClock.now().minus(5.seconds)
+            arrivalsCache = arrivalsCache.filter { it.lastTimestamp >= cutoff }
+            departuresCache = departuresCache.filter { it.lastTimestamp >= cutoff }
+            onSequenceUpdated()
+        }
     }
 
     override fun stop() {
+        scope.cancel()
         atcClient.stopCollectingMovementsFor(airportIcao)
     }
 
@@ -183,23 +182,23 @@ class PlannerServiceMaster(
             }
         }
 
-    override fun refreshWeatherData(): Result<Unit> =
-        runCatching {
-            Thread {
-                val weather = weatherDataRepository.getWindData(airport.location.lat, airport.location.lon)
-                weatherData = weather
-                dataUpdateListeners.forEach { listener ->
-                    listener.onWeatherDataUpdated(airportIcao, weather)
-                }
-            }.start()
+    override fun refreshWeatherData(): Result<Unit> {
+        scope.launch {
+            val weather = weatherDataRepository.getWindData(airport.location.lat, airport.location.lon)
+            weatherData = weather
+            dataUpdateListeners.forEach { listener ->
+                listener.onWeatherDataUpdated(airportIcao, weather)
+            }
         }
+        return Result.success(Unit)
+    }
 
-    override fun refreshCdmData(): Result<Unit> =
-        runCatching {
-            Thread {
-                this.cdmDepartures = cdmClient.fetchCdmDepartures(airportIcao)
-            }.start()
+    override fun refreshCdmData(): Result<Unit> {
+        scope.launch {
+            cdmDepartures = cdmClient.fetchCdmDepartures(airportIcao)
         }
+        return Result.success(Unit)
+    }
 
     override fun suggestScheduledTime(timelineEvent: TimelineEvent, scheduledTime: Instant, newRunway: String?): Result<Unit> =
         runCatching {
@@ -288,4 +287,13 @@ class PlannerServiceMaster(
             sequenceStatus = if (sequenceSchedule != null) SequenceStatus.OK else SequenceStatus.AWAITING_FOR_SEQUENCE,
         )
     }
+
+
+    private fun CoroutineScope.runEvery(n: Duration, codeBlock: suspend () -> Unit) =
+        launch {
+            while (isActive) {
+                codeBlock()
+                delay(n)
+            }
+        }
 }
