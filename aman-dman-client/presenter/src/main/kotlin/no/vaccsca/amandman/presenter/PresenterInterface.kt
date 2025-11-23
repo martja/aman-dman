@@ -40,4 +40,5 @@ interface PresenterInterface {
     // New timeline
     fun onAddTimelineButtonClicked(airportIcao: String, timelineConfig: TimelineConfig)
     fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto)
+    fun onReloadWindsClicked(airportIcao: String)
 }

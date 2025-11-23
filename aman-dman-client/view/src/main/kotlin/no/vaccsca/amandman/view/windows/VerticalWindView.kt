@@ -2,9 +2,12 @@ package no.vaccsca.amandman.view.windows
 
 import no.vaccsca.amandman.common.util.NumberUtils.format
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.view.coponents.ReloadButton
 import no.vaccsca.amandman.view.util.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color
+import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.FlowLayout
 import javax.swing.JComboBox
@@ -12,13 +15,20 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import kotlin.math.roundToInt
 
-class VerticalWindView: JPanel(BorderLayout()) {
+class VerticalWindView(
+    private val presenter: PresenterInterface,
+): JPanel(BorderLayout()) {
 
     private val profiles = mutableMapOf<String, VerticalWeatherProfile>()
     private var selectedAirport: String? = null
 
     private val airportSelector = JComboBox<String>()
     private val contentPanel = ContentPanel()
+    private val reloadButton = ReloadButton("Reload winds for airport") {
+        selectedAirport?.let {
+            presenter.onReloadWindsClicked(airportIcao = it)
+        }
+    }
 
     init {
         airportSelector.addActionListener {
@@ -29,8 +39,10 @@ class VerticalWindView: JPanel(BorderLayout()) {
         // Create bottom panel with label and dropdown
         val bottomPanel = JPanel(FlowLayout(FlowLayout.LEFT, 5, 5))
         val airportLabel = JLabel("Airport:")
+
         bottomPanel.add(airportLabel)
         bottomPanel.add(airportSelector)
+        bottomPanel.add(reloadButton)
 
         add(contentPanel, BorderLayout.CENTER)
         add(bottomPanel, BorderLayout.SOUTH)

@@ -28,7 +28,6 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     override lateinit var presenterInterface: PresenterInterface
 
     private val nonSeqView = NonSeqView()
-    private val verticalWindView = VerticalWindView()
     private val descentProfileVisualizationView = DescentProfileVisualization()
     private val landingRatesGraph = LandingRatesGraph()
 
@@ -40,6 +39,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     private var footer: Footer? = null
     private var airportViewsPanel: AirportViewsPanel? = null
     private var currentTime: Instant? = null
+    private var verticalWindView: VerticalWindView? = null
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -51,6 +51,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         presenterInterface.onReloadSettingsRequested()
         footer = Footer(presenterInterface, this)
         airportViewsPanel = AirportViewsPanel(presenterInterface)
+        verticalWindView = VerticalWindView(presenterInterface)
 
         setSize(1000, 800)
         setLocationRelativeTo(null) // Center the window
@@ -186,12 +187,12 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
                 add(verticalWindView)
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
-                preferredSize = Dimension(300, 700)
+                preferredSize = Dimension(330, 700)
                 isVisible = true
                 pack()
             }
         }
-        verticalWindView.showAirport(airportIcao)
+        verticalWindView?.showAirport(airportIcao)
     }
 
     override fun openLandingRatesWindow() {
@@ -226,7 +227,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     }
 
     override fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?) {
-        verticalWindView.update(airportIcao, weather)
+        verticalWindView?.update(airportIcao, weather)
     }
 
     override fun openDescentProfileWindow(callsign: String) {

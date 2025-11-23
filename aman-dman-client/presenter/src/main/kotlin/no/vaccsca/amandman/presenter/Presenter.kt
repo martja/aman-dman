@@ -375,6 +375,16 @@ class Presenter(
         )
     }
 
+    override fun onReloadWindsClicked(airportIcao: String) {
+        plannerManager.getServiceForAirport(airportIcao).refreshWeatherData()
+            .onFailure {
+                when (it) {
+                    is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
+                    else -> view.showErrorMessage("Failed to reload winds: ${it.message}")
+                }
+            }
+    }
+
     override fun onRemoveTimelineClicked(timelineConfig: TimelineConfig) {
         timelineGroups.forEach { group ->
             group.timelines.removeIf { it.title == timelineConfig.title }
