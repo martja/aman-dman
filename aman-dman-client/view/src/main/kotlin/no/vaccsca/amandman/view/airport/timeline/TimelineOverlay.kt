@@ -1,6 +1,5 @@
 package no.vaccsca.amandman.view.airport.timeline
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.*
 import no.vaccsca.amandman.model.domain.valueobjects.LabelItem
@@ -278,25 +277,23 @@ class TimelineOverlay(
         }
 
         override fun mouseClicked(e: MouseEvent?) {
-            label.onDragEnd()
-            cleanupDraggedLabelCopy()
-            if (e?.button == MouseEvent.BUTTON1) { // Left click
+            if (e?.isLeftButton() == true) {
+                label.onDragEnd()
+                cleanupDraggedLabelCopy()
                 handleLabelClick(label)
             }
         }
 
         override fun mouseReleased(e: MouseEvent) {
             cleanupDraggedLabelCopy()
-            if (!isDraggingLabel && e.button == MouseEvent.BUTTON1) { // Left click
-                handleLabelClick(label)
-                return
+            if (isDraggingLabel && e.isLeftButton()) {
+                isDraggingLabel = false
+                proposedTime = null
+                val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
+                val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
+                onLabelDropped(label.timelineEvent, newInstant)
+                label.onDragEnd()
             }
-            isDraggingLabel = false
-            proposedTime = null
-            val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
-            val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
-            onLabelDropped(label.timelineEvent, newInstant)
-            label.onDragEnd()
         }
     }
 
@@ -362,6 +359,10 @@ class TimelineOverlay(
             intArrayOf(nowY, nowY + hourglassSize, nowY - hourglassSize),
             3
         ))
+    }
+
+    private fun MouseEvent.isLeftButton(): Boolean {
+        return this.button == MouseEvent.BUTTON1
     }
 
 }
