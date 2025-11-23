@@ -238,7 +238,7 @@ class PlannerServiceMaster(
         timelineEvent: TimelineEvent,
         scheduledTime: Instant
     ): Boolean {
-        return AmanDmanSequenceService.isTimeSlotAvailable(sequence, timelineEvent, scheduledTime)
+        return AmanDmanSequenceService.isTimeSlotAvailable(sequence, timelineEvent, scheduledTime, minimumSpacingNm)
     }
 
     override  fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =

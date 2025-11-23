@@ -148,7 +148,7 @@ object AmanDmanSequenceService {
         currentSequence: Sequence,
         timelineEvent: TimelineEvent,
         requestedTime: Instant,
-        minimumSeparationNm: Double = 3.0
+        minimumSeparationNm: Double
     ): Boolean {
         if (timelineEvent !is RunwayArrivalEvent) return false
 
