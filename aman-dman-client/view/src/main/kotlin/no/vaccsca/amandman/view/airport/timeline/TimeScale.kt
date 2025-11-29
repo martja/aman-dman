@@ -11,7 +11,7 @@ import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.AmanPopupMenu
 import no.vaccsca.amandman.view.airport.timeline.utils.GraphicUtils.drawStringAdvanced
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.util.SharedValue
+import no.vaccsca.amandman.view.entity.SharedValue
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.event.MouseEvent

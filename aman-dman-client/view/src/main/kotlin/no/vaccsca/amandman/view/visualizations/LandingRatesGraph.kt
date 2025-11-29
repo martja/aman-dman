@@ -1,12 +1,11 @@
-package no.vaccsca.amandman.view.windows
+package no.vaccsca.amandman.view.visualizations
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.airport.TimeRangeScrollBarHorizontal
-import no.vaccsca.amandman.view.util.SharedValue
+import no.vaccsca.amandman.view.entity.SharedValue
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartPanel
 import org.jfree.chart.JFreeChart

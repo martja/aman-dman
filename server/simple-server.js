@@ -1,9 +1,22 @@
 const express = require('express');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+async function versionMiddleware(req, res, next) {
+  try {
+    const latestVersion = await getLatestVersionCached();
+    req.latestClientVersion = latestVersion || "unknown";
+  } catch (err) {
+    console.error("Failed to fetch latest client version:", err);
+    req.latestClientVersion = "unknown";
+  }
+  next();
+}
+
 // Middleware
 app.use(express.json());
+app.use(versionMiddleware);
 
 // In-memory storage for airport data
 const airportData = {};
@@ -11,6 +24,51 @@ const airportData = {};
 // Helper function to validate ICAO codes (4 letters)
 function isValidICAO(icao) {
   return /^[A-Z]{4}$/.test(icao.toUpperCase());
+}
+
+async function fetchLatestClientVersion() {
+  const url = "https://api.github.com/repos/EvenAR/aman-dman/releases/latest";
+  const token = process.env.GITHUB_TOKEN;
+
+  const response = await fetch(url, {
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "Authorization": `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28"
+    }
+  });
+
+  if (!response.ok) {
+    console.error("GitHub API error:", response.status);
+    return null;
+  }
+
+  const json = await response.json();
+  const tag = json.tag_name; // e.g. "v1.4.2"
+
+  // Remove leading "v" if present
+  return tag.startsWith("v") ? tag.slice(1) : tag;
+}
+
+let cache = {
+  version: null,
+  timestamp: 0
+};
+
+async function getLatestVersionCached() {
+  const ttlMs = 10 * 60 * 1000; // 10 minutes
+  const now = Date.now();
+
+  if (cache.version && (now - cache.timestamp < ttlMs)) {
+    return cache.version;
+  }
+
+  const latest = await fetchLatestClientVersion();
+  if (latest) {
+    cache = { version: latest, timestamp: now };
+  }
+
+  return cache.version;
 }
 
 // Generic handler for GET endpoints
@@ -371,9 +429,51 @@ app.get('/api/v1/airports', (req, res) => {
   res.json({ airports });
 });
 
+app.get('/api/v1/compat', async (req, res) => {
+  const clientVer = req.headers['x-client-version'] || "0.0.0";
+
+  // Fetch latest version dynamically
+  const latestClientVersion = await getLatestVersionCached();
+  const minClientVersion = "1.2.0"; // keep this as your minimum supported version
+
+  if (!latestClientVersion) {
+    return res.status(500).json({ error: 'Failed to fetch latest client version' });
+  }
+
+  const status =
+    compareVersions(clientVer, minClientVersion) < 0
+      ? "update-required"
+      : compareVersions(clientVer, latestClientVersion) < 0
+        ? "update-recommended"
+        : "ok";
+
+  res.json({
+    apiVersion: "1.0.0",
+    latestClientVersion,
+    minClientVersion,
+    status,
+    message:
+      status === "update-required"
+        ? "Your client version is no longer supported. Please update."
+        : status === "update-recommended"
+          ? `A newer version (${latestClientVersion}) of the client is available.`
+          : "Your client is up to date."
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/v1/latest-client-version', async (req, res) => {
+  const latestVersion = await getLatestVersionCached();
+  
+  if (!latestVersion) {
+    return res.status(500).json({ error: 'Failed to fetch latest client version' });
+  }
+  
+  res.json({ latestClientVersion: latestVersion });
 });
 
 // Client activity endpoint (replaces dedicated heartbeat for non-masters)

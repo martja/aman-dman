@@ -1,11 +1,11 @@
-package no.vaccsca.amandman.view.util
+package no.vaccsca.amandman.view.forms
 
 import javax.swing.JTextField
 import javax.swing.text.AbstractDocument
 import javax.swing.text.AttributeSet
 import javax.swing.text.DocumentFilter
 
-object Form {
+object FormUtils {
     fun enforceUppercase(textField: JTextField, maxLength: Int? = null) {
         val doc = textField.document
         if (doc is AbstractDocument) {

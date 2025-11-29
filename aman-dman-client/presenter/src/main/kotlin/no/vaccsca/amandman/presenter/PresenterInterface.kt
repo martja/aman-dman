@@ -41,4 +41,5 @@ interface PresenterInterface {
     fun onAddTimelineButtonClicked(airportIcao: String, timelineConfig: TimelineConfig)
     fun onCreateNewTimeline(config: CreateOrUpdateTimelineDto)
     fun onReloadWindsClicked(airportIcao: String)
+    fun onSetMinSpacingSelectionClicked(icao: String, minSpacingSelectionNm: Double?)
 }

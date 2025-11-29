@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.util
+package no.vaccsca.amandman.view.entity
 
 class SharedValue<T>(initialValue: T) {
     private val listeners = mutableListOf<(T) -> Unit>()

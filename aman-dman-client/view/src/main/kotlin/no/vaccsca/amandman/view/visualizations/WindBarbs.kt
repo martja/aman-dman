@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.util
+package no.vaccsca.amandman.view.visualizations
 
 import java.awt.Graphics
 import java.awt.Point

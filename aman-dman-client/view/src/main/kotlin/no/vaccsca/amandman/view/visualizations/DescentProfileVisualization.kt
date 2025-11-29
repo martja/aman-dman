@@ -1,10 +1,12 @@
-package no.vaccsca.amandman.view
+package no.vaccsca.amandman.view.visualizations
 
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
-import no.vaccsca.amandman.view.util.WindBarbs
+import no.vaccsca.amandman.view.visualizations.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color
+import java.awt.Graphics
 import java.awt.event.MouseEvent
+import java.awt.event.MouseMotionAdapter
 import javax.swing.JPanel
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -21,7 +23,7 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     private val BARB_SPACING = 40
 
     init {
-        addMouseMotionListener(object : java.awt.event.MouseMotionAdapter() {
+        addMouseMotionListener(object : MouseMotionAdapter() {
             override fun mouseMoved(e: MouseEvent) {
                 val point = findClosestTrajectoryPointAlongXAxis(e.x)
                 if (point != hoveredPoint) {
@@ -52,7 +54,7 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     private val diagramMargin = 40
     private val diagramMarginTop = 90
 
-    override fun paintComponent(g: java.awt.Graphics) {
+    override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
         if (trajectoryPoints.isEmpty()) {
@@ -126,12 +128,12 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
 
             drawLegend(g, it)
 
-            g.color = java.awt.Color.RED
+            g.color = Color.RED
             g.drawLine(x, diagramMarginTop, x, height - diagramMargin)
         }
     }
 
-    private fun drawLegend(g: java.awt.Graphics, it: TrajectoryPoint) {
+    private fun drawLegend(g: Graphics, it: TrajectoryPoint) {
         var x = 5
 
         // Altitude
@@ -197,4 +199,3 @@ class DescentProfileVisualization : JPanel(BorderLayout()) {
     }
 
 }
-

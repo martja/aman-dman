@@ -124,7 +124,6 @@ class DescentTrajectoryServiceTest {
         runways=mapOf(
             "19L" to rwy19L,
         ),
-        spacingOptionsNm = listOf()
     )
 
     @Test

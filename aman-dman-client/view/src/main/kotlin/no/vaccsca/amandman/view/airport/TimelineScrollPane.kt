@@ -7,7 +7,7 @@ import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.AmanPopupMenu
 import no.vaccsca.amandman.view.airport.timeline.TimelineView
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.util.SharedValue
+import no.vaccsca.amandman.view.entity.SharedValue
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Point
@@ -144,14 +144,9 @@ class TimelineScrollPane(
                 })
             }
 
-            item("Set spacing") {
-                airport.spacingOptionsNm?.map { option ->
-                    val title = if (minSpacingSelectionNm == option) "$option NM ✓" else "$option NM"
-                    item(title, action = {
-                        presenterInterface.onMinimumSpacingDistanceSet(airport.icao, option)
-                    })
-                }
-            }
+            item("Final approach spacing", action = {
+                presenterInterface.onSetMinSpacingSelectionClicked(airport.icao, minSpacingSelectionNm)
+            })
 
             item("Show winds", action = {
                 presenterInterface.onOpenMetWindowClicked(airport.icao)

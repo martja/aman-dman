@@ -385,6 +385,10 @@ class Presenter(
             }
     }
 
+    override fun onSetMinSpacingSelectionClicked(icao: String, minSpacingSelectionNm: Double?) {
+        view.showMinimumSpacingDialog(icao, minSpacingSelectionNm ?: minimumSpacingNm)
+    }
+
     override fun onRemoveTimelineClicked(timelineConfig: TimelineConfig) {
         timelineGroups.forEach { group ->
             group.timelines.removeIf { it.title == timelineConfig.title }

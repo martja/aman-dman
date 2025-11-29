@@ -104,8 +104,6 @@ fun AirportJson.toDomain(icao: String, stars: StarYamlFile) =
                 }
             )
         },
-        spacingOptionsNm = spacingOptionsNm?.map { it.toDouble() }
-            ?: (0 .. 20 step 1).map { it.toDouble() }
     )
 
 fun StarYamlEntry.toDomain() = Star(

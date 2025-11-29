@@ -3,7 +3,7 @@ package no.vaccsca.amandman.view.airport
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.util.SharedValue
+import no.vaccsca.amandman.view.entity.SharedValue
 import java.awt.*
 import java.awt.event.MouseEvent
 import kotlin.math.roundToInt

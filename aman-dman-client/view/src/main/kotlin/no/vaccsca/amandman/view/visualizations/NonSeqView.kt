@@ -1,4 +1,4 @@
-package no.vaccsca.amandman.view.windows
+package no.vaccsca.amandman.view.visualizations
 
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent

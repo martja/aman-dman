@@ -21,10 +21,6 @@ data class AirportJson(
     @field:NotNull
     @field:Valid
     val runwayThresholds: Map<@NotEmpty String, @Valid RunwayThresholdJson>,
-
-    @field:Valid
-    @field:JsonPropertyDescription("The possible spacing options (in NM) between arrivals on final approach")
-    val spacingOptionsNm: List<Number>? = null
 )
 
 data class LocationJson(

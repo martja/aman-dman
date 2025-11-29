@@ -60,7 +60,6 @@ class DescentProfileTest {
         icao = "ENGM",
         location = LatLng(0.0, 0.0),
         runways = mapOf("01L" to runway01L),
-        spacingOptionsNm = listOf()
     )
 
     data class TestFlight(

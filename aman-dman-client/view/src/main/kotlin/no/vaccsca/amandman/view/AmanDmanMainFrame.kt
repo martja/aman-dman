@@ -11,15 +11,18 @@ import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoDat
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.airport.Footer
-import no.vaccsca.amandman.view.windows.LandingRatesGraph
-import no.vaccsca.amandman.view.windows.NewTimelineForm
-import no.vaccsca.amandman.view.windows.NonSeqView
-import no.vaccsca.amandman.view.windows.VerticalWindView
+import no.vaccsca.amandman.view.visualizations.LandingRatesGraph
+import no.vaccsca.amandman.view.forms.NewTimelineForm
+import no.vaccsca.amandman.view.visualizations.NonSeqView
+import no.vaccsca.amandman.view.visualizations.VerticalWindView
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.*
 import kotlin.math.roundToInt
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.view.dialogs.RunwayDialog
+import no.vaccsca.amandman.view.dialogs.SpacingDialog
+import no.vaccsca.amandman.view.visualizations.DescentProfileVisualization
 import java.awt.Point
 import kotlin.time.Duration.Companion.seconds
 
@@ -71,36 +74,12 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         runwayOptions: Set<String>,
         onClose: (String) -> Unit
     ) {
-        val dialog = JDialog(this, "Select Runway", true).apply {
-            defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
-            layout = BorderLayout(10, 10)
-            setLocationRelativeTo(this@AmanDmanMainFrame)
-        }
-
-        val comboBox = JComboBox(runwayOptions.toTypedArray())
-        val okButton = JButton("OK")
-        val cancelButton = JButton("Cancel")
-
-        comboBox.selectedItem = runwayEvent.runway
-
-        okButton.addActionListener {
-            val selected = comboBox.selectedItem as String
-            onClose(selected)
-            dialog.dispose()
-        }
-        cancelButton.addActionListener { dialog.dispose() }
-
-        val buttonPanel = JPanel().apply {
-            add(okButton)
-            add(cancelButton)
-        }
-
-        dialog.add(comboBox, BorderLayout.CENTER)
-        dialog.add(buttonPanel, BorderLayout.SOUTH)
-
-        dialog.pack()              // <-- sizes dialog exactly to its contents
-        dialog.isResizable = false // <-- prevents empty extra space
-        dialog.isVisible = true
+        RunwayDialog.open(
+            parent = this,
+            runwayEvent = runwayEvent,
+            runwayOptions = runwayOptions,
+            onSubmit = onClose
+        )
     }
 
     override fun showTimelineGroup(airportIcao: String) {
@@ -171,6 +150,12 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         newTimelineForm?.isVisible = false
         newTimelineForm?.dispose()
         newTimelineForm = null
+    }
+
+    override fun showMinimumSpacingDialog(icao: String, default: Double) {
+        SpacingDialog.open(this, icao, default) { newValue ->
+            presenterInterface.onMinimumSpacingDistanceSet(icao, newValue)
+        }
     }
 
     override fun updateDescentTrajectory(callsign: String, trajectory: List<TrajectoryPoint>) {

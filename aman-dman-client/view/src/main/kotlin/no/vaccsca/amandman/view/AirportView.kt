@@ -16,7 +16,7 @@ import no.vaccsca.amandman.view.airport.TopBar
 import no.vaccsca.amandman.view.airport.timeline.TimelineView
 import no.vaccsca.amandman.view.coponents.ReloadButton
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.util.SharedValue
+import no.vaccsca.amandman.view.entity.SharedValue
 import java.awt.*
 import javax.swing.BorderFactory
 import javax.swing.JButton

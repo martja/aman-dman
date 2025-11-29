@@ -10,7 +10,13 @@
   "dependencies": {
     "express": "^4.18.2"
   },
-  "keywords": ["airport", "api", "simple", "json", "express"],
+  "keywords": [
+    "airport",
+    "api",
+    "simple",
+    "json",
+    "express"
+  ],
   "author": "",
   "license": "MIT"
 }

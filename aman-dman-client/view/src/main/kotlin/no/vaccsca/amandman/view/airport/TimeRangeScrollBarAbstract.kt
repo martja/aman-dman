@@ -6,7 +6,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEv
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.util.SharedValue
+import no.vaccsca.amandman.view.entity.SharedValue
 import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent

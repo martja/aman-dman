@@ -4,6 +4,7 @@ import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.view.dialogs.RoleSelectionDialog
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Graphics
@@ -32,60 +33,11 @@ class Footer(
             repaint()
         }.start()
 
-        startButton.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mousePressed(e: MouseEvent?) {
-                super.mousePressed(e)
-
-                // Get available ICAOs and sort them alphabetically
-                val availableAirportIcaos = SettingsRepository.getAirportData().map { it.icao }
-                val icaoComboBox = JComboBox(availableAirportIcaos.toTypedArray())
-
-                val roles = UserRole.entries.toTypedArray()
-                val roleComboBox = JComboBox(roles)
-
-                val panel = JPanel(GridBagLayout()).apply {
-                    val gbc = GridBagConstraints().apply {
-                        fill = GridBagConstraints.HORIZONTAL
-                        insets = Insets(5, 5, 5, 5)
-                        anchor = GridBagConstraints.WEST
-                    }
-
-                    // --- ICAO ComboBox ---
-                    gbc.gridx = 0
-                    gbc.gridy = 0
-                    add(JLabel("Airport"), gbc)
-
-                    gbc.gridx = 1
-                    gbc.gridy = 0
-                    add(icaoComboBox, gbc)
-
-                    // --- Role ComboBox ---
-                    gbc.gridx = 0
-                    gbc.gridy = 1
-                    add(JLabel("User Role"), gbc)
-
-                    gbc.gridx = 1
-                    gbc.gridy = 1
-                    add(roleComboBox, gbc)
-                }
-
-                val result = JOptionPane.showConfirmDialog(
-                    mainWindow,
-                    panel,
-                    "New Timeline Group",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
-                )
-
-                if (result == JOptionPane.OK_OPTION) {
-                    val icao = icaoComboBox.selectedItem as? String
-                    val role = roleComboBox.selectedItem as? UserRole
-                    if (!icao.isNullOrBlank() && role != null) {
-                        presenterInterface.onNewTimelineGroup(icao, role)
-                    }
-                }
+        startButton.addActionListener {
+            RoleSelectionDialog.open(mainWindow) { icao, role ->
+                presenterInterface.onNewTimelineGroup(icao, role)
             }
-        })
+        }
     }
 
     override fun paintComponent(g: Graphics?) {

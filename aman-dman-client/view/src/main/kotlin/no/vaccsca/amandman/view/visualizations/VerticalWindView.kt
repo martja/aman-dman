@@ -1,13 +1,12 @@
-package no.vaccsca.amandman.view.windows
+package no.vaccsca.amandman.view.visualizations
 
 import no.vaccsca.amandman.common.util.NumberUtils.format
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.coponents.ReloadButton
-import no.vaccsca.amandman.view.util.WindBarbs
+import no.vaccsca.amandman.view.visualizations.WindBarbs
 import java.awt.BorderLayout
 import java.awt.Color
-import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.FlowLayout
 import javax.swing.JComboBox
