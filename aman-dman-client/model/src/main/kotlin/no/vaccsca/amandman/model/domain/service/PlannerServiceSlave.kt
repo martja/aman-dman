@@ -1,27 +1,27 @@
 package no.vaccsca.amandman.model.domain.service
 
+import kotlinx.coroutines.*
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.data.integration.SharedState
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import java.util.Timer
-import java.util.TimerTask
 
 class PlannerServiceSlave(
     airportIcao: String,
     private val sharedState: SharedState,
     private val dataUpdateListener: DataUpdateListener
 ) : PlannerService(airportIcao) {
-    val timer = Timer()
     val arrivalAirportsToFetch = mutableSetOf<String>()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun start() {
-        timer.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
+        scope.launch {
+            while (isActive) {
                 fetchAll()
+                delay(1000)
             }
-        }, 0, 1000)
+        }
     }
 
     override fun getAvailableRunways(): Result<List<String>> =
@@ -69,7 +69,7 @@ class PlannerServiceSlave(
         }
     }
 
-    override fun planArrivals() {
+    override fun startDataCollection() {
         if (!arrivalAirportsToFetch.contains(airportIcao)) {
             arrivalAirportsToFetch.add(airportIcao)
         }
@@ -117,6 +117,6 @@ class PlannerServiceSlave(
         }
 
     override fun stop() {
-        timer.cancel()
+        scope.cancel()
     }
 }

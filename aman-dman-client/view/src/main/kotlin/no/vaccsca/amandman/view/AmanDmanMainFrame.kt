@@ -65,7 +65,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         isAlwaysOnTop = true
     }
 
-    override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) {
+    override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) = runOnUiThread {
         airportViewsPanel?.updateMinimumSpacing(airportIcao, minimumSpacingNm)
     }
 
@@ -73,7 +73,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         runwayEvent: RunwayEvent,
         runwayOptions: Set<String>,
         onClose: (String) -> Unit
-    ) {
+    ) = runOnUiThread {
         RunwayDialog.open(
             parent = this,
             runwayEvent = runwayEvent,
@@ -82,11 +82,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         )
     }
 
-    override fun showTimelineGroup(airportIcao: String) {
+    override fun showTimelineGroup(airportIcao: String) = runOnUiThread {
         airportViewsPanel?.changeVisibleGroup(airportIcao)
     }
 
-    override fun updateTime(currentTime: Instant) {
+    override fun updateTime(currentTime: Instant) = runOnUiThread {
         val previousTime = this.currentTime
         this.currentTime = currentTime
         val delta = if (previousTime != null) {
@@ -97,11 +97,15 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         airportViewsPanel?.updateTime(currentTime, delta)
     }
 
-    override fun showAirportContextMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point) {
+    override fun showAirportContextMenu(
+        airportIcao: String,
+        availableTimelines: List<TimelineConfig>,
+        screenPos: Point
+    ) = runOnUiThread {
         airportViewsPanel?.openPopupMenu(airportIcao, availableTimelines, screenPos)
     }
 
-    override fun updateTab(airportIcao: String, tabData: TabData) {
+    override fun updateTab(airportIcao: String, tabData: TabData) = runOnUiThread {
         airportViewsPanel?.updateTab(airportIcao, tabData)
         val allArrivalEvents = tabData.timelinesData.flatMap { it.left + it.right }
         landingRatesGraph.updateData(airportIcao, allArrivalEvents)
@@ -110,15 +114,22 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         )
     }
 
-    override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) {
+    override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) = runOnUiThread {
         airportViewsPanel?.updateTimelineGroups(timelineGroups)
     }
 
-    override fun updateDraggedLabel(timelineEvent: TimelineEvent, newInstant: Instant, isAvailable: Boolean) {
+    override fun updateDraggedLabel(
+        timelineEvent: TimelineEvent,
+        newInstant: Instant,
+        isAvailable: Boolean
+    ) = runOnUiThread {
         airportViewsPanel?.updateDraggedLabel(timelineEvent, newInstant, isAvailable)
     }
 
-    override fun updateRunwayModes(airportIcao: String, runwayModes: List<Pair<String, Boolean>>) {
+    override fun updateRunwayModes(
+        airportIcao: String,
+        runwayModes: List<Pair<String, Boolean>>
+    ) = runOnUiThread {
         airportViewsPanel?.updateRunwayModes(airportIcao, runwayModes)
     }
 
@@ -127,7 +138,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         availableTagLayoutsDep: Set<String>,
         availableTagLayoutsArr: Set<String>,
         existingConfig: TimelineConfig?
-    ) {
+    ) = runOnUiThread {
         if (newTimelineForm != null) {
             newTimelineForm?.isVisible = true
         } else {
@@ -146,25 +157,29 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         )
     }
 
-    override fun closeTimelineForm() {
+    override fun closeTimelineForm() = runOnUiThread {
         newTimelineForm?.isVisible = false
         newTimelineForm?.dispose()
         newTimelineForm = null
     }
 
-    override fun showMinimumSpacingDialog(icao: String, default: Double) {
+    override fun showMinimumSpacingDialog(icao: String, default: Double) = runOnUiThread {
         SpacingDialog.open(this, icao, default) { newValue ->
             presenterInterface.onMinimumSpacingDistanceSet(icao, newValue)
         }
     }
 
-    override fun updateDescentTrajectory(callsign: String, trajectory: List<TrajectoryPoint>) {
-        val currentFlightLevel = (trajectory.first().altitude / 100.0).roundToInt() // Convert to FL
-        descentProfileDialog?.title = "$callsign - calculated descent profile from FL$currentFlightLevel"
+    override fun updateDescentTrajectory(
+        callsign: String,
+        trajectory: List<TrajectoryPoint>
+    ) = runOnUiThread {
+        val currentFlightLevel = (trajectory.first().altitude / 100.0).roundToInt()
+        descentProfileDialog?.title =
+            "$callsign - calculated descent profile from FL$currentFlightLevel"
         descentProfileVisualizationView.setDescentSegments(trajectory)
     }
 
-    override fun openMetWindow(airportIcao: String) {
+    override fun openMetWindow(airportIcao: String) = runOnUiThread {
         if (windDialog != null) {
             windDialog?.isVisible = true
         } else {
@@ -180,12 +195,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         verticalWindView?.showAirport(airportIcao)
     }
 
-    override fun openLandingRatesWindow() {
+    override fun openLandingRatesWindow() = runOnUiThread {
         if (landingRatesDialog != null) {
             landingRatesDialog?.isVisible = true
         } else {
             landingRatesDialog = JDialog(this, "Landing Rates").apply {
-                // Add your landing rates visualization component here
                 add(landingRatesGraph)
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
@@ -196,7 +210,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         }
     }
 
-    override fun openNonSequencedWindow() {
+    override fun openNonSequencedWindow() = runOnUiThread {
         if (nonSequencedDialog != null) {
             nonSequencedDialog?.isVisible = true
         } else {
@@ -211,11 +225,14 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         }
     }
 
-    override fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?) {
+    override fun updateWeatherData(
+        airportIcao: String,
+        weather: VerticalWeatherProfile?
+    ) = runOnUiThread {
         verticalWindView?.update(airportIcao, weather)
     }
 
-    override fun openDescentProfileWindow(callsign: String) {
+    override fun openDescentProfileWindow(callsign: String) = runOnUiThread {
         if (descentProfileDialog != null) {
             descentProfileDialog?.isVisible = true
         } else {
@@ -231,7 +248,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         presenterInterface.onAircraftSelected(callsign)
     }
 
-    override fun showErrorMessage(message: String) {
+    override fun showErrorMessage(message: String) = runOnUiThread {
         JOptionPane.showMessageDialog(
             this,
             message,
@@ -240,11 +257,21 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         )
     }
 
-    override fun updateControllerInfo(controllerInfoData: ControllerInfoData) {
+    override fun updateControllerInfo(controllerInfoData: ControllerInfoData) = runOnUiThread {
         if (controllerInfoData.callsign != null && controllerInfoData.facilityType != null) {
             this.title = "AMAN - ${controllerInfoData.callsign} (${controllerInfoData.facilityType})"
         } else {
             this.title = "AMAN"
+        }
+    }
+
+    private fun runOnUiThread(block: () -> Unit) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            block()
+        } else {
+            SwingUtilities.invokeLater {
+                block()
+            }
         }
     }
 }
