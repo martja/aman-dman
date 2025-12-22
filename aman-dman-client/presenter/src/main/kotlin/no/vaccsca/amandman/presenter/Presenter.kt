@@ -1,6 +1,5 @@
 package no.vaccsca.amandman.presenter
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.common.TimelineConfig
@@ -19,7 +18,6 @@ import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
 import no.vaccsca.amandman.model.domain.service.PlannerServiceMaster
 import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
-import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
@@ -43,7 +41,6 @@ class Presenter(
     private var timelineConfigs = mutableMapOf<String, TimelineConfig>()
 
     private val cachedAmanData = mutableMapOf<String, CachedEvent>()
-    private val lock = Object()
 
     // Replace the simple currentMinimumSpacingNm with a reactive state manager
     private val runwayModeStateManager = RunwayModeStateManager(view)
@@ -134,19 +131,17 @@ class Presenter(
     }
 
     override fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>) {
-        synchronized(lock) {
-            timelineEvents.filterIsInstance<RunwayFlightEvent>().forEach {
-                cachedAmanData[it.callsign] = CachedEvent(
-                    lastTimestamp = NtpClock.now(),
-                    timelineEvent = it
-                )
-            }
+        timelineEvents.filterIsInstance<RunwayFlightEvent>().forEach {
+            cachedAmanData[it.callsign] = CachedEvent(
+                lastTimestamp = NtpClock.now(),
+                timelineEvent = it
+            )
+        }
 
-            // Delete stale data
-            val cutoffTime = NtpClock.now() - 5.seconds
-            cachedAmanData.entries.removeIf { entry ->
-                entry.value.lastTimestamp < cutoffTime
-            }
+        // Delete stale data
+        val cutoffTime = NtpClock.now() - 5.seconds
+        cachedAmanData.entries.removeIf { entry ->
+            entry.value.lastTimestamp < cutoffTime
         }
         updateViewFromCachedData()
     }
@@ -170,10 +165,7 @@ class Presenter(
     }
 
     private fun updateViewFromCachedData() {
-        val snapshot: List<TimelineEvent>
-        synchronized(lock) {
-            snapshot = cachedAmanData.values.toList().map { it.timelineEvent }
-        }
+        val snapshot: List<TimelineEvent> = cachedAmanData.values.toList().map { it.timelineEvent }
 
         timelineGroups.forEach { group ->
             val relevantDataForTab = snapshot.filter { occurrence ->
@@ -246,17 +238,13 @@ class Presenter(
 
     override fun onRemoveTab(airportIcao: String) {
         // Clean up cached data for this airport
-        synchronized(lock) {
-            cachedAmanData.entries.removeIf { entry ->
-                entry.value.timelineEvent.airportIcao == airportIcao
-            }
+        cachedAmanData.entries.removeIf { entry ->
+            entry.value.timelineEvent.airportIcao == airportIcao
         }
 
         // Clear selected callsign if it belongs to the removed airport
         selectedCallsign?.let { callsign ->
-            val selectedEvent = synchronized(lock) {
-                cachedAmanData[callsign]?.timelineEvent
-            }
+            val selectedEvent = cachedAmanData[callsign]?.timelineEvent
             if (selectedEvent?.airportIcao == airportIcao) {
                 selectedCallsign = null
             }
@@ -444,7 +432,7 @@ class Presenter(
         }
 
         plannerManager.registerService(plannerService)
-        plannerManager.getServiceForAirport(timelineGroup.airport.icao).planArrivals()
+        plannerManager.getServiceForAirport(timelineGroup.airport.icao).startDataCollection()
         timelineGroups.add(timelineGroup)
         view.updateTimelineGroups(timelineGroups)
         view.showTimelineGroup(timelineGroup.airport.icao)

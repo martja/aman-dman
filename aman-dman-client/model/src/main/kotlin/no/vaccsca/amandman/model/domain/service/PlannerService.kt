@@ -7,7 +7,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 abstract class PlannerService(
     val airportIcao: String
 ) {
-    abstract fun planArrivals()
+    abstract fun startDataCollection()
     abstract fun setMinimumSpacing(minimumSpacingDistanceNm: Double): Result<Unit>
     abstract fun refreshWeatherData(): Result<Unit>
     abstract fun refreshCdmData(): Result<Unit>
