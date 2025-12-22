@@ -491,7 +491,7 @@ app.get('/api/v1/compat', (req: Request, res: Response): void => {
 
     // Fetch latest version dynamically
     const latestClientVersion = await getLatestVersionCached();
-    const minClientVersion = '1.2.0'; // keep this as your minimum supported version
+    const minClientVersion = '0.3.1';
 
     if (!latestClientVersion) {
       res.status(500).json({ error: 'Failed to fetch latest client version' });
@@ -500,22 +500,16 @@ app.get('/api/v1/compat', (req: Request, res: Response): void => {
 
     const status =
       compareVersions(clientVer, minClientVersion) < 0
-        ? 'update-required'
+        ? 'UPDATE_REQUIRED'
         : compareVersions(clientVer, latestClientVersion) < 0
-          ? 'update-recommended'
-          : 'ok';
+          ? 'UPDATE_RECOMMENDED'
+          : 'OK';
 
     res.json({
       apiVersion: '1.0.0',
       latestClientVersion,
       minClientVersion,
       status,
-      message:
-        status === 'update-required'
-          ? 'Your client version is no longer supported. Please update.'
-          : status === 'update-recommended'
-            ? `A newer version (${latestClientVersion}) of the client is available.`
-            : 'Your client is up to date.',
     });
   })();
 });
