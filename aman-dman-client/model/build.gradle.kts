@@ -2,9 +2,6 @@ plugins {
     kotlin("jvm")
 }
 
-group = "no.vaccsca.amandman"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
@@ -37,6 +34,15 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.named<Jar>("jar") {
+    manifest {
+        attributes(
+            "Implementation-Version" to rootProject.version,
+            "Implementation-Title" to rootProject.name,
+        )
+    }
 }
 
 val generateSchemas by tasks.registering(JavaExec::class) {

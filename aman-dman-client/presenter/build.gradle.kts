@@ -1,6 +1,3 @@
-group = "no.vaccsca.amandman"
-version = "1.0-SNAPSHOT"
-
 dependencies {
     implementation(project(":model"))
     implementation(project(":common"))

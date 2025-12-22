@@ -93,6 +93,39 @@ class Presenter(
         }.start()
     }
 
+    /**
+     * Checks version compatibility with the SharedState server.
+     * Returns true if compatible, false if incompatible.
+     */
+    private fun checkVersionCompatibility(): Boolean {
+        try {
+            val versionResult = sharedState.checkVersionCompatibility()
+
+            if (!versionResult.isCompatible) {
+                view.showErrorMessage(
+                    """
+                    Your application version is incompatible with the server.
+                    
+                    Current Version: ${versionResult.currentVersion}
+                    Required Version: ${versionResult.requiredVersion}
+                    Latest Version: ${versionResult.newestVersion}
+                    
+                    Please update the application to use MASTER/SLAVE modes.
+                    You can still use LOCAL mode.
+                    """.trimIndent()
+                )
+                return false
+            }
+
+            // Version is compatible
+            return true
+        } catch (e: Exception) {
+            // Allow user to retry (maybe they'll fix connectivity)
+            view.showErrorMessage("Unable to verify version compatibility with server: ${e.message}\n\nYou can try again or use LOCAL mode.")
+            return false
+        }
+    }
+
     override fun onReloadSettingsRequested() {
         timelineGroups.clear()
         timelineConfigs.clear()
@@ -399,6 +432,10 @@ class Presenter(
 
         val plannerService = when(timelineGroup.userRole) {
             UserRole.MASTER -> {
+                if (!checkVersionCompatibility()) {
+                    return
+                }
+
                 if (sharedState.acquireMasterRole(airport.icao)) {
                     println("Acquired master role for ${airport.icao}")
                     myMasterRoles.add(airport.icao)
@@ -415,6 +452,17 @@ class Presenter(
                     dataUpdateListeners = arrayOf(guiUpdater, dataUpdatesServerSender),
                 )
             }
+            UserRole.SLAVE -> {
+                if (!checkVersionCompatibility()) {
+                    return
+                }
+
+                PlannerServiceSlave(
+                    airportIcao = timelineGroup.airport.icao,
+                    sharedState = sharedState,
+                    dataUpdateListener = guiUpdater,
+                )
+            }
             UserRole.LOCAL ->
                 PlannerServiceMaster(
                     airport = airport,
@@ -422,12 +470,6 @@ class Presenter(
                     atcClient = euroScopeClient,
                     cdmClient = cdmClient,
                     dataUpdateListeners = arrayOf(guiUpdater),
-                )
-            UserRole.SLAVE ->
-                PlannerServiceSlave(
-                    airportIcao = timelineGroup.airport.icao,
-                    sharedState = sharedState,
-                    dataUpdateListener = guiUpdater,
                 )
         }
 
