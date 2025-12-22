@@ -132,6 +132,9 @@ void AmanServer::serverLoop() {
           // Notify sender thread that client is connected
         queueCondition.notify_all();
         
+        // Notify derived class that client connected (for version handshake)
+        onClientConnected();
+        
         handleClientConnection();
         
         // Client disconnected

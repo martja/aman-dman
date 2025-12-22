@@ -142,6 +142,12 @@ void AmanPlugIn::sendUpdatedRunwayStatuses() {
     }
 }
 
+void AmanPlugIn::onClientConnected() {
+    // Send plugin version to the client immediately upon connection
+    auto versionMessage = jsonSerializer.getJsonOfPluginVersion(MY_PLUGIN_VERSION);
+    enqueueMessage(versionMessage);
+}
+
 void AmanPlugIn::onRegisterAirport(const std::string& icao) {
     airportsSubscribedTo.insert(icao);
     sendUpdatedRunwayStatuses();

@@ -44,7 +44,7 @@ class SharedStateHttpClient : SharedState {
     private val CLIENT_VERSION_HEADER = "x-client-version"
     private val JSON = "application/json".toMediaType()
     private val BASE_URL: String = SettingsRepository.getSettings(reload = true).connectionConfig.api.host
-    private val clientVersion = object {}.javaClass.`package`.implementationVersion ?: "DEV-SNAPSHOT"
+    private val clientVersion = object {}.javaClass.`package`.implementationVersion
 
     override fun checkMasterRoleStatus(airportIcao: String): Boolean {
         val request = baseApiRequest(airportIcao, "master-role")

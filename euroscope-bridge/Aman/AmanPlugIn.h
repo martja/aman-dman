@@ -47,6 +47,7 @@ private:
     void sendUpdatedRunwayStatuses();
 
     // Server methods
+    void onClientConnected() override;
     void onRegisterAirport(const std::string& airportIcao) override;
     void onUnregisterAirport(const std::string& icao) override;
     void onRequestAssignRunway(const std::string& callsign, const std::string& runway) override;

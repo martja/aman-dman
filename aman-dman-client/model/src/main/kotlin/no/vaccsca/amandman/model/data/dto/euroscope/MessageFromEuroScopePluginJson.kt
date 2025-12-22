@@ -9,12 +9,17 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
+    JsonSubTypes.Type(value = PluginVersionJson::class, name = "pluginVersion"),
     JsonSubTypes.Type(value = ArrivalsUpdateFromServerJson::class, name = "arrivals"),
     JsonSubTypes.Type(value = DeparturesUpdateFromServerJson::class, name = "departures"),
     JsonSubTypes.Type(value = RunwayStatusesUpdateFromServerJson::class, name = "runwayStatuses"),
     JsonSubTypes.Type(value = ControllerInfoFromServerJson::class, name = "controllerInfo"),
 )
 sealed class MessageFromServerJson()
+
+data class PluginVersionJson(
+    val version: String
+) : MessageFromServerJson()
 
 data class DeparturesUpdateFromServerJson(
     val outbounds: List<DepartureJson>
