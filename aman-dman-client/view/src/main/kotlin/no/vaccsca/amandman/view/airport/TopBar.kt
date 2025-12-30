@@ -1,7 +1,10 @@
 package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.view.components.WrapLayout
 import java.awt.*
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 import javax.swing.*
 
 class TopBar(
@@ -11,7 +14,8 @@ class TopBar(
     private val showDepartures = JCheckBox("Departures")
     private val nonSequencedButton = JButton("NonSeq")
     private val landingRatesButton = JButton("Landing Rates")
-    private val runwayModeList = JPanel(FlowLayout(FlowLayout.LEFT, 10, 5))
+    // Use WrapLayout so the labels wrap based on available width
+    private val runwayModeList = JPanel(WrapLayout(FlowLayout.LEFT, 10, 5))
 
     init {
         layout = BorderLayout()
@@ -34,14 +38,17 @@ class TopBar(
         rightPanel.add(nonSequencedButton)
         rightPanel.add(landingRatesButton)
 
-        // Wrap runwayModeList in a container to center it vertically
-        val runwayModeContainer = JPanel(GridBagLayout())
-        val gbc = GridBagConstraints()
-        gbc.anchor = GridBagConstraints.WEST
-        runwayModeContainer.add(runwayModeList, gbc)
-
-        add(runwayModeContainer, BorderLayout.WEST)
+        // Place runwayModeList in CENTER so it can expand vertically/horizontally
+        add(runwayModeList, BorderLayout.CENTER)
         add(rightPanel, BorderLayout.EAST)
+
+        // Revalidate/repaint the runwayModeList on resize to force WrapLayout recalculation
+        addComponentListener(object : ComponentAdapter() {
+            override fun componentResized(e: ComponentEvent?) {
+                runwayModeList.revalidate()
+                runwayModeList.repaint()
+            }
+        })
     }
 
     fun updateNonSeqNumbers(numberOfNonSeq: Int) {

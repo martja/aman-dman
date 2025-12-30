@@ -14,12 +14,10 @@ import no.vaccsca.amandman.view.airport.TimeRangeScrollBarVertical
 import no.vaccsca.amandman.view.airport.TimelineScrollPane
 import no.vaccsca.amandman.view.airport.TopBar
 import no.vaccsca.amandman.view.airport.timeline.TimelineView
-import no.vaccsca.amandman.view.coponents.ReloadButton
+import no.vaccsca.amandman.view.components.ReloadButton
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.entity.SharedValue
 import java.awt.*
-import javax.swing.BorderFactory
-import javax.swing.JButton
 import javax.swing.JPanel
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
