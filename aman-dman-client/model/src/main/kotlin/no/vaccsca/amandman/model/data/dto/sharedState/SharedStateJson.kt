@@ -35,3 +35,17 @@ data class SharedStateEventJson(
     )
     val event: TimelineEvent
 )
+
+data class CompatibilityCheckJson(
+    val apiVersion: String,
+    val latestClientVersion: String,
+    val minClientVersion: String,
+    val status: VersionStatus,
+)
+
+enum class VersionStatus {
+    OK,
+    UPDATE_REQUIRED,
+    UPDATE_RECOMMENDED,
+}
+

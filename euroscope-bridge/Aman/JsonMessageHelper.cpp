@@ -11,6 +11,20 @@
 
 using namespace rapidjson;
 
+const std::string JsonMessageHelper::getJsonOfPluginVersion(const std::string& version) {
+    Document document;
+    document.SetObject();
+    Document::AllocatorType& allocator = document.GetAllocator();
+
+    document.AddMember("type", "pluginVersion", allocator);
+    document.AddMember("version", Value(version.c_str(), allocator), allocator);
+
+    StringBuffer sb;
+    Writer<StringBuffer> writer(sb);
+    document.Accept(writer);
+    return sb.GetString();
+}
+
 const std::string JsonMessageHelper::getJsonOfArrivals(const std::vector<AmanAircraft>& aircraftList) {
     Document document;
     document.SetObject();

@@ -51,7 +51,10 @@ class Presenter(
 
     private val euroScopeClient by lazy {
         AtcClientEuroScope(
-            controllerInfoCallback = { info -> handleControllerInfoUpdate(info) }
+            controllerInfoCallback = { info -> handleControllerInfoUpdate(info) },
+            onVersionMismatch = { clientVersion, pluginVersion -> 
+                handleVersionMismatch(clientVersion, pluginVersion)
+            }
         )
     }
 
@@ -91,6 +94,68 @@ class Presenter(
                 }
             }
         }.start()
+    }
+
+    /**
+     * Handles version mismatch between the client and the EuroScope plugin.
+     * Shows an error message to the user and guides them to update the plugin.
+     */
+    private fun handleVersionMismatch(clientVersion: String, pluginVersion: String) {
+        javax.swing.SwingUtilities.invokeLater {
+            view.showErrorMessage(
+                """
+                VERSION MISMATCH DETECTED
+                
+                The EuroScope plugin version does not match your client version.
+                
+                Client Version:  $clientVersion
+                Plugin Version:  $pluginVersion
+                
+                Please update the EuroScope plugin (dll) to version $clientVersion.
+                
+                Steps to update:
+                1. Download the latest release from GitHub
+                2. Replace the .dll file in your EuroScope plugins folder
+                3. Restart EuroScope
+                4. Restart this application
+                
+                Connection has been terminated.
+                """.trimIndent()
+            )
+        }
+    }
+
+    /**
+     * Checks version compatibility with the SharedState server.
+     * Returns true if compatible, false if incompatible.
+     */
+    private fun checkVersionCompatibility(): Boolean {
+        try {
+            val versionResult = sharedState.checkVersionCompatibility()
+
+            if (!versionResult.isCompatible) {
+                view.showErrorMessage(
+                    """
+                    Your application version is incompatible with the server.
+                    
+                    Your Version: ${versionResult.currentVersion}
+                    Required Version: ${versionResult.requiredVersion}
+                    Latest Version: ${versionResult.newestVersion}
+                    
+                    Please update the application to use MASTER/SLAVE modes.
+                    You can still use LOCAL mode.
+                    """.trimIndent()
+                )
+                return false
+            }
+
+            // Version is compatible
+            return true
+        } catch (e: Exception) {
+            // Allow user to retry (maybe they'll fix connectivity)
+            view.showErrorMessage("Unable to verify version compatibility with server: ${e.message}\n\nYou can try again or use LOCAL mode.")
+            return false
+        }
     }
 
     override fun onReloadSettingsRequested() {
@@ -399,6 +464,10 @@ class Presenter(
 
         val plannerService = when(timelineGroup.userRole) {
             UserRole.MASTER -> {
+                if (!checkVersionCompatibility()) {
+                    return
+                }
+
                 if (sharedState.acquireMasterRole(airport.icao)) {
                     println("Acquired master role for ${airport.icao}")
                     myMasterRoles.add(airport.icao)
@@ -415,6 +484,17 @@ class Presenter(
                     dataUpdateListeners = arrayOf(guiUpdater, dataUpdatesServerSender),
                 )
             }
+            UserRole.SLAVE -> {
+                if (!checkVersionCompatibility()) {
+                    return
+                }
+
+                PlannerServiceSlave(
+                    airportIcao = timelineGroup.airport.icao,
+                    sharedState = sharedState,
+                    dataUpdateListener = guiUpdater,
+                )
+            }
             UserRole.LOCAL ->
                 PlannerServiceMaster(
                     airport = airport,
@@ -422,12 +502,6 @@ class Presenter(
                     atcClient = euroScopeClient,
                     cdmClient = cdmClient,
                     dataUpdateListeners = arrayOf(guiUpdater),
-                )
-            UserRole.SLAVE ->
-                PlannerServiceSlave(
-                    airportIcao = timelineGroup.airport.icao,
-                    sharedState = sharedState,
-                    dataUpdateListener = guiUpdater,
                 )
         }
 

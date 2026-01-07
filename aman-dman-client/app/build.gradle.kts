@@ -1,7 +1,3 @@
-group = "no.vaccsca.amandman"
-version = "1.0-SNAPSHOT"
-
-
 repositories {
     mavenCentral()
 }

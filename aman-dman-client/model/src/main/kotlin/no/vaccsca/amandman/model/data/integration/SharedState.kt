@@ -1,6 +1,7 @@
 package no.vaccsca.amandman.model.data.integration
 
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
+import no.vaccsca.amandman.model.domain.valueobjects.VersionCompatibilityResult
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 
@@ -16,4 +17,5 @@ interface SharedState {
     fun acquireMasterRole(airportIcao: String): Boolean
     fun checkMasterRoleStatus(airportIcao: String): Boolean
     fun releaseMasterRole(airportIcao: String)
+    fun checkVersionCompatibility(): VersionCompatibilityResult
 }

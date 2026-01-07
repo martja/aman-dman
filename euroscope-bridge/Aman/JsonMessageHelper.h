@@ -7,6 +7,7 @@
 
 class JsonMessageHelper {
 public:
+    const std::string getJsonOfPluginVersion(const std::string& version);
     const std::string getJsonOfArrivals(const std::vector<AmanAircraft>& aircraftList);
     const std::string getJsonOfDepartures(const std::vector<DmanAircraft>& aircraftList);
     const std::string getJsonOfRunwayStatuses(const std::vector<RunwayStatus>& runways);

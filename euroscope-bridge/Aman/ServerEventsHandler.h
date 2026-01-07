@@ -6,6 +6,7 @@ class ServerEventsHandler {
 public:
     void processMessage(const std::string& message);
 protected:
+    virtual void onClientConnected() = 0;
     virtual void onRegisterAirport(const std::string& icao) = 0;
     virtual void onUnregisterAirport(const std::string& icao) = 0;
     virtual void onRequestAssignRunway(const std::string& callsign, const std::string& runway) = 0;

@@ -9,10 +9,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
+import no.vaccsca.amandman.model.data.dto.sharedState.CompatibilityCheckJson
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateEventJson
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateJson
+import no.vaccsca.amandman.model.data.dto.sharedState.VersionStatus
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
+import no.vaccsca.amandman.model.domain.valueobjects.VersionCompatibilityResult
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
@@ -41,7 +44,7 @@ class SharedStateHttpClient : SharedState {
     private val CLIENT_VERSION_HEADER = "x-client-version"
     private val JSON = "application/json".toMediaType()
     private val BASE_URL: String = SettingsRepository.getSettings(reload = true).connectionConfig.api.host
-    private val clientVersion = object {}.javaClass.`package`.implementationVersion ?: "DEV-SNAPSHOT"
+    private val clientVersion = object {}.javaClass.`package`.implementationVersion
 
     override fun checkMasterRoleStatus(airportIcao: String): Boolean {
         val request = baseApiRequest(airportIcao, "master-role")
@@ -79,6 +82,26 @@ class SharedStateHttpClient : SharedState {
             .build()
 
         httpClient.newCall(request).execute().close()
+    }
+
+    override fun checkVersionCompatibility(): VersionCompatibilityResult {
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/compat")
+            .header(CLIENT_VERSION_HEADER, clientVersion)
+            .get()
+            .build()
+
+        val response = httpClient.newCall(request).execute().use { response ->
+            val body = response.body.string()
+            objectMapper.readValue(body, CompatibilityCheckJson::class.java)
+        }
+
+        return VersionCompatibilityResult(
+            isCompatible = response.status != VersionStatus.UPDATE_REQUIRED,
+            requiredVersion = response.minClientVersion,
+            newestVersion = response.latestClientVersion,
+            currentVersion = clientVersion
+        )
     }
 
     override fun sendTimelineEvents(airportIcao: String, timelineEvents: List<TimelineEvent>) {

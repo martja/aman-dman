@@ -13,6 +13,7 @@ import no.vaccsca.amandman.model.data.dto.euroscope.DepartureJson
 import no.vaccsca.amandman.model.data.dto.euroscope.DeparturesUpdateFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageFromServerJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageToEuroScopePluginJson
+import no.vaccsca.amandman.model.data.dto.euroscope.PluginVersionJson
 import no.vaccsca.amandman.model.data.dto.euroscope.RequestArrivalAndDeparturesMessageJson
 import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusJson
 import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusesUpdateFromServerJson
@@ -33,6 +34,7 @@ import kotlin.time.Duration.Companion.minutes
 
 class AtcClientEuroScope(
     private val controllerInfoCallback: ((ControllerInfoData) -> Unit),
+    private val onVersionMismatch: ((clientVersion: String, pluginVersion: String) -> Unit)? = null,
     private val host: String = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.host,
     private val port: Int = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.port ?: 12345,
 ) : AtcClient {
@@ -41,6 +43,7 @@ class AtcClientEuroScope(
     private var writer: OutputStreamWriter? = null
     private var reader: InputStreamReader? = null
     private var isConnected = false
+    private var isVersionValidated = false
     private var scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val arrivalCallbacks = mutableMapOf<String, (List<AtcClientArrivalData>) -> Unit>()
     private val departuresCallbacks = mutableMapOf<String, (List<AtcClientDepartureData>) -> Unit>()
@@ -166,7 +169,7 @@ class AtcClientEuroScope(
     }
 
     private fun onConnectionEstablished() {
-        reSubscribeToAllAirports()
+        isVersionValidated = false
     }
 
     private fun reSubscribeToAllAirports() {
@@ -270,6 +273,25 @@ class AtcClientEuroScope(
 
     private fun handleMessage(messageFromServerJson: MessageFromServerJson) {
         when (messageFromServerJson) {
+            is PluginVersionJson -> {
+                val clientVersion = object {}.javaClass.`package`.implementationVersion
+                val pluginVersion = messageFromServerJson.version
+                
+                println("Plugin version: $pluginVersion, Client version: $clientVersion")
+                
+                if (clientVersion != "DEVELOPMENT" && pluginVersion != clientVersion) {
+                    println("VERSION MISMATCH! Plugin: $pluginVersion, Client: $clientVersion")
+                    // Disconnect and notify about version mismatch
+                    isVersionValidated = false
+                    onVersionMismatch?.invoke(clientVersion, pluginVersion)
+                    close()
+                } else {
+                    println("Version check passed or in development mode")
+                    isVersionValidated = true
+                    // Continue with normal operation after version is validated
+                    reSubscribeToAllAirports()
+                }
+            }
             is ArrivalsUpdateFromServerJson -> {
                 messageFromServerJson.inbounds.groupBy { it.arrivalAirportIcao }.forEach { (arrivalAirportIcao, arrivals) ->
                     arrivalCallbacks[arrivalAirportIcao]?.invoke(arrivals.map { it.toArrival() })

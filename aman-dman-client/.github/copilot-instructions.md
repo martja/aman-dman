@@ -328,3 +328,7 @@ Version is managed in `gradle.properties` and injected into JAR manifest.
 9. ✅ Use sealed classes for type hierarchies
 10. ✅ Access NTP-synced time via `NtpClock.now()`
 
+## Other instructions
+
+- Check AGENTS.md for specific agent instructions.
+- Don't add inline comments for code snippets unless necessary for clarity.
