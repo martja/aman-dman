@@ -232,36 +232,40 @@ class Presenter(
     private fun updateViewFromCachedData() {
         val snapshot: List<TimelineEvent> = cachedAmanData.values.toList().map { it.timelineEvent }
 
-        timelineGroups.forEach { group ->
-            val relevantDataForTab = snapshot.filter { occurrence ->
-                group.timelines.any { it.airportIcao == occurrence.airportIcao }
-            }
-            view.updateTab(group.airport.icao, TabData(
-                timelinesData = group.timelines.map { timeline ->
-                    TimelineData(
-                        timelineId = timeline.title,
-                        left = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysLeft.contains(it.runway) },
-                        right = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysRight.contains(it.runway) }
-                    )
+        try {
+            timelineGroups.toList().forEach { group ->
+                val relevantDataForTab = snapshot.filter { occurrence ->
+                    group.timelines.any { it.airportIcao == occurrence.airportIcao }
                 }
-            ))
-        }
-
-        selectedCallsign?.let { callsign ->
-            plannerManager.getAllServices().forEach { plannerService ->
-                plannerService.getDescentProfileForCallsign(callsign)
-                    .onSuccess { selectedDescentProfile ->
-                        if (selectedDescentProfile != null)
-                            view.updateDescentTrajectory(callsign, selectedDescentProfile)
+                view.updateTab(group.airport.icao, TabData(
+                    timelinesData = group.timelines.map { timeline ->
+                        TimelineData(
+                            timelineId = timeline.title,
+                            left = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysLeft.contains(it.runway) },
+                            right = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysRight.contains(it.runway) }
+                        )
                     }
-                    .onFailure {
-                        selectedCallsign = null
-                        when (it) {
-                            is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
-                            else -> view.showErrorMessage("Failed to fetch descent profile")
-                        }
-                    }
+                ))
             }
+
+            selectedCallsign?.let { callsign ->
+                plannerManager.getAllServices().toList().forEach { plannerService ->
+                    plannerService.getDescentProfileForCallsign(callsign)
+                        .onSuccess { selectedDescentProfile ->
+                            if (selectedDescentProfile != null)
+                                view.updateDescentTrajectory(callsign, selectedDescentProfile)
+                        }
+                        .onFailure {
+                            selectedCallsign = null
+                            when (it) {
+                                is UnsupportedInSlaveModeException -> view.showErrorMessage(it.msg)
+                                else -> view.showErrorMessage("Failed to fetch descent profile")
+                            }
+                        }
+                }
+            }
+        } catch (e: Exception) {
+            println("Error updating view from cached data: ${e.message}")
         }
     }
 
