@@ -22,6 +22,7 @@ import kotlin.math.roundToInt
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.view.dialogs.RunwayDialog
 import no.vaccsca.amandman.view.dialogs.SpacingDialog
+import no.vaccsca.amandman.view.dialogs.LogViewerDialog
 import no.vaccsca.amandman.view.visualizations.DescentProfileVisualization
 import java.awt.Point
 import kotlin.time.Duration.Companion.seconds
@@ -39,6 +40,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     private var descentProfileDialog: JDialog? = null
     private var landingRatesDialog: JDialog? = null
     private var nonSequencedDialog: JDialog? = null
+    private var logsDialog: JDialog? = null
     private var footer: Footer? = null
     private var airportViewsPanel: AirportViewsPanel? = null
     private var currentTime: Instant? = null
@@ -221,6 +223,16 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
                 preferredSize = Dimension(300, 300)
                 isVisible = true
                 pack()
+            }
+        }
+    }
+
+    override fun openLogsWindow() = runOnUiThread {
+        if (logsDialog != null) {
+            logsDialog?.isVisible = true
+        } else {
+            logsDialog = LogViewerDialog(this).apply {
+                isVisible = true
             }
         }
     }

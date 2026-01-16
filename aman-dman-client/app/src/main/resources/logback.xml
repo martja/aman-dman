@@ -5,8 +5,15 @@
         </encoder>
     </appender>
 
+    <appender name="IN_MEMORY" class="no.vaccsca.amandman.view.dialogs.InMemoryLogAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <!-- Set the default logging level for all modules -->
     <root level="INFO">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="IN_MEMORY" />
     </root>
 </configuration>

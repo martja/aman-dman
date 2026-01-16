@@ -43,4 +43,5 @@ interface ViewInterface {
     fun openTimelineConfigForm(groupId: String, availableTagLayoutsDep: Set<String>, availableTagLayoutsArr: Set<String>, existingConfig: TimelineConfig? = null)
     fun closeTimelineForm()
     fun showMinimumSpacingDialog(icao: String, d: Double)
+    fun openLogsWindow()
 }

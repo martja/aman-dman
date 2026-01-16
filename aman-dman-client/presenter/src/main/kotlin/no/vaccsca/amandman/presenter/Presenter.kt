@@ -449,6 +449,10 @@ class Presenter(
         view.showMinimumSpacingDialog(icao, minSpacingSelectionNm ?: minimumSpacingNm)
     }
 
+    override fun onOpenLogsWindowClicked() {
+        view.openLogsWindow()
+    }
+
     override fun onRemoveTimelineClicked(timelineConfig: TimelineConfig) {
         timelineGroups.forEach { group ->
             group.timelines.removeIf { it.title == timelineConfig.title }

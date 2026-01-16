@@ -91,10 +91,10 @@ class AtcClientEuroScope(
                         launch { receiveMessages() }
                     } catch (e: Exception) {
                         logger.info("Connection to EuroScope failed (${e.message}). Will try again.")
-                        delay(1000)
+                        delay(5000)
                     }
                 } else {
-                    delay(1000)
+                    delay(5000)
                 }
             }
         }
