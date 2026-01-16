@@ -6,12 +6,16 @@ import no.vaccsca.amandman.model.data.integration.SharedState
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import org.slf4j.LoggerFactory
 
 class PlannerServiceSlave(
     airportIcao: String,
     private val sharedState: SharedState,
     private val dataUpdateListener: DataUpdateListener
 ) : PlannerService(airportIcao) {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     val arrivalAirportsToFetch = mutableSetOf<String>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -44,28 +48,28 @@ class PlannerServiceSlave(
             val data = sharedState.getTimelineEvents(airportIcao)
             dataUpdateListener.onLiveData(airportIcao, data)
         } catch (e: Exception) {
-            println("Failed to fetch timeline events for $airportIcao: ${e.message}")
+            logger.error("Failed to fetch timeline events for $airportIcao: ${e.message}")
         }
 
         try {
             val runwayStatuses = sharedState.getRunwayStatuses(airportIcao)
             dataUpdateListener.onRunwayModesUpdated(airportIcao, runwayStatuses)
         } catch (e: Exception) {
-            println("Failed to fetch runway statuses for $airportIcao: ${e.message}")
+            logger.error("Failed to fetch runway statuses for $airportIcao: ${e.message}")
         }
 
         try {
             val weatherData = sharedState.getWeatherData(airportIcao)
             dataUpdateListener.onWeatherDataUpdated(airportIcao, weatherData)
         } catch (e: Exception) {
-            println("Failed to fetch weather data for $airportIcao: ${e.message}")
+            logger.error("Failed to fetch weather data for $airportIcao: ${e.message}")
         }
 
         try {
             val minimumSpacingNm = sharedState.getMinimumSpacing(airportIcao)
             dataUpdateListener.onMinimumSpacingUpdated(airportIcao, minimumSpacingNm)
         } catch (e: Exception) {
-            println("Failed to fetch minimum spacing data for $airportIcao: ${e.message}")
+            logger.error("Failed to fetch minimum spacing data for $airportIcao: ${e.message}")
         }
     }
 

@@ -26,6 +26,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayFlightEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import org.slf4j.LoggerFactory
 import java.awt.Point
 import kotlin.time.Duration.Companion.seconds
 
@@ -34,6 +35,8 @@ class Presenter(
     private val view: ViewInterface,
     private val guiUpdater: DataUpdateListener,
 ) : PresenterInterface, DataUpdateListener {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private val timelineGroups = mutableListOf<TimelineGroup>()
     private var selectedCallsign: String? = null
@@ -83,7 +86,7 @@ class Presenter(
             updateViewFromCachedData()
 
             myMasterRoles.forEach { airportIcao ->
-                if (!sharedState.checkMasterRoleStatus(airportIcao)) {
+                if (!sharedState.hasMasterRoleStatus(airportIcao)) {
                     view.showErrorMessage("Lost master role for $airportIcao")
                     plannerManager.unregisterService(airportIcao)
                     runwayModeStateManager.cleanupAirportState(airportIcao)
@@ -393,10 +396,10 @@ class Presenter(
                 view.openSelectRunwayDialog(runwayEvent, availableRunways, onClose)
             } else {
                 onClose(null)
-                println("Not the tracking controller for ${runwayEvent.callsign}, cannot select runway. Tracking controller is ${runwayEvent.trackingController}, my positionId is ${controllerInfo?.positionId}")
+                logger.info("Not the tracking controller for ${runwayEvent.callsign}, cannot select runway. Tracking controller is ${runwayEvent.trackingController}, my positionId is ${controllerInfo?.positionId}")
             }
         } else {
-            println("selectRunway called with unsupported event type")
+            logger.error("selectRunway called with unsupported event type")
         }
     }
 
@@ -473,7 +476,7 @@ class Presenter(
                 }
 
                 if (sharedState.acquireMasterRole(airport.icao)) {
-                    println("Acquired master role for ${airport.icao}")
+                    logger.info("Acquired master role for ${airport.icao}")
                     myMasterRoles.add(airport.icao)
                 } else {
                     view.showErrorMessage("Master role for ${airport.icao} is already taken by another user")

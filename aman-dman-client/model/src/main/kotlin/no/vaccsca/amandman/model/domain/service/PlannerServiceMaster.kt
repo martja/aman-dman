@@ -17,6 +17,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEven
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import org.slf4j.LoggerFactory
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -31,6 +32,8 @@ class PlannerServiceMaster(
     private val cdmClient: CdmClient,
     private vararg val dataUpdateListeners: DataUpdateListener,
 ) : PlannerService(airport.icao) {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private val state = State()
     private val mutex = Mutex()
@@ -57,14 +60,14 @@ class PlannerServiceMaster(
         // Periodic refresh of CDM data
         scope.runEvery(2.minutes) {
             if (fetchCdmData) {
-                println("Refreshing CDM data for $airportIcao")
+                logger.info("Refreshing CDM data for $airportIcao")
                 refreshCdmData()
             }
         }
 
         // Periodic refresh of weather data
         scope.runEvery(15.minutes) {
-            println("Refreshing weather data for $airportIcao")
+            logger.info("Refreshing weather data for $airportIcao")
             refreshWeatherData()
         }
 
@@ -180,7 +183,7 @@ class PlannerServiceMaster(
             try {
                 ArrivalEventService.createRunwayArrivalEvent(airport, arrival, state.weatherData)
             } catch (e: DescentTrajectoryException) {
-                println("Failed to map arrival ${arrival.callsign}: ${e.message}")
+                logger.warn("Failed to compute descent trajectory for ${arrival.callsign}: ${e.msg}")
                 null
             }
         }
@@ -190,7 +193,7 @@ class PlannerServiceMaster(
             try {
                 DepartureEventService.createRunwayDepartureEvent(departure, cdmDepartures)
             } catch (e: Exception) {
-                println("Failed to map departure ${departure.callsign}: ${e.message}")
+                logger.warn("Failed to create departure event from ${departure.callsign}: ${e.message}")
                 null
             }
         }
@@ -243,7 +246,7 @@ class PlannerServiceMaster(
                             atcClient.assignRunway(timelineEvent.callsign, newRunway)
                         }
                     } else {
-                        println("Time slot is not available for ${timelineEvent.callsign} at $scheduledTime")
+                        logger.info("Time slot is not available for ${timelineEvent.callsign} at $scheduledTime")
                     }
                 }
                 onSequenceUpdated()

@@ -16,11 +16,14 @@ import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.domain.valueobjects.weather.WeatherLayer
 import no.vaccsca.amandman.model.domain.valueobjects.weather.WindVector
+import org.slf4j.LoggerFactory
 import ucar.nc2.NetcdfFile
 import ucar.nc2.NetcdfFiles
 import kotlin.math.round
 
 class WindApi {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     fun getVerticalProfileAtPoint(latitude: Double, longitude: Double): VerticalWeatherProfile? {
         val gridPoints = getVerticalProfileGrid(
@@ -134,7 +137,7 @@ class WindApi {
                 return Pair(closestPublishTime, gribFile)
             } catch (e: FileNotFoundException) {
                 val nextPublicationTime = closestPublishTime.minus(6.hours)
-                println("Could not find a forecast publication from $closestPublishTime. Will try $nextPublicationTime")
+                logger.info("Could not find a forecast publication from $closestPublishTime. Will try $nextPublicationTime")
                 closestPublishTime = nextPublicationTime
             }
         }

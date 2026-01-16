@@ -15,7 +15,7 @@ interface SharedState {
     fun getMinimumSpacing(airportIcao: String): Double
     fun sendMinimumSpacing(airportIcao: String, minimumSpacingNm: Double)
     fun acquireMasterRole(airportIcao: String): Boolean
-    fun checkMasterRoleStatus(airportIcao: String): Boolean
+    fun hasMasterRoleStatus(airportIcao: String): Boolean
     fun releaseMasterRole(airportIcao: String)
     fun checkVersionCompatibility(): VersionCompatibilityResult
 }

@@ -26,10 +26,12 @@ import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientDepartureData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientRunwaySelectionData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
+import org.slf4j.LoggerFactory
 import java.io.*
 import java.net.Socket
 import java.net.SocketException
 import java.net.SocketTimeoutException
+import kotlin.math.log
 import kotlin.time.Duration.Companion.minutes
 
 class AtcClientEuroScope(
@@ -48,6 +50,8 @@ class AtcClientEuroScope(
     private val arrivalCallbacks = mutableMapOf<String, (List<AtcClientArrivalData>) -> Unit>()
     private val departuresCallbacks = mutableMapOf<String, (List<AtcClientDepartureData>) -> Unit>()
     private val runwayStatusCallbacks = mutableMapOf<String, (List<AtcClientRunwaySelectionData>) -> Unit>()
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private val objectMapper = jacksonObjectMapper().apply {
         // Configure Jackson for large messages
@@ -69,7 +73,7 @@ class AtcClientEuroScope(
         scope.launch {
             while (isRunning) {
                 if (!isConnected) {
-                    println("Attempting to connect to $host:$port")
+                    logger.info("Attempting to connect to $host:$port")
                     try {
                         socket = Socket(host, port)
                         
@@ -81,12 +85,12 @@ class AtcClientEuroScope(
                         writer = OutputStreamWriter(socket!!.getOutputStream(), Charsets.UTF_8)
                         reader = InputStreamReader(socket!!.getInputStream(), Charsets.UTF_8)
                         isConnected = true
-                        println("Connected to $host:$port (buffers: recv=${socket!!.receiveBufferSize}, send=${socket!!.sendBufferSize})")
+                        logger.info("Connected to $host:$port (buffers: recv=${socket!!.receiveBufferSize}, send=${socket!!.sendBufferSize})")
 
                         onConnectionEstablished()
                         launch { receiveMessages() }
                     } catch (e: Exception) {
-                        println("Connection failed: ${e.message}")
+                        logger.info("Connection to EuroScope failed (${e.message}). Will try again.")
                         delay(1000)
                     }
                 } else {
@@ -130,7 +134,7 @@ class AtcClientEuroScope(
 
     override fun close() {
         try {
-            println("Closing AtcClientEuroScope...")
+            logger.info("Closing AtcClientEuroScope...")
             isRunning = false
             isConnected = false
 
@@ -142,7 +146,7 @@ class AtcClientEuroScope(
                 try {
                     socket?.close()
                 } catch (e: Exception) {
-                    println("Error closing socket: ${e.message}")
+                    logger.error("Error closing socket: ${e.message}", e)
                 } finally {
                     socket = null
                 }
@@ -150,7 +154,7 @@ class AtcClientEuroScope(
                 try {
                     writer?.close()
                 } catch (e: Exception) {
-                    println("Error closing writer: ${e.message}")
+                    logger.error("Error closing writer: ${e.message}", e)
                 } finally {
                     writer = null
                 }
@@ -158,13 +162,13 @@ class AtcClientEuroScope(
                 try {
                     reader?.close()
                 } catch (e: Exception) {
-                    println("Error closing reader: ${e.message}")
+                    logger.error("Error closing reader: ${e.message}", e)
                 } finally {
                     reader = null
                 }
             }
         } catch (e: Exception) {
-            println("Error closing connection: ${e.message}")
+            logger.error("Error closing connection: ${e.message}", e)
         }
     }
 
@@ -188,7 +192,7 @@ class AtcClientEuroScope(
             writer?.write(jsonMessage + "\n")
             writer?.flush()
         } catch (e: Exception) {
-            println("Error sending message: ${e.message}")
+            logger.error("Error sending message to EuroScope: ${e.message}", e)
         }
     }
 
@@ -201,7 +205,7 @@ class AtcClientEuroScope(
             // Set socket timeout for read operations (60 seconds for better stability)
             socket?.soTimeout = 60000
 
-            println("Starting message receive loop...")
+            logger.info("Starting message receive loop...")
             var messageCount = 0
             var lastMessageTime = NtpClock.now()
 
@@ -209,7 +213,7 @@ class AtcClientEuroScope(
                 try {
                     val message = bufferedReader.readLine()
                     if (message == null) {
-                        println("readLine() returned null - server closed connection")
+                        logger.warn("readLine() returned null - server closed connection")
                         break
                     }
                     
@@ -220,45 +224,39 @@ class AtcClientEuroScope(
                         val dataPackage = objectMapper.readValue(message, MessageFromServerJson::class.java)
                         handleMessage(dataPackage)
                     } catch (e: Exception) {
-                        println("Error parsing JSON message #$messageCount (length: ${message.length}): ${e.message}")
-                        println("Message start: ${message.take(100)}")
-                        e.printStackTrace()
+                        logger.error("Error parsing JSON message #$messageCount from EuroScope (length: ${message.length}): $message", e)
                         // Continue processing other messages even if one fails
                         continue
                     }
                 } catch (e: SocketTimeoutException) {
                     val timeSinceLastMessage = NtpClock.now() - lastMessageTime
-                    println("Socket read timeout after ${timeSinceLastMessage}ms - checking connection...")
+                    logger.error("Socket read timeout after ${timeSinceLastMessage}ms - checking connection...")
 
                     // If no message for more than 2 minutes, consider connection dead
                     if (timeSinceLastMessage > 2.minutes) {
-                        println("No messages received for over 2 minutes - connection may be dead")
+                        logger.error("No messages received for over 2 minutes - connection to EuroScope may be dead")
                         break
                     }
                     continue
                 } catch (e: SocketException) {
                     if (isRunning && isConnected) {
-                        println("Socket exception while reading: ${e.message}")
-                        e.printStackTrace()
+                        logger.error("Socket exception while reading from EuroScope", e)
                     } else {
-                        println("Socket closed during shutdown (expected)")
+                        logger.info("Socket closed during shutdown (expected)")
                     }
                     break
                 } catch (e: IOException) {
-                    println("IOException while reading: ${e.message}")
-                    e.printStackTrace()
+                    logger.error("IOException while reading from EuroScope: ${e.message}", e)
                     break
                 } catch (e: Exception) {
-                    println("Unexpected error while reading: ${e.message}")
-                    e.printStackTrace()
+                    logger.error("Unexpected error while reading from EuroScope: ${e.message}", e)
                     break
                 }
             }
         } catch (e: Exception) {
-            println("Error receiving message: ${e.message}")
-            e.printStackTrace()
+            logger.error("Error receiving message: ${e.message}", e)
         } finally {
-            println("Disconnected from server.")
+            logger.info("Disconnected from server.")
             // Only mark as disconnected, don't call close() to avoid recursion
             isConnected = false
 

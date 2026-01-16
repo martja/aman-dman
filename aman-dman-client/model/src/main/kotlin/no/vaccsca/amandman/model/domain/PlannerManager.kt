@@ -1,9 +1,12 @@
 package no.vaccsca.amandman.model.domain
 
 import no.vaccsca.amandman.model.domain.service.PlannerService
+import org.slf4j.LoggerFactory
 
 class PlannerManager {
     private val services: MutableList<PlannerService> = mutableListOf()
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     fun registerService(service: PlannerService) {
         services.add(service)
@@ -11,7 +14,7 @@ class PlannerManager {
 
     fun unregisterService(airportIcao: String) {
         val serviceToRemove = services.find { it.airportIcao == airportIcao }
-        println("Unregistering service for $serviceToRemove")
+        logger.info("Unregistering service for ${serviceToRemove?.airportIcao}")
         serviceToRemove?.stop()
         services.remove(serviceToRemove)
     }

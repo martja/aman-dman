@@ -3,8 +3,12 @@ package no.vaccsca.amandman.model.domain.service
 import no.vaccsca.amandman.model.domain.valueobjects.CdmData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientDepartureData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
+import org.slf4j.LoggerFactory
 
 object DepartureEventService {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     fun createRunwayDepartureEvent(departure: AtcClientDepartureData, cdmDepartures: List<CdmData>?): DepartureEvent? {
         val cdmDataForDeparture = cdmDepartures?.find { it.callsign == departure.callsign }
         val expectedTime = cdmDataForDeparture?.ctot ?: cdmDataForDeparture?.ttot
@@ -14,7 +18,7 @@ object DepartureEventService {
         }
 
         if (departure.assignedRunway == null) {
-            println("No assigned runway found for departure ${departure.callsign}")
+            logger.warn("No assigned runway found for departure ${departure.callsign}. Cannot create DepartureEvent.")
             return null
         }
 

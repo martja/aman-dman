@@ -25,12 +25,16 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.slf4j.LoggerFactory
 import java.util.UUID.randomUUID
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 import kotlin.time.toKotlinDuration
 
 class SharedStateHttpClient : SharedState {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     private val clientUuid = randomUUID().toString()
     private val httpClient = OkHttpClient()
     private val objectMapper = ObjectMapper().apply {
@@ -46,7 +50,7 @@ class SharedStateHttpClient : SharedState {
     private val BASE_URL: String = SettingsRepository.getSettings(reload = true).connectionConfig.api.host
     private val clientVersion = object {}.javaClass.`package`.implementationVersion
 
-    override fun checkMasterRoleStatus(airportIcao: String): Boolean {
+    override fun hasMasterRoleStatus(airportIcao: String): Boolean {
         val request = baseApiRequest(airportIcao, "master-role")
             .header(SESSION_ID_HEADER, clientUuid)
             .get()
@@ -61,6 +65,7 @@ class SharedStateHttpClient : SharedState {
                 val masterResp = objectMapper.readValue(body, MasterRoleResponse::class.java)
                 masterResp.isMaster
             } catch (ex: Exception) {
+                logger.error("Failed to parse master role response: $body", ex)
                 false
             }
         }
@@ -235,15 +240,11 @@ class SharedStateHttpClient : SharedState {
     private fun sendStateJson(airportIcao: String, resource: String, sharedStateJson: SharedStateJson<*>) {
         val json = objectMapper.writeValueAsString(sharedStateJson)
 
-        val request = baseApiRequest(airportIcao, resource)
+        baseApiRequest(airportIcao, resource)
             .post(json.toRequestBody(JSON))
             .build()
 
-        val response = httpClient.newCall(request).execute().use { response ->
-            response.body.string()
-        }
-
-        println(response)
+        logger.debug("Sent shared state to $airportIcao/$resource")
     }
 
     private data class MasterRoleResponse(

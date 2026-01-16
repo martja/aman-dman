@@ -9,10 +9,13 @@ import no.vaccsca.amandman.model.domain.util.WeatherUtils.interpolateWeatherAtAl
 import no.vaccsca.amandman.model.domain.valueobjects.*
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.model.domain.valueobjects.weather.WindVector
+import org.slf4j.LoggerFactory
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
 object DescentTrajectoryService {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private val CURRENT_ID = "CURRENT"
     private val DECELERATION_RATE = 0.5
@@ -43,7 +46,7 @@ object DescentTrajectoryService {
     ): DescentTrajectoryResult? {
         val runwayInfo = airport.runways[assignedRunway]
         if (runwayInfo == null) {
-            println("No runway info for $assignedRunway at ${airport.icao}")
+            logger.warn("No runway info for $assignedRunway at ${airport.icao}. Cannot compute descent trajectory.")
             return null
         }
 
