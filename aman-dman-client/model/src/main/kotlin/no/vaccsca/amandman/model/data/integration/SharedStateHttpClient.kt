@@ -10,10 +10,11 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.dto.sharedState.CompatibilityCheckJson
-import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateEventJson
+import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateTimelineEventJson
 import no.vaccsca.amandman.model.data.dto.sharedState.SharedStateJson
 import no.vaccsca.amandman.model.data.dto.sharedState.VersionStatus
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
+import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.VersionCompatibilityResult
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
@@ -109,6 +110,17 @@ class SharedStateHttpClient : SharedState {
         )
     }
 
+    override fun sendNonSequencedList(
+        airportIcao: String,
+        nonSequencedList: List<NonSequencedEvent>
+    ) {
+        val sharedStateJson = SharedStateJson(
+            lastUpdate = NtpClock.now(),
+            data = nonSequencedList
+        )
+        sendStateJson(airportIcao, "non-sequenced", sharedStateJson)
+    }
+
     override fun sendTimelineEvents(airportIcao: String, timelineEvents: List<TimelineEvent>) {
         val events = timelineEvents.map { event ->
             val type = when (event) {
@@ -117,7 +129,7 @@ class SharedStateHttpClient : SharedState {
                 is RunwayDelayEvent -> "runwayDelay"
                 else -> throw IllegalArgumentException("Unknown event type: ${event::class}")
             }
-            SharedStateEventJson(type = type, event = event)
+            SharedStateTimelineEventJson(type = type, event = event)
         }
 
         val sharedState = SharedStateJson(
@@ -129,7 +141,7 @@ class SharedStateHttpClient : SharedState {
     }
 
     override fun getTimelineEvents(airportIcao: String): List<TimelineEvent> {
-        val typeRef = object : TypeReference<SharedStateJson<List<SharedStateEventJson>>>() {}
+        val typeRef = object : TypeReference<SharedStateJson<List<SharedStateTimelineEventJson>>>() {}
         val timelineEvents = fetchStateJson(airportIcao, "events", typeRef)
 
         return timelineEvents.data.map {

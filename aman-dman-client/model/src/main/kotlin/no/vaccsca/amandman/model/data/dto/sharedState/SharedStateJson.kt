@@ -3,6 +3,7 @@ package no.vaccsca.amandman.model.data.dto.sharedState
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import kotlinx.datetime.Instant
+import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
@@ -21,7 +22,7 @@ data class SharedStateJson<T>(
  * Wrapper for polymorphic TimelineEvent serialization/deserialization.
  * The "type" field is used to determine the concrete subclass of Timeline
  */
-data class SharedStateEventJson(
+data class SharedStateTimelineEventJson(
     val type: String,
     @param:JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -41,6 +42,10 @@ data class CompatibilityCheckJson(
     val latestClientVersion: String,
     val minClientVersion: String,
     val status: VersionStatus,
+)
+
+data class NonSequencedEventsJson(
+    val events: List<NonSequencedEvent>
 )
 
 enum class VersionStatus {

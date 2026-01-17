@@ -9,6 +9,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.Waypoint
  *
  * @param callsign The callsign of the aircraft.
  * @param icaoType The ICAO type of the aircraft.
+ * @param wakeCategory The wake turbulence category of the aircraft.
  * @param assignedStar The name of the STAR assigned to the aircraft, if any.
  * @param assignedDirect The direct waypoint assigned to the aircraft, if any.
  * @param trackingController The position ID of the controller currently tracking.

@@ -18,6 +18,7 @@ import no.vaccsca.amandman.model.domain.service.DataUpdateListener
 import no.vaccsca.amandman.model.domain.service.DataUpdatesServerSender
 import no.vaccsca.amandman.model.domain.service.PlannerServiceMaster
 import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
+import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
@@ -43,7 +44,8 @@ class Presenter(
 
     private var timelineConfigs = mutableMapOf<String, TimelineConfig>()
 
-    private val cachedAmanData = mutableMapOf<String, CachedEvent>()
+    private val cachedTimelineEvents = mutableMapOf<String, CachedTimelineEvent>()
+    private var cachedNonSequencedEvents: List<NonSequencedEvent>? = null
 
     // Replace the simple currentMinimumSpacingNm with a reactive state manager
     private val runwayModeStateManager = RunwayModeStateManager(view)
@@ -198,9 +200,9 @@ class Presenter(
         selectedCallsign = callsign
     }
 
-    override fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>) {
+    override fun onTimelineEventsUpdated(airportIcao: String, timelineEvents: List<TimelineEvent>) {
         timelineEvents.filterIsInstance<RunwayFlightEvent>().forEach {
-            cachedAmanData[it.callsign] = CachedEvent(
+            cachedTimelineEvents[it.callsign] = CachedTimelineEvent(
                 lastTimestamp = NtpClock.now(),
                 timelineEvent = it
             )
@@ -208,7 +210,7 @@ class Presenter(
 
         // Delete stale data
         val cutoffTime = NtpClock.now() - 5.seconds
-        cachedAmanData.entries.removeIf { entry ->
+        cachedTimelineEvents.entries.removeIf { entry ->
             entry.value.lastTimestamp < cutoffTime
         }
         updateViewFromCachedData()
@@ -232,12 +234,20 @@ class Presenter(
         view.updateWeatherData(airportIcao, data)
     }
 
+    override fun onNonSequencedListUpdated(
+        airportIcao: String,
+        nonSequencedList: List<NonSequencedEvent>
+    ) {
+        cachedNonSequencedEvents = nonSequencedList
+    }
+
     private fun updateViewFromCachedData() {
-        val snapshot: List<TimelineEvent> = cachedAmanData.values.toList().map { it.timelineEvent }
+        val timelineEventsSnapshot: List<TimelineEvent> = cachedTimelineEvents.values.toList().map { it.timelineEvent }
+        val nonSequencedSnapshot = cachedNonSequencedEvents ?: emptyList()
 
         try {
             timelineGroups.toList().forEach { group ->
-                val relevantDataForTab = snapshot.filter { occurrence ->
+                val relevantDataForTab = timelineEventsSnapshot.filter { occurrence ->
                     group.timelines.any { it.airportIcao == occurrence.airportIcao }
                 }
                 view.updateTab(group.airport.icao, TabData(
@@ -247,7 +257,8 @@ class Presenter(
                             left = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysLeft.contains(it.runway) },
                             right = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysRight.contains(it.runway) }
                         )
-                    }
+                    },
+                    nonSequencedList = nonSequencedSnapshot.filter { it.arrivalAirport == group.airport.icao }
                 ))
             }
 
@@ -310,13 +321,13 @@ class Presenter(
 
     override fun onRemoveTab(airportIcao: String) {
         // Clean up cached data for this airport
-        cachedAmanData.entries.removeIf { entry ->
+        cachedTimelineEvents.entries.removeIf { entry ->
             entry.value.timelineEvent.airportIcao == airportIcao
         }
 
         // Clear selected callsign if it belongs to the removed airport
         selectedCallsign?.let { callsign ->
-            val selectedEvent = cachedAmanData[callsign]?.timelineEvent
+            val selectedEvent = cachedTimelineEvents[callsign]?.timelineEvent
             if (selectedEvent?.airportIcao == airportIcao) {
                 selectedCallsign = null
             }
@@ -562,7 +573,7 @@ class Presenter(
         view.updateControllerInfo(info)
     }
 
-    private data class CachedEvent(
+    private data class CachedTimelineEvent(
         val lastTimestamp: Instant,
         val timelineEvent: TimelineEvent
     )

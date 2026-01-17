@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.model.data.integration
 
+import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.VersionCompatibilityResult
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
@@ -18,4 +19,5 @@ interface SharedState {
     fun hasMasterRoleStatus(airportIcao: String): Boolean
     fun releaseMasterRole(airportIcao: String)
     fun checkVersionCompatibility(): VersionCompatibilityResult
+    fun sendNonSequencedList(airportIcao: String, nonSequencedList: List<NonSequencedEvent>)
 }

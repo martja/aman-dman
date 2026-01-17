@@ -32,8 +32,6 @@ public:
     std::string arrivalAirportIcao;
 
     bool isSelected;
-    char wtc;
-    uint32_t secondsBehindPreceeding;
     float latitude;
     float longitude;
 

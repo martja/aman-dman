@@ -112,7 +112,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         val allArrivalEvents = tabData.timelinesData.flatMap { it.left + it.right }
         landingRatesGraph.updateData(airportIcao, allArrivalEvents)
         nonSeqView.updateNonSeqData(
-            tabData.timelinesData.flatMap { it.left + it.right }
+            tabData.nonSequencedList
         )
     }
 
@@ -220,7 +220,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
                 add(nonSeqView)
                 defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
                 setLocationRelativeTo(this@AmanDmanMainFrame)
-                preferredSize = Dimension(300, 300)
+                preferredSize = Dimension(450, 300)
                 isVisible = true
                 pack()
             }

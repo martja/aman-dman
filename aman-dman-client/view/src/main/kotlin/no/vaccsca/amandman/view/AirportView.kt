@@ -77,13 +77,7 @@ class AirportView(
     fun updateAmanData(tabData: TabData) {
         timeWindowScrollbar.updateTimelineEvents(tabData.timelinesData)
         timelineScrollPane.updateTimelineEvents(tabData.timelinesData)
-
-        val numberOfNonSeq = tabData.timelinesData
-            .flatMap { it.left + it.right }
-            .filterIsInstance<RunwayArrivalEvent>()
-            .count { it.sequenceStatus == SequenceStatus.FOR_MANUAL_REINSERTION }
-
-        topBar.updateNonSeqNumbers(numberOfNonSeq)
+        topBar.updateNonSeqNumbers(tabData.nonSequencedList.size)
     }
 
     fun updateDraggedLabel(

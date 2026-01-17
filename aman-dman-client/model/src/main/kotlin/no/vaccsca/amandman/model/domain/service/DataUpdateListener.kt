@@ -1,5 +1,6 @@
 package no.vaccsca.amandman.model.domain.service
 
+import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
@@ -12,7 +13,7 @@ interface DataUpdateListener {
     /**
      * Called when new timeline data is available
      */
-    fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>)
+    fun onTimelineEventsUpdated(airportIcao: String, timelineEvents: List<TimelineEvent>)
 
     /**
      * Called when runway status changes for an airport
@@ -28,4 +29,9 @@ interface DataUpdateListener {
      * Called when weather data is updated
      */
     fun onWeatherDataUpdated(airportIcao: String, data: VerticalWeatherProfile?)
+
+    /**
+     * Called when non-sequenced events are updated
+     */
+    fun onNonSequencedListUpdated(airportIcao: String, nonSequencedList: List<NonSequencedEvent>)
 }

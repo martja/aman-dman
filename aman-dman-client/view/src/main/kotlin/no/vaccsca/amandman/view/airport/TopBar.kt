@@ -35,7 +35,7 @@ class TopBar(
         // Right-aligned controls
         val rightPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 10, 5))
         rightPanel.add(showDepartures)
-        //rightPanel.add(nonSequencedButton)
+        rightPanel.add(nonSequencedButton)
         rightPanel.add(landingRatesButton)
 
         // Place runwayModeList in CENTER so it can expand vertically/horizontally

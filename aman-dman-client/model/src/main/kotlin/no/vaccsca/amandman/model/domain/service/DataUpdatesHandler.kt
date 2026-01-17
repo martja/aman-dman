@@ -3,10 +3,10 @@ package no.vaccsca.amandman.model.domain.service
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.integration.SharedState
+import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -15,8 +15,8 @@ import kotlin.time.Duration.Companion.seconds
 class GuiDataHandler : DataUpdateListener {
     lateinit var presenter: DataUpdateListener
 
-    override fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>) {
-        presenter.onLiveData(airportIcao, timelineEvents)
+    override fun onTimelineEventsUpdated(airportIcao: String, timelineEvents: List<TimelineEvent>) {
+        presenter.onTimelineEventsUpdated(airportIcao, timelineEvents)
     }
 
     override fun onRunwayModesUpdated(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>) {
@@ -25,6 +25,13 @@ class GuiDataHandler : DataUpdateListener {
 
     override fun onWeatherDataUpdated(airportIcao: String, data: VerticalWeatherProfile?) {
         presenter.onWeatherDataUpdated(airportIcao, data)
+    }
+
+    override fun onNonSequencedListUpdated(
+        airportIcao: String,
+        nonSequencedList: List<NonSequencedEvent>
+    ) {
+        presenter.onNonSequencedListUpdated(airportIcao, nonSequencedList)
     }
 
     override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {
@@ -41,7 +48,7 @@ class DataUpdatesServerSender(
 
     val sendUpdateMem = mutableMapOf<String, Instant>()
 
-    override fun onLiveData(airportIcao: String, timelineEvents: List<TimelineEvent>) {
+    override fun onTimelineEventsUpdated(airportIcao: String, timelineEvents: List<TimelineEvent>) {
         val now = NtpClock.now()
         sendUpdateMem[airportIcao]
             ?.takeIf { now - it <= 2.seconds }
@@ -57,6 +64,13 @@ class DataUpdatesServerSender(
 
     override fun onWeatherDataUpdated(airportIcao: String, data: VerticalWeatherProfile?) {
         sharedState.sendWeatherData(airportIcao, data)
+    }
+
+    override fun onNonSequencedListUpdated(
+        airportIcao: String,
+        nonSequencedList: List<NonSequencedEvent>
+    ) {
+        sharedState.sendNonSequencedList(airportIcao, nonSequencedList)
     }
 
     override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {

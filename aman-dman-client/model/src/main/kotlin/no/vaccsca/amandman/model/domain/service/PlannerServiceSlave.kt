@@ -48,7 +48,7 @@ class PlannerServiceSlave(
     private fun fetchAmanData(airportIcao: String) {
         try {
             val data = sharedState.getTimelineEvents(airportIcao)
-            dataUpdateListener.onLiveData(airportIcao, data)
+            dataUpdateListener.onTimelineEventsUpdated(airportIcao, data)
         } catch (e: Exception) {
             logger.error("Failed to fetch timeline events for $airportIcao: ${e.message}")
         }

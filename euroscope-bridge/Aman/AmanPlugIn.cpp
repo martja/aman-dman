@@ -228,8 +228,6 @@ std::vector<AmanAircraft> AmanPlugIn::getInboundsForAirport(const std::string& a
         ac.assignedDirectRouting = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetDirectToPointName();
         ac.trackingController = rt.GetCorrelatedFlightPlan().GetTrackingControllerId();
         ac.isSelected = isSelectedAircraft;
-        ac.wtc = rt.GetCorrelatedFlightPlan().GetFlightPlanData().GetAircraftWtc();
-        ac.secondsBehindPreceeding = 0; // Updated in the for-loop below
         ac.scratchPad = rt.GetCorrelatedFlightPlan().GetControllerAssignedData().GetScratchPadString();
         ac.groundSpeed = rt.GetPosition().GetReportedGS();
         ac.pressureAltitude = rt.GetPosition().GetPressureAltitude();

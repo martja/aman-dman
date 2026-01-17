@@ -6,9 +6,12 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.integration.AtcClient
+import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
 import no.vaccsca.amandman.model.data.repository.CdmClient
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
+import no.vaccsca.amandman.model.domain.enums.NonSequencedReason
 import no.vaccsca.amandman.model.domain.exception.NoAssignedRunwayException
+import no.vaccsca.amandman.model.domain.exception.ReachedEndOfRouteException
 import no.vaccsca.amandman.model.domain.exception.UnknownAircraftTypeException
 import no.vaccsca.amandman.model.domain.valueobjects.*
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
@@ -36,24 +39,25 @@ class PlannerServiceMaster(
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    private val state = State()
+    private val plannerState = PlannerState()
     private val mutex = Mutex()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, exception ->
         logger.error("Unhandled exception in coroutine", exception)
     })
 
     // Mutable state encapsulated in one object
-    private data class State(
+    private data class PlannerState(
         var arrivalsCache: List<RunwayArrivalEvent> = emptyList(),
         var departuresCache: List<DepartureEvent> = emptyList(),
         var sequence: Sequence = Sequence(emptyList()),
         var minimumSpacingNm: Double = 3.0,
         var availableRunways: List<String>? = null,
-        var weatherData: VerticalWeatherProfile? = null
+        var weatherData: VerticalWeatherProfile? = null,
+        var nonSequencedList: List<NonSequencedEvent> = emptyList(),
     )
 
-    private suspend fun <T> withStateLock(block: State.() -> T): T =
-        mutex.withLock { state.block() }
+    private suspend fun <T> withStateLock(block: PlannerState.() -> T): T =
+        mutex.withLock { plannerState.block() }
 
     private var controllerInfo: ControllerInfoData? = null
     private var fetchCdmData = false
@@ -109,7 +113,7 @@ class PlannerServiceMaster(
     }
 
     override fun getAvailableRunways(): Result<List<String>> =
-        runCatching { state.availableRunways ?: emptyList() }
+        runCatching { plannerState.availableRunways ?: emptyList() }
 
     override fun setShowDepartures(showDepartures: Boolean) {
         this.fetchCdmData = showDepartures
@@ -119,7 +123,7 @@ class PlannerServiceMaster(
             scope.launch {
                 withStateLock {
                     cdmDepartures = emptyList()
-                    state.departuresCache = emptyList()
+                    plannerState.departuresCache = emptyList()
                 }
                 onSequenceUpdated()
             }
@@ -146,7 +150,10 @@ class PlannerServiceMaster(
 
     private suspend fun handleArrivalsUpdateFromAtcClient(arrivals: List<AtcClientArrivalData>) {
         withStateLock {
-            val runwayArrivalEvents = makeRunwayArrivalEvents(arrivals)
+            val (runwayArrivalEvents, nonSeq) = makeRunwayArrivalEvents(arrivals)
+
+            nonSequencedList = nonSeq
+
             val sequenceItems = runwayArrivalEvents.map {
                 AircraftSequenceCandidate(
                     callsign = it.callsign,
@@ -183,21 +190,53 @@ class PlannerServiceMaster(
         onSequenceUpdated()
     }
 
-    private fun makeRunwayArrivalEvents(arrivals: List<AtcClientArrivalData>): List<RunwayArrivalEvent> =
-        arrivals.mapNotNull { arrival ->
+    private fun makeRunwayArrivalEvents(arrivals: List<AtcClientArrivalData>): Pair<List<RunwayArrivalEvent>, List<NonSequencedEvent>> {
+        val runwayArrivalEvents = mutableListOf<RunwayArrivalEvent>()
+        val nonSequencedEvents = mutableListOf<NonSequencedEvent>()
+
+        arrivals.forEach { arrival ->
             try {
-                ArrivalEventService.createRunwayArrivalEvent(airport, arrival, state.weatherData)
+                val arrivalEvent = ArrivalEventService.createRunwayArrivalEvent(airport, arrival, plannerState.weatherData)
+                runwayArrivalEvents.add(arrivalEvent)
             } catch (e: NoAssignedRunwayException) {
-                logger.warn("Arrival ${arrival.callsign} has no assigned runway.")
-                null
+                nonSequencedEvents.add(
+                    makeNonSequencedEvent(arrival, NonSequencedReason.NO_ASSIGNED_RUNWAY)
+                )
             } catch (e: UnknownAircraftTypeException) {
-                logger.warn("Arrival ${arrival.callsign} has unknown aircraft type: ${arrival.icaoType}")
-                null
+                nonSequencedEvents.add(
+                    makeNonSequencedEvent(arrival, NonSequencedReason.MISSING_PERFORMANCE_DATA)
+                )
+            } catch (e: ReachedEndOfRouteException) {
+                nonSequencedEvents.add(
+                    makeNonSequencedEvent(arrival, NonSequencedReason.EMPTY_ROUTE)
+                )
             } catch (e: Exception) {
                 logger.warn("Failed to create arrival event from ${arrival.callsign}: ${e.message}")
-                null
+                nonSequencedEvents.add(
+                    makeNonSequencedEvent(arrival, NonSequencedReason.UNKNOWN_ERROR)
+                )
             }
         }
+
+        return Pair(runwayArrivalEvents, nonSequencedEvents)
+    }
+
+    private fun makeNonSequencedEvent(arrival: AtcClientArrivalData, reason: NonSequencedReason): NonSequencedEvent  {
+        val wtc = try {
+            val performanceData = AircraftPerformanceData.get(arrival.icaoType)
+            performanceData.takeOffWTC
+        } catch (_: IllegalArgumentException) {
+           null
+        }
+
+        return NonSequencedEvent(
+            callsign = arrival.callsign,
+            aircraftType = arrival.icaoType,
+            wakeCategory = wtc,
+            reason = reason,
+            arrivalAirport = arrival.arrivalAirportIcao,
+        )
+    }
 
     private fun makeDepartureEvents(departures: List<AtcClientDepartureData>): List<DepartureEvent> =
         departures.mapNotNull { departure ->
@@ -213,8 +252,8 @@ class PlannerServiceMaster(
         runCatching {
             scope.launch {
                 withStateLock {
-                    state.minimumSpacingNm = minimumSpacingDistanceNm
-                    state.sequence = AmanDmanSequenceService.reSchedule(state.sequence)
+                    plannerState.minimumSpacingNm = minimumSpacingDistanceNm
+                    plannerState.sequence = AmanDmanSequenceService.reSchedule(plannerState.sequence)
                 }
                 onSequenceUpdated()
                 // Notify listeners of the spacing change
@@ -227,7 +266,7 @@ class PlannerServiceMaster(
     override fun refreshWeatherData(): Result<Unit> {
         scope.launch {
             val weather = weatherDataRepository.getWindData(airport.location.lat, airport.location.lon)
-            withStateLock { state.weatherData = weather }
+            withStateLock { plannerState.weatherData = weather }
             dataUpdateListeners.forEach { listener ->
                 listener.onWeatherDataUpdated(airportIcao, weather)
             }
@@ -250,8 +289,8 @@ class PlannerServiceMaster(
             scope.launch {
                 withStateLock {
                     if (checkTimeSlotAvailable(timelineEvent, scheduledTime)) {
-                        state.sequence = AmanDmanSequenceService.suggestScheduledTime(
-                            state.sequence, timelineEvent.callsign, scheduledTime, state.minimumSpacingNm
+                        plannerState.sequence = AmanDmanSequenceService.suggestScheduledTime(
+                            plannerState.sequence, timelineEvent.callsign, scheduledTime, plannerState.minimumSpacingNm
                         )
                         if (newRunway != null) {
                             atcClient.assignRunway(timelineEvent.callsign, newRunway)
@@ -268,10 +307,10 @@ class PlannerServiceMaster(
         runCatching {
             scope.launch {
                 withStateLock {
-                    state.sequence = if (callSign == null) {
-                        AmanDmanSequenceService.reSchedule(state.sequence)
+                    plannerState.sequence = if (callSign == null) {
+                        AmanDmanSequenceService.reSchedule(plannerState.sequence)
                     } else {
-                        AmanDmanSequenceService.removeFromSequence(state.sequence, callSign)
+                        AmanDmanSequenceService.removeFromSequence(plannerState.sequence, callSign)
                     }
                 }
                 onSequenceUpdated()
@@ -283,18 +322,18 @@ class PlannerServiceMaster(
 
     private fun checkTimeSlotAvailable(timelineEvent: TimelineEvent, scheduledTime: Instant): Boolean =
         if (timelineEvent !is RunwayArrivalEvent) false
-        else AmanDmanSequenceService.isTimeSlotAvailable(state.sequence, timelineEvent, scheduledTime, state.minimumSpacingNm)
+        else AmanDmanSequenceService.isTimeSlotAvailable(plannerState.sequence, timelineEvent, scheduledTime, plannerState.minimumSpacingNm)
 
     override fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =
         runCatching { ArrivalEventService.getDescentProfileForCallsign(callsign) }
 
     private suspend fun onSequenceUpdated() {
         withStateLock {
-            val updatedArrivals = state.arrivalsCache
-                .map { it.updateScheduledTime(state.sequence) }
+            val updatedArrivals = plannerState.arrivalsCache
+                .map { it.updateScheduledTime(plannerState.sequence) }
                 .sortedByDescending { it.scheduledTime }
 
-            val departures = state.departuresCache
+            val departures = plannerState.departuresCache
 
             val sequencedArrivals = if (updatedArrivals.size <= 1) {
                 updatedArrivals
@@ -308,10 +347,11 @@ class PlannerServiceMaster(
                 (pairedArrivals + updatedArrivals.last()).reversed()
             }
 
-            state.arrivalsCache = sequencedArrivals
+            plannerState.arrivalsCache = sequencedArrivals
 
             dataUpdateListeners.forEach { listener ->
-                listener.onLiveData(airportIcao, sequencedArrivals + departures)
+                listener.onTimelineEventsUpdated(airportIcao, sequencedArrivals + departures)
+                listener.onNonSequencedListUpdated(airportIcao, plannerState.nonSequencedList)
             }
         }
     }
