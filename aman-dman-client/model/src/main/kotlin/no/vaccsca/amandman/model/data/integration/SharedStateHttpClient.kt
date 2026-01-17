@@ -121,6 +121,12 @@ class SharedStateHttpClient : SharedState {
         sendStateJson(airportIcao, "non-sequenced", sharedStateJson)
     }
 
+    override fun getNonSequencedList(airportIcao: String): List<NonSequencedEvent> {
+        val typeRef = object : TypeReference<SharedStateJson<List<NonSequencedEvent>>>() {}
+        val sharedState = fetchStateJson(airportIcao, "non-sequenced", typeRef)
+        return sharedState.data
+    }
+
     override fun sendTimelineEvents(airportIcao: String, timelineEvents: List<TimelineEvent>) {
         val events = timelineEvents.map { event ->
             val type = when (event) {
@@ -252,9 +258,11 @@ class SharedStateHttpClient : SharedState {
     private fun sendStateJson(airportIcao: String, resource: String, sharedStateJson: SharedStateJson<*>) {
         val json = objectMapper.writeValueAsString(sharedStateJson)
 
-        baseApiRequest(airportIcao, resource)
+        val request = baseApiRequest(airportIcao, resource)
             .post(json.toRequestBody(JSON))
             .build()
+
+        httpClient.newCall(request).execute().close()
 
         logger.debug("Sent shared state to $airportIcao/$resource")
     }

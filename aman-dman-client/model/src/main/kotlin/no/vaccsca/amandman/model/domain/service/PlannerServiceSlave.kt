@@ -73,6 +73,13 @@ class PlannerServiceSlave(
         } catch (e: Exception) {
             logger.error("Failed to fetch minimum spacing data for $airportIcao: ${e.message}")
         }
+
+        try {
+            val nonSequencedList = sharedState.getNonSequencedList(airportIcao)
+            dataUpdateListener.onNonSequencedListUpdated(airportIcao, nonSequencedList)
+        } catch (e: Exception) {
+            logger.error("Failed to fetch non-sequenced list for $airportIcao: ${e.message}")
+        }
     }
 
     override fun startDataCollection() {

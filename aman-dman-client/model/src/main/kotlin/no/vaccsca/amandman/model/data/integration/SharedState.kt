@@ -20,4 +20,5 @@ interface SharedState {
     fun releaseMasterRole(airportIcao: String)
     fun checkVersionCompatibility(): VersionCompatibilityResult
     fun sendNonSequencedList(airportIcao: String, nonSequencedList: List<NonSequencedEvent>)
+    fun getNonSequencedList(airportIcao: String): List<NonSequencedEvent>
 }

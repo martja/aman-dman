@@ -392,6 +392,10 @@ app.delete('/api/v1/airports/:icao/master-role', (req, res) => {
 app.get('/api/v1/airports/:icao/minimum-spacing', getDataHandler('minimumSpacing'));
 app.post('/api/v1/airports/:icao/minimum-spacing', postDataHandler('minimumSpacing'));
 
+// Non-sequenced endpoints
+app.get('/api/v1/airports/:icao/non-sequenced', getDataHandler('nonSequenced'));
+app.post('/api/v1/airports/:icao/non-sequenced', postDataHandler('nonSequenced'));
+
 // Get all data for a specific airport
 app.get('/api/v1/airports/:icao', (req, res) => {
   const icao = req.params.icao.toUpperCase();
@@ -412,7 +416,8 @@ app.get('/api/v1/airports/:icao', (req, res) => {
     weather: airport.weather || null,
     events: airport.events || [],
     runwayModes: airport.runwayModes || null,
-    minimumSpacing: airport.minimumSpacing || null
+    minimumSpacing: airport.minimumSpacing || null,
+    nonSequenced: airport.nonSequenced || null
   });
 });
 
@@ -423,7 +428,8 @@ app.get('/api/v1/airports', (req, res) => {
     hasWeather: !!airportData[icao].weather,
     hasEvents: !!(airportData[icao].events && airportData[icao].events.length > 0),
     hasRunwayModes: !!airportData[icao].runwayModes,
-    hasMinimumSpacing: !!airportData[icao].minimumSpacing
+    hasMinimumSpacing: !!airportData[icao].minimumSpacing,
+    hasNonSequenced: !!airportData[icao].nonSequenced
   }));
   
   res.json({ airports });
@@ -508,6 +514,8 @@ app.listen(PORT, () => {
   console.log(`   DELETE /api/v1/airports/:icao/master-role`);
   console.log(`   GET  /api/v1/airports/:icao/minimum-spacing`);
   console.log(`   POST /api/v1/airports/:icao/minimum-spacing`);
+  console.log(`   GET  /api/v1/airports/:icao/non-sequenced`);
+  console.log(`   POST /api/v1/airports/:icao/non-sequenced`);
   console.log(`   GET  /api/v1/airports/:icao`);
   console.log(`   GET  /api/v1/airports`);
   console.log(`   POST /api/v1/heartbeat`);
