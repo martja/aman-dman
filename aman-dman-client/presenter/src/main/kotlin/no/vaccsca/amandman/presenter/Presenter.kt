@@ -45,7 +45,7 @@ class Presenter(
     private var timelineConfigs = mutableMapOf<String, TimelineConfig>()
 
     private val cachedTimelineEvents = mutableMapOf<String, CachedTimelineEvent>()
-    private var cachedNonSequencedEvents: List<NonSequencedEvent>? = null
+    private val cachedNonSequencedEvents = mutableMapOf<String, List<NonSequencedEvent>>()
 
     // Replace the simple currentMinimumSpacingNm with a reactive state manager
     private val runwayModeStateManager = RunwayModeStateManager(view)
@@ -238,12 +238,12 @@ class Presenter(
         airportIcao: String,
         nonSequencedList: List<NonSequencedEvent>
     ) {
-        cachedNonSequencedEvents = nonSequencedList
+        cachedNonSequencedEvents[airportIcao] = nonSequencedList
     }
 
     private fun updateViewFromCachedData() {
         val timelineEventsSnapshot: List<TimelineEvent> = cachedTimelineEvents.values.toList().map { it.timelineEvent }
-        val nonSequencedSnapshot = cachedNonSequencedEvents ?: emptyList()
+        val nonSequencedSnapshot = cachedNonSequencedEvents.toMap()
 
         try {
             timelineGroups.toList().forEach { group ->
@@ -258,7 +258,7 @@ class Presenter(
                             right = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysRight.contains(it.runway) }
                         )
                     },
-                    nonSequencedList = nonSequencedSnapshot.filter { it.arrivalAirport == group.airport.icao }
+                    nonSequencedList = nonSequencedSnapshot.get(group.airport.icao) ?: emptyList()
                 ))
             }
 
@@ -487,7 +487,7 @@ class Presenter(
         val plannerService = when(timelineGroup.userRole) {
             UserRole.MASTER -> {
                 if (!checkVersionCompatibility()) {
-                    return
+                    //return
                 }
 
                 if (sharedState.acquireMasterRole(airport.icao)) {

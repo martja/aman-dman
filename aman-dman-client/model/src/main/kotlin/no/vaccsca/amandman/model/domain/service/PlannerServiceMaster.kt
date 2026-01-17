@@ -237,7 +237,6 @@ class PlannerServiceMaster(
             aircraftType = arrival.icaoType,
             wakeCategory = wtc,
             reason = reason,
-            arrivalAirport = arrival.arrivalAirportIcao,
         )
     }
 
