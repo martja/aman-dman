@@ -107,5 +107,9 @@ class TimelineView(
         labelContainer.updateDraggedLabel(timelineEvent, proposedTime, available)
     }
 
+    fun containsEvent(timelineEvent: TimelineEvent): Boolean {
+        return labelContainer.containsEventLabel(timelineEvent)
+    }
+
     fun getScaleWidth(): Int = scaleWidth
 }

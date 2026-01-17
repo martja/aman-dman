@@ -10,32 +10,32 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = PluginVersionJson::class, name = "pluginVersion"),
-    JsonSubTypes.Type(value = ArrivalsUpdateFromServerJson::class, name = "arrivals"),
-    JsonSubTypes.Type(value = DeparturesUpdateFromServerJson::class, name = "departures"),
-    JsonSubTypes.Type(value = RunwayStatusesUpdateFromServerJson::class, name = "runwayStatuses"),
-    JsonSubTypes.Type(value = ControllerInfoFromServerJson::class, name = "controllerInfo"),
+    JsonSubTypes.Type(value = ArrivalsUpdateFromEuroScopePluginJson::class, name = "arrivals"),
+    JsonSubTypes.Type(value = DeparturesUpdateFromEuroScopePluginJson::class, name = "departures"),
+    JsonSubTypes.Type(value = RunwayStatusesUpdateFromEuroScopePluginJson::class, name = "runwayStatuses"),
+    JsonSubTypes.Type(value = ControllerInfoFromEuroScopePluginJson::class, name = "controllerInfo"),
 )
-sealed class MessageFromServerJson()
+sealed class MessageFromEuroScopePluginJson()
 
 data class PluginVersionJson(
     val version: String
-) : MessageFromServerJson()
+) : MessageFromEuroScopePluginJson()
 
-data class DeparturesUpdateFromServerJson(
+data class DeparturesUpdateFromEuroScopePluginJson(
     val outbounds: List<DepartureJson>
-) : MessageFromServerJson()
+) : MessageFromEuroScopePluginJson()
 
-data class ArrivalsUpdateFromServerJson(
+data class ArrivalsUpdateFromEuroScopePluginJson(
     val inbounds: List<ArrivalJson>
-) : MessageFromServerJson()
+) : MessageFromEuroScopePluginJson()
 
-data class RunwayStatusesUpdateFromServerJson(
+data class RunwayStatusesUpdateFromEuroScopePluginJson(
     val airports: Map<String, Map<String, RunwayStatusJson>>
-) : MessageFromServerJson()
+) : MessageFromEuroScopePluginJson()
 
-data class ControllerInfoFromServerJson(
+data class ControllerInfoFromEuroScopePluginJson(
     val me: ControllerInfoJson
-) : MessageFromServerJson()
+) : MessageFromEuroScopePluginJson()
 
 data class RunwayStatusJson(
     val arrivals: Boolean,

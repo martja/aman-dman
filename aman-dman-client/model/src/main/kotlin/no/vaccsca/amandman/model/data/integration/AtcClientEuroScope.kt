@@ -3,21 +3,20 @@ package no.vaccsca.amandman.model.data.integration
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.JsonFactory
 import kotlinx.coroutines.*
-import kotlinx.datetime.Clock
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalJson
-import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalsUpdateFromServerJson
-import no.vaccsca.amandman.model.data.dto.euroscope.AssignRunwayMessage
-import no.vaccsca.amandman.model.data.dto.euroscope.ControllerInfoFromServerJson
+import no.vaccsca.amandman.model.data.dto.euroscope.ArrivalsUpdateFromEuroScopePluginJson
+import no.vaccsca.amandman.model.data.dto.euroscope.AssignRunwayJson
+import no.vaccsca.amandman.model.data.dto.euroscope.ControllerInfoFromEuroScopePluginJson
 import no.vaccsca.amandman.model.data.dto.euroscope.DepartureJson
-import no.vaccsca.amandman.model.data.dto.euroscope.DeparturesUpdateFromServerJson
-import no.vaccsca.amandman.model.data.dto.euroscope.MessageFromServerJson
+import no.vaccsca.amandman.model.data.dto.euroscope.DeparturesUpdateFromEuroScopePluginJson
+import no.vaccsca.amandman.model.data.dto.euroscope.MessageFromEuroScopePluginJson
 import no.vaccsca.amandman.model.data.dto.euroscope.MessageToEuroScopePluginJson
 import no.vaccsca.amandman.model.data.dto.euroscope.PluginVersionJson
-import no.vaccsca.amandman.model.data.dto.euroscope.RequestArrivalAndDeparturesMessageJson
+import no.vaccsca.amandman.model.data.dto.euroscope.RegisterAirportJson
 import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusJson
-import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusesUpdateFromServerJson
-import no.vaccsca.amandman.model.data.dto.euroscope.UnregisterTimelineMessageJson
+import no.vaccsca.amandman.model.data.dto.euroscope.RunwayStatusesUpdateFromEuroScopePluginJson
+import no.vaccsca.amandman.model.data.dto.euroscope.UnregisterAirportJson
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
@@ -31,7 +30,6 @@ import java.io.*
 import java.net.Socket
 import java.net.SocketException
 import java.net.SocketTimeoutException
-import kotlin.math.log
 import kotlin.time.Duration.Companion.minutes
 
 class AtcClientEuroScope(
@@ -40,18 +38,21 @@ class AtcClientEuroScope(
     private val host: String = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.host,
     private val port: Int = SettingsRepository.getSettings(reload = true).connectionConfig.atcClient.port ?: 12345,
 ) : AtcClient {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     private var isRunning = false
     private var socket: Socket? = null
     private var writer: OutputStreamWriter? = null
     private var reader: InputStreamReader? = null
     private var isConnected = false
     private var isVersionValidated = false
-    private var scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var scope = CoroutineScope(Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, exception ->
+        logger.error("Unhandled exception in AtcClientEuroScope coroutine: ${exception.message}", exception)
+    })
     private val arrivalCallbacks = mutableMapOf<String, (List<AtcClientArrivalData>) -> Unit>()
     private val departuresCallbacks = mutableMapOf<String, (List<AtcClientDepartureData>) -> Unit>()
     private val runwayStatusCallbacks = mutableMapOf<String, (List<AtcClientRunwaySelectionData>) -> Unit>()
-
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     private val objectMapper = jacksonObjectMapper().apply {
         // Configure Jackson for large messages
@@ -66,7 +67,9 @@ class AtcClientEuroScope(
 
         // Reset state and create a new scope if needed
         if (scope.isActive.not()) {
-            scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+            scope = CoroutineScope(Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, exception ->
+                logger.error("Unhandled exception in AtcClientEuroScope coroutine: ${exception.message}", exception)
+            })
         }
 
         isRunning = true
@@ -115,7 +118,8 @@ class AtcClientEuroScope(
 
     override fun stopCollectingMovementsFor(airportIcao: String) {
         // Send unregister message to the server
-        sendMessage(UnregisterTimelineMessageJson(airportIcao))
+        logger.info("Unsubscribing from EuroScope data for airport $airportIcao")
+        sendMessage(UnregisterAirportJson(airportIcao))
 
         // Clean up local callbacks for this airport
         runwayStatusCallbacks.remove(airportIcao)
@@ -124,8 +128,9 @@ class AtcClientEuroScope(
     }
 
     override fun assignRunway(callsign: String, newRunway: String) {
+        logger.info("Assigning runway $callsign to $newRunway")
         sendMessage(
-            AssignRunwayMessage(
+            AssignRunwayJson(
                 callsign = callsign,
                 runway = newRunway
             )
@@ -178,8 +183,9 @@ class AtcClientEuroScope(
 
     private fun reSubscribeToAllAirports() {
         (arrivalCallbacks + departuresCallbacks).keys.toSet().forEach { airportIcao ->
+            logger.info("Requesting data from EuroScope for airport $airportIcao")
             sendMessage(
-                RequestArrivalAndDeparturesMessageJson(
+                RegisterAirportJson(
                     icao = airportIcao
                 )
             )
@@ -221,7 +227,7 @@ class AtcClientEuroScope(
                     lastMessageTime = NtpClock.now()
 
                     try {
-                        val dataPackage = objectMapper.readValue(message, MessageFromServerJson::class.java)
+                        val dataPackage = objectMapper.readValue(message, MessageFromEuroScopePluginJson::class.java)
                         handleMessage(dataPackage)
                     } catch (e: Exception) {
                         logger.error("Error parsing JSON message #$messageCount from EuroScope (length: ${message.length}): $message", e)
@@ -269,48 +275,48 @@ class AtcClientEuroScope(
         }
     }
 
-    private fun handleMessage(messageFromServerJson: MessageFromServerJson) {
-        when (messageFromServerJson) {
+    private fun handleMessage(messageFromEuroScopePluginJson: MessageFromEuroScopePluginJson) {
+        when (messageFromEuroScopePluginJson) {
             is PluginVersionJson -> {
                 val clientVersion = object {}.javaClass.`package`.implementationVersion
-                val pluginVersion = messageFromServerJson.version
+                val pluginVersion = messageFromEuroScopePluginJson.version
                 
-                println("Plugin version: $pluginVersion, Client version: $clientVersion")
+                logger.info("Plugin version: $pluginVersion, Client version: $clientVersion")
                 
                 if (clientVersion != "DEVELOPMENT" && pluginVersion != clientVersion) {
-                    println("VERSION MISMATCH! Plugin: $pluginVersion, Client: $clientVersion")
+                    logger.error("VERSION MISMATCH! Plugin: $pluginVersion, Client: $clientVersion")
                     // Disconnect and notify about version mismatch
                     isVersionValidated = false
                     onVersionMismatch?.invoke(clientVersion, pluginVersion)
                     close()
                 } else {
-                    println("Version check passed or in development mode")
+                    logger.info("Version check passed or in development mode")
                     isVersionValidated = true
                     // Continue with normal operation after version is validated
                     reSubscribeToAllAirports()
                 }
             }
-            is ArrivalsUpdateFromServerJson -> {
-                messageFromServerJson.inbounds.groupBy { it.arrivalAirportIcao }.forEach { (arrivalAirportIcao, arrivals) ->
+            is ArrivalsUpdateFromEuroScopePluginJson -> {
+                messageFromEuroScopePluginJson.inbounds.groupBy { it.arrivalAirportIcao }.forEach { (arrivalAirportIcao, arrivals) ->
                     arrivalCallbacks[arrivalAirportIcao]?.invoke(arrivals.map { it.toArrival() })
                 }
             }
-            is DeparturesUpdateFromServerJson -> {
-                messageFromServerJson.outbounds.groupBy { it.departureAirportIcao }.forEach { (departureAirportIcao, departures) ->
+            is DeparturesUpdateFromEuroScopePluginJson -> {
+                messageFromEuroScopePluginJson.outbounds.groupBy { it.departureAirportIcao }.forEach { (departureAirportIcao, departures) ->
                     departuresCallbacks[departureAirportIcao]?.invoke(departures.map { it.toDeparture() })
                 }
             }
-            is RunwayStatusesUpdateFromServerJson -> {
-                messageFromServerJson.airports.forEach { (airportIcao, statusesJson) ->
+            is RunwayStatusesUpdateFromEuroScopePluginJson -> {
+                messageFromEuroScopePluginJson.airports.forEach { (airportIcao, statusesJson) ->
                     val statuses = statusesJson.map { (name, statusJson) -> statusJson.toRunwayStatus(name) }
                     runwayStatusCallbacks[airportIcao]?.invoke(statuses)
                 }
             }
-            is ControllerInfoFromServerJson -> {
+            is ControllerInfoFromEuroScopePluginJson -> {
                 val infoData = ControllerInfoData(
-                    callsign = messageFromServerJson.me.callsign,
-                    positionId = messageFromServerJson.me.positionId,
-                    facilityType = facilityTypeToString(messageFromServerJson.me.facilityType),
+                    callsign = messageFromEuroScopePluginJson.me.callsign,
+                    positionId = messageFromEuroScopePluginJson.me.positionId,
+                    facilityType = facilityTypeToString(messageFromEuroScopePluginJson.me.facilityType),
                 )
                 controllerInfoCallback(infoData)
             }

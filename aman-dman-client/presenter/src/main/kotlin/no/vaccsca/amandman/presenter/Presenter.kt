@@ -396,7 +396,7 @@ class Presenter(
                 view.openSelectRunwayDialog(runwayEvent, availableRunways, onClose)
             } else {
                 onClose(null)
-                logger.info("Not the tracking controller for ${runwayEvent.callsign}, cannot select runway. Tracking controller is ${runwayEvent.trackingController}, my positionId is ${controllerInfo?.positionId}")
+                logger.debug("User is not the tracking controller for ${runwayEvent.callsign}, will not prompt for runway. Tracking controller is ${runwayEvent.trackingController}, my positionId is ${controllerInfo?.positionId}")
             }
         } else {
             logger.error("selectRunway called with unsupported event type")

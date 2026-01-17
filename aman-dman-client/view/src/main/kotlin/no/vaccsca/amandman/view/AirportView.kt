@@ -93,7 +93,9 @@ class AirportView(
     ) {
         val items = timelineScrollPane.viewport.view as JPanel
         items.components.filterIsInstance<TimelineView>().forEach { timelineView ->
-            timelineView.updateDraggedLabel(timelineEvent, proposedTime, isAvailable)
+            if (timelineView.containsEvent(timelineEvent)) {
+                timelineView.updateDraggedLabel(timelineEvent, proposedTime, isAvailable)
+            }
         }
     }
 

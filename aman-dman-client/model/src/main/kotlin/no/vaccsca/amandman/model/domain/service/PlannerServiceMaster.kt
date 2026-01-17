@@ -8,7 +8,8 @@ import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.integration.AtcClient
 import no.vaccsca.amandman.model.data.repository.CdmClient
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
-import no.vaccsca.amandman.model.domain.exception.DescentTrajectoryException
+import no.vaccsca.amandman.model.domain.exception.NoAssignedRunwayException
+import no.vaccsca.amandman.model.domain.exception.UnknownAircraftTypeException
 import no.vaccsca.amandman.model.domain.valueobjects.*
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientDepartureData
@@ -37,7 +38,9 @@ class PlannerServiceMaster(
 
     private val state = State()
     private val mutex = Mutex()
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, exception ->
+        logger.error("Unhandled exception in coroutine", exception)
+    })
 
     // Mutable state encapsulated in one object
     private data class State(
@@ -173,7 +176,9 @@ class PlannerServiceMaster(
 
     private suspend fun handleDeparturesUpdateFromAtcClient(departures: List<AtcClientDepartureData>) {
         withStateLock {
-            departuresCache = makeDepartureEvents(departures)
+            val departureEvents = makeDepartureEvents(departures)
+            logger.debug("Converted ${departures.size} departures into ${departureEvents.size} departure events.")
+            departuresCache = departureEvents
         }
         onSequenceUpdated()
     }
@@ -182,8 +187,14 @@ class PlannerServiceMaster(
         arrivals.mapNotNull { arrival ->
             try {
                 ArrivalEventService.createRunwayArrivalEvent(airport, arrival, state.weatherData)
-            } catch (e: DescentTrajectoryException) {
-                logger.warn("Failed to compute descent trajectory for ${arrival.callsign}: ${e.msg}")
+            } catch (e: NoAssignedRunwayException) {
+                logger.warn("Arrival ${arrival.callsign} has no assigned runway.")
+                null
+            } catch (e: UnknownAircraftTypeException) {
+                logger.warn("Arrival ${arrival.callsign} has unknown aircraft type: ${arrival.icaoType}")
+                null
+            } catch (e: Exception) {
+                logger.warn("Failed to create arrival event from ${arrival.callsign}: ${e.message}")
                 null
             }
         }

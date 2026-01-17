@@ -17,7 +17,9 @@ class PlannerServiceSlave(
     private val logger = LoggerFactory.getLogger(javaClass)
 
     val arrivalAirportsToFetch = mutableSetOf<String>()
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, exception ->
+        logger.error("Unhandled exception in coroutine", exception)
+    })
 
     override fun start() {
         scope.launch {

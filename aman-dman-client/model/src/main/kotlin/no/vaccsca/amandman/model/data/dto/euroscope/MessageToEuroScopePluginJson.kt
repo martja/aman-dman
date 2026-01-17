@@ -8,15 +8,15 @@ sealed class MessageToEuroScopePluginJson(
     val type: String
 )
 
-data class RequestArrivalAndDeparturesMessageJson(
+data class RegisterAirportJson(
     val icao: String,
 ) : MessageToEuroScopePluginJson("registerAirport")
 
-data class UnregisterTimelineMessageJson(
+data class UnregisterAirportJson(
     val icao: String,
 ) : MessageToEuroScopePluginJson("unregisterAirport")
 
-data class AssignRunwayMessage(
+data class AssignRunwayJson(
     val callsign: String,
     val runway: String,
 ) : MessageToEuroScopePluginJson("assignRunway")

@@ -78,6 +78,10 @@ class TimelineOverlay(
         repaint()
     }
 
+    fun containsEventLabel(timelineEvent: TimelineEvent): Boolean {
+        return labels.values.any { it.timelineEvent == timelineEvent }
+    }
+
     private fun isDualTimeline(): Boolean {
         return timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
     }

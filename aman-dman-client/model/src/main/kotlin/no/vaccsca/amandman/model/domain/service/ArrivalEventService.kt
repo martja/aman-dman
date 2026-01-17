@@ -3,7 +3,10 @@ package no.vaccsca.amandman.model.domain.service
 import kotlinx.datetime.Clock
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
-import no.vaccsca.amandman.model.domain.exception.DescentTrajectoryException
+import no.vaccsca.amandman.model.domain.exception.EmptyTrajectoryException
+import no.vaccsca.amandman.model.domain.exception.NoAssignedRunwayException
+import no.vaccsca.amandman.model.domain.exception.ReachedEndOfRouteException
+import no.vaccsca.amandman.model.domain.exception.UnknownAircraftTypeException
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
@@ -23,11 +26,11 @@ object ArrivalEventService {
         val aircraftPerformance = try {
             AircraftPerformanceData.get(arrival.icaoType)
         } catch (_: IllegalArgumentException) {
-            throw DescentTrajectoryException("Unsupported aircraft type: ${arrival.icaoType}")
+            throw UnknownAircraftTypeException("Unsupported aircraft type: ${arrival.icaoType}")
         }
 
         if (arrival.assignedRunway == null) {
-            throw DescentTrajectoryException("Arrival has no runway assigned")
+            throw NoAssignedRunwayException("Arrival has no runway assigned")
         }
 
         val trajectory = DescentTrajectoryService.calculateDescentTrajectory(
@@ -42,13 +45,13 @@ object ArrivalEventService {
         )
 
         if (trajectory == null) {
-            throw DescentTrajectoryException("Failed to calculate descent trajectory for ${arrival.callsign}")
+            throw ReachedEndOfRouteException("Failed to calculate descent trajectory for ${arrival.callsign}")
         }
 
         descentTrajectoryCache[arrival.callsign] = trajectory.trajectoryPoints
 
         if (trajectory.trajectoryPoints.isEmpty()) {
-            throw DescentTrajectoryException("The descent trajectory is empty")
+            throw EmptyTrajectoryException("The descent trajectory is empty")
         }
 
         val estimatedTime = NtpClock.now() + (trajectory.trajectoryPoints.firstOrNull()?.remainingTime ?: 0.seconds)
