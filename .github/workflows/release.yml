@@ -31,7 +31,9 @@ jobs:
         uses: microsoft/setup-msbuild@v1.0.2
 
       - name: Build C++ Project
-        run: msbuild /m /p:Configuration=Release /p:PluginVersion="${{ env.VERSION }}" /p:Contributors="TBD" euroscope-bridge /p:Platform=x86
+        run: |
+          $version = "${{ env.VERSION }}" -replace '^v', ''
+          msbuild /m /p:Configuration=Release /p:PluginVersion="$version" /p:Contributors="TBD" euroscope-bridge /p:Platform=x86
 
       - name: Build Gradle Project
         run: |
