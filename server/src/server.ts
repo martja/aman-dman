@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT as unknown as number || 3000;
 
 // Type definitions
 interface AirportData {
@@ -9,6 +9,7 @@ interface AirportData {
   events?: unknown[];
   runwayModes?: unknown;
   minimumSpacing?: unknown;
+  nonSequenced?: unknown;
 }
 
 interface VersionCache {
@@ -447,6 +448,10 @@ app.delete('/api/v1/airports/:icao/master-role', (req: Request, res: Response): 
 app.get('/api/v1/airports/:icao/minimum-spacing', getDataHandler('minimumSpacing'));
 app.post('/api/v1/airports/:icao/minimum-spacing', postDataHandler('minimumSpacing'));
 
+// Non-sequenced endpoints
+app.get('/api/v1/airports/:icao/non-sequenced', getDataHandler('nonSequenced'));
+app.post('/api/v1/airports/:icao/non-sequenced', postDataHandler('nonSequenced'));
+
 // Get all data for a specific airport
 app.get('/api/v1/airports/:icao', (req: Request, res: Response): void => {
   const icao = req.params.icao.toUpperCase();
@@ -469,6 +474,7 @@ app.get('/api/v1/airports/:icao', (req: Request, res: Response): void => {
     events: airport.events || [],
     runwayModes: airport.runwayModes || null,
     minimumSpacing: airport.minimumSpacing || null,
+    nonSequenced: airport.nonSequenced || null,
   });
 });
 
@@ -480,6 +486,7 @@ app.get('/api/v1/airports', (req: Request, res: Response): void => {
     hasEvents: !!(airportData[icao].events && airportData[icao].events.length > 0),
     hasRunwayModes: !!airportData[icao].runwayModes,
     hasMinimumSpacing: !!airportData[icao].minimumSpacing,
+    hasNonSequenced: !!airportData[icao].nonSequenced,
   }));
 
   res.json({ airports });
@@ -551,7 +558,7 @@ app.post('/api/v1/heartbeat', (req: Request, res: Response): void => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Simple Airport API Server running on port ${PORT}`);
   console.log(`📖 API Documentation:`);
   console.log(`   GET  /api/v1/airports/:icao/weather`);
@@ -565,6 +572,8 @@ app.listen(PORT, () => {
   console.log(`   DELETE /api/v1/airports/:icao/master-role`);
   console.log(`   GET  /api/v1/airports/:icao/minimum-spacing`);
   console.log(`   POST /api/v1/airports/:icao/minimum-spacing`);
+  console.log(`   GET  /api/v1/airports/:icao/non-sequenced`);
+  console.log(`   POST /api/v1/airports/:icao/non-sequenced`);
   console.log(`   GET  /api/v1/airports/:icao`);
   console.log(`   GET  /api/v1/airports`);
   console.log(`   POST /api/v1/heartbeat`);
