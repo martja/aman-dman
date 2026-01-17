@@ -27,7 +27,6 @@ import org.jfree.data.xy.XYBarDataset
 import java.awt.*
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
 import javax.swing.JPanel
 import kotlin.time.Duration.Companion.hours
@@ -41,7 +40,7 @@ class LandingRatesGraph : JPanel() {
     private var chart: JFreeChart? = null
     private var plot: XYPlot? = null
     private var barDataset: XYBarDataset? = null
-    private var currentBucketMillis = 10 * 60 * 1000L // default: 10 min
+    private var currentBucketMillis = 10 * 60 * 1000L
 
     private val bucketSelector = JComboBox(arrayOf("10 min", "30 min", "60 min"))
 
@@ -61,11 +60,7 @@ class LandingRatesGraph : JPanel() {
 
     private val timeWindowScrollbar = TimeRangeScrollBarHorizontal(selectedTimeRange, availableTimeRange)
 
-    // ICAO dropdown and tracking
-    private val icaoComboBox = JComboBox<String>()
-    private val knownIcaos = mutableSetOf<String>()
-    private var selectedIcao: String? = null
-    private val allArrivalEventsByIcao = mutableMapOf<String, List<TimelineEvent>>()
+    private var currentEvents: List<TimelineEvent> = emptyList()
 
     init {
         layout = BorderLayout()
@@ -74,15 +69,7 @@ class LandingRatesGraph : JPanel() {
         val chartPanel = ChartPanel(chart)
 
         val controlPanel = JPanel().apply {
-            add(icaoComboBox)
             add(bucketSelector)
-        }
-
-        icaoComboBox.addActionListener {
-            val selected = icaoComboBox.selectedItem as? String
-            selectedIcao = selected
-            val events = selected?.let { allArrivalEventsByIcao[it] } ?: emptyList()
-            showEvents(events)
         }
 
         bucketSelector.addActionListener {
@@ -93,9 +80,7 @@ class LandingRatesGraph : JPanel() {
                 else -> 10 * 60 * 1000L
             }
             updateChartBarWidth()
-            // Re-filter and show data for current ICAO
-            val events = selectedIcao?.let { allArrivalEventsByIcao[it] } ?: emptyList()
-            showEvents(events)
+            showEvents(currentEvents)
         }
 
         selectedTimeRange.addListener {
@@ -184,25 +169,9 @@ class LandingRatesGraph : JPanel() {
         plot?.dataset = barDataset
     }
 
-    fun updateData(airportIcao: String, allArrivalEvents: List<TimelineEvent>) {
-        // Track ICAOs and update dropdown if new
-        if (knownIcaos.add(airportIcao)) {
-            val sortedIcaos = knownIcaos.toList().sorted()
-            icaoComboBox.model = DefaultComboBoxModel(sortedIcaos.toTypedArray())
-            // Select the first ICAO if none selected
-            if (selectedIcao == null && sortedIcaos.isNotEmpty()) {
-                selectedIcao = sortedIcaos.first()
-            }
-        }
-        // Store events for this ICAO
-        allArrivalEventsByIcao[airportIcao] = allArrivalEvents
-
-        icaoComboBox.selectedItem = selectedIcao
-
-        // If this ICAO is selected, show its data
-        if (airportIcao == selectedIcao) {
-            showEvents(allArrivalEvents)
-        }
+    fun updateData(allArrivalEvents: List<TimelineEvent>) {
+        currentEvents = allArrivalEvents
+        showEvents(allArrivalEvents)
     }
 
     private fun showEvents(events: List<TimelineEvent>) {

@@ -360,12 +360,12 @@ class Presenter(
         myMasterRoles.remove(airportIcao)
     }
 
-    override fun onOpenLandingRatesWindow() {
-        view.openLandingRatesWindow()
+    override fun onOpenLandingRatesWindow(airportIcao: String) {
+        view.openLandingRatesWindow(airportIcao)
     }
 
-    override fun onOpenNonSequencedWindow() {
-        view.openNonSequencedWindow()
+    override fun onOpenNonSequencedWindow(airportIcao: String) {
+        view.openNonSequencedWindow(airportIcao)
     }
 
     override fun onLabelDragEnd(airportIcao: String, timelineEvent: TimelineEvent, newScheduledTime: Instant, newRunway: String?) {

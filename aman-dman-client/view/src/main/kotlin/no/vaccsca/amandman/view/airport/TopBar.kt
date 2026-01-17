@@ -25,11 +25,11 @@ class TopBar(
         }
 
         landingRatesButton.addActionListener {
-            presenter.onOpenLandingRatesWindow()
+            presenter.onOpenLandingRatesWindow(airportIcao)
         }
 
         nonSequencedButton.addActionListener {
-            presenter.onOpenNonSequencedWindow()
+            presenter.onOpenNonSequencedWindow(airportIcao)
         }
 
         // Right-aligned controls
@@ -53,7 +53,7 @@ class TopBar(
 
     fun updateNonSeqNumbers(numberOfNonSeq: Int) {
         this.nonSequencedButton.apply {
-            background = if (numberOfNonSeq > 0) Color.YELLOW else Color.GRAY
+            background = if (numberOfNonSeq > 0) Color.YELLOW else null
             text = "NonSeq ($numberOfNonSeq)"
             foreground = if (numberOfNonSeq > 0) Color.BLACK else Color.WHITE
         }

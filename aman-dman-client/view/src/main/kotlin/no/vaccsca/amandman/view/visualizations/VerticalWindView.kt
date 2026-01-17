@@ -8,85 +8,39 @@ import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.FlowLayout
-import javax.swing.JComboBox
-import javax.swing.JLabel
 import javax.swing.JPanel
 import kotlin.math.roundToInt
 
 class VerticalWindView(
     private val presenter: PresenterInterface,
+    private val airportIcao: String
 ): JPanel(BorderLayout()) {
 
-    private val profiles = mutableMapOf<String, VerticalWeatherProfile>()
-    private var selectedAirport: String? = null
+    private var weatherProfile: VerticalWeatherProfile? = null
 
-    private val airportSelector = JComboBox<String>()
     private val contentPanel = ContentPanel()
     private val reloadButton = ReloadButton("Reload winds for airport") {
-        selectedAirport?.let {
-            presenter.onReloadWindsClicked(airportIcao = it)
-        }
+        presenter.onReloadWindsClicked(airportIcao = airportIcao)
     }
 
     init {
-        airportSelector.addActionListener {
-            selectedAirport = airportSelector.selectedItem as? String
-            contentPanel.repaint()
-        }
-
-        // Create bottom panel with label and dropdown
         val bottomPanel = JPanel(FlowLayout(FlowLayout.LEFT, 5, 5))
-        val airportLabel = JLabel("Airport:")
-
-        bottomPanel.add(airportLabel)
-        bottomPanel.add(airportSelector)
         bottomPanel.add(reloadButton)
 
         add(contentPanel, BorderLayout.CENTER)
         add(bottomPanel, BorderLayout.SOUTH)
     }
 
-    fun update(airportIcao: String, weatherProfile: VerticalWeatherProfile?) {
-        if (weatherProfile != null) {
-            profiles[airportIcao] = weatherProfile
-        } else {
-            profiles.remove(airportIcao)
-        }
-
-        updateSelector()
+    fun update(weatherProfile: VerticalWeatherProfile?) {
+        this.weatherProfile = weatherProfile
         contentPanel.repaint()
-    }
-
-    private fun updateSelector() {
-        val currentSelection = airportSelector.selectedItem as? String
-        airportSelector.removeAllItems()
-
-        profiles.keys.sorted().forEach { icao ->
-            airportSelector.addItem(icao)
-        }
-
-        // Restore selection if it still exists, otherwise select first
-        if (currentSelection != null && profiles.containsKey(currentSelection)) {
-            airportSelector.selectedItem = currentSelection
-            selectedAirport = currentSelection
-        } else if (profiles.isNotEmpty()) {
-            airportSelector.selectedIndex = 0
-            selectedAirport = airportSelector.selectedItem as? String
-        } else {
-            selectedAirport = null
-        }
-    }
-
-    fun showAirport(airportIcao: String) {
-        airportSelector.selectedItem = airportIcao
-        updateSelector()
     }
 
     private inner class ContentPanel : JPanel() {
         override fun paintComponent(g: Graphics) {
             super.paintComponent(g)
 
-            val profile = selectedAirport?.let { profiles[it] }
+            val profile = weatherProfile
 
             profile?.let { currentProfile ->
                 val maxFl = currentProfile.weatherLayers.maxOf { it.flightLevelFt }

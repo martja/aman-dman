@@ -3,6 +3,7 @@ package no.vaccsca.amandman.view
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.TimelineGroup
+import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.presenter.PresenterInterface
 import java.awt.*
 import javax.swing.*
@@ -151,5 +152,21 @@ class AirportViewsPanel(
 
     fun openPopupMenu(airportIcao: String, availableTimelines: List<TimelineConfig>, screenPos: Point) {
         visibleTabs.find { it.airport.icao == airportIcao }?.openPopupMenu(availableTimelines, screenPos)
+    }
+
+    fun openLandingRatesWindow(airportIcao: String) {
+        visibleTabs.find { it.airport.icao == airportIcao }?.openLandingRatesWindow()
+    }
+
+    fun openNonSequencedWindow(airportIcao: String) {
+        visibleTabs.find { it.airport.icao == airportIcao }?.openNonSequencedWindow()
+    }
+
+    fun openMetWindow(airportIcao: String) {
+        visibleTabs.find { it.airport.icao == airportIcao }?.openMetWindow()
+    }
+
+    fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?) {
+        visibleTabs.find { it.airport.icao == airportIcao }?.updateWeatherData(weather)
     }
 }

@@ -10,41 +10,33 @@ import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.view.airport.Footer
-import no.vaccsca.amandman.view.visualizations.LandingRatesGraph
-import no.vaccsca.amandman.view.forms.NewTimelineForm
-import no.vaccsca.amandman.view.visualizations.NonSeqView
-import no.vaccsca.amandman.view.visualizations.VerticalWindView
-import java.awt.BorderLayout
-import java.awt.Dimension
-import javax.swing.*
-import kotlin.math.roundToInt
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
+import no.vaccsca.amandman.view.forms.NewTimelineForm
+import no.vaccsca.amandman.view.visualizations.DescentProfileVisualization
 import no.vaccsca.amandman.view.dialogs.RunwayDialog
 import no.vaccsca.amandman.view.dialogs.SpacingDialog
 import no.vaccsca.amandman.view.dialogs.LogViewerDialog
-import no.vaccsca.amandman.view.visualizations.DescentProfileVisualization
+import no.vaccsca.amandman.view.dialogs.RoleSelectionDialog
+import java.awt.BorderLayout
+import java.awt.Dimension
 import java.awt.Point
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import javax.swing.*
+import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
 class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
     override lateinit var presenterInterface: PresenterInterface
 
-    private val nonSeqView = NonSeqView()
     private val descentProfileVisualizationView = DescentProfileVisualization()
-    private val landingRatesGraph = LandingRatesGraph()
 
     private var newTimelineForm: JDialog? = null
-    private var windDialog: JDialog? = null
     private var descentProfileDialog: JDialog? = null
-    private var landingRatesDialog: JDialog? = null
-    private var nonSequencedDialog: JDialog? = null
     private var logsDialog: JDialog? = null
-    private var footer: Footer? = null
     private var airportViewsPanel: AirportViewsPanel? = null
     private var currentTime: Instant? = null
-    private var verticalWindView: VerticalWindView? = null
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -54,17 +46,52 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     override fun openWindow() {
 
         presenterInterface.onReloadSettingsRequested()
-        footer = Footer(presenterInterface, this)
         airportViewsPanel = AirportViewsPanel(presenterInterface)
-        verticalWindView = VerticalWindView(presenterInterface)
 
         setSize(1000, 800)
-        setLocationRelativeTo(null) // Center the window
+        setLocationRelativeTo(null)
         add(airportViewsPanel, BorderLayout.CENTER)
-        add(footer, BorderLayout.SOUTH)
 
-        isVisible = true // Show the frame
+        setupContextMenu()
+
+        isVisible = true
         isAlwaysOnTop = true
+    }
+
+    private fun setupContextMenu() {
+        val contextMenu = JPopupMenu()
+
+        val startMenuItem = JMenuItem("Start New Timeline Group")
+        val logsMenuItem = JMenuItem("Open Logs")
+
+        startMenuItem.addActionListener {
+            RoleSelectionDialog.open(this) { icao, role ->
+                presenterInterface.onNewTimelineGroup(icao, role)
+            }
+        }
+
+        logsMenuItem.addActionListener {
+            presenterInterface.onOpenLogsWindowClicked()
+        }
+
+        contextMenu.add(startMenuItem)
+        contextMenu.add(logsMenuItem)
+
+        addMouseListener(object : MouseAdapter() {
+            override fun mousePressed(e: MouseEvent) {
+                maybeShowPopup(e)
+            }
+
+            override fun mouseReleased(e: MouseEvent) {
+                maybeShowPopup(e)
+            }
+
+            private fun maybeShowPopup(e: MouseEvent) {
+                if (e.isPopupTrigger) {
+                    contextMenu.show(e.component, e.x, e.y)
+                }
+            }
+        })
     }
 
     override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) = runOnUiThread {
@@ -109,11 +136,6 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
     override fun updateTab(airportIcao: String, tabData: TabData) = runOnUiThread {
         airportViewsPanel?.updateTab(airportIcao, tabData)
-        val allArrivalEvents = tabData.timelinesData.flatMap { it.left + it.right }
-        landingRatesGraph.updateData(airportIcao, allArrivalEvents)
-        nonSeqView.updateNonSeqData(
-            tabData.nonSequencedList
-        )
     }
 
     override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) = runOnUiThread {
@@ -182,49 +204,15 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     }
 
     override fun openMetWindow(airportIcao: String) = runOnUiThread {
-        if (windDialog != null) {
-            windDialog?.isVisible = true
-        } else {
-            windDialog = JDialog(this, "Vertical wind profile").apply {
-                add(verticalWindView)
-                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
-                setLocationRelativeTo(this@AmanDmanMainFrame)
-                preferredSize = Dimension(330, 700)
-                isVisible = true
-                pack()
-            }
-        }
-        verticalWindView?.showAirport(airportIcao)
+        airportViewsPanel?.openMetWindow(airportIcao)
     }
 
-    override fun openLandingRatesWindow() = runOnUiThread {
-        if (landingRatesDialog != null) {
-            landingRatesDialog?.isVisible = true
-        } else {
-            landingRatesDialog = JDialog(this, "Landing Rates").apply {
-                add(landingRatesGraph)
-                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
-                setLocationRelativeTo(this@AmanDmanMainFrame)
-                preferredSize = Dimension(500, 300)
-                isVisible = true
-                pack()
-            }
-        }
+    override fun openLandingRatesWindow(airportIcao: String) = runOnUiThread {
+        airportViewsPanel?.openLandingRatesWindow(airportIcao)
     }
 
-    override fun openNonSequencedWindow() = runOnUiThread {
-        if (nonSequencedDialog != null) {
-            nonSequencedDialog?.isVisible = true
-        } else {
-            nonSequencedDialog = JDialog(this, "Non-Sequenced Flights").apply {
-                add(nonSeqView)
-                defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
-                setLocationRelativeTo(this@AmanDmanMainFrame)
-                preferredSize = Dimension(450, 300)
-                isVisible = true
-                pack()
-            }
-        }
+    override fun openNonSequencedWindow(airportIcao: String) = runOnUiThread {
+        airportViewsPanel?.openNonSequencedWindow(airportIcao)
     }
 
     override fun openLogsWindow() = runOnUiThread {
@@ -241,7 +229,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         airportIcao: String,
         weather: VerticalWeatherProfile?
     ) = runOnUiThread {
-        verticalWindView?.update(airportIcao, weather)
+        airportViewsPanel?.updateWeatherData(airportIcao, weather)
     }
 
     override fun openDescentProfileWindow(callsign: String) = runOnUiThread {
