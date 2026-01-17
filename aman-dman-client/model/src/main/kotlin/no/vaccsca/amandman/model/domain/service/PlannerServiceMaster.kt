@@ -10,6 +10,7 @@ import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
 import no.vaccsca.amandman.model.data.repository.CdmClient
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
 import no.vaccsca.amandman.model.domain.enums.NonSequencedReason
+import no.vaccsca.amandman.model.domain.exception.HasLandedException
 import no.vaccsca.amandman.model.domain.exception.NoAssignedRunwayException
 import no.vaccsca.amandman.model.domain.exception.ReachedEndOfRouteException
 import no.vaccsca.amandman.model.domain.exception.UnknownAircraftTypeException
@@ -210,6 +211,8 @@ class PlannerServiceMaster(
                 nonSequencedEvents.add(
                     makeNonSequencedEvent(arrival, NonSequencedReason.EMPTY_ROUTE)
                 )
+            } catch (e: HasLandedException) {
+                // Do nothing
             } catch (e: Exception) {
                 logger.warn("Failed to create arrival event from ${arrival.callsign}: ${e.message}")
                 nonSequencedEvents.add(

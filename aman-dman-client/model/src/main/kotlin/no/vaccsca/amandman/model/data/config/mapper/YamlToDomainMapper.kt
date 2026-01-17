@@ -25,7 +25,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.LabelItemSource
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
 import no.vaccsca.amandman.model.domain.valueobjects.Side
 import no.vaccsca.amandman.model.domain.valueobjects.Timeline
-import no.vaccsca.amandman.model.domain.valueobjects.Runway
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayThreshold
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
 
@@ -91,9 +91,9 @@ fun AirportJson.toDomain(icao: String, stars: StarYamlFile) =
         icao = icao,
         location = LatLng(location.latitude, location.longitude),
         runways = runwayThresholds.mapValues { (id, value) ->
-            Runway(
+            RunwayThreshold(
                 id = id,
-                location = LatLng(
+                latLng = LatLng(
                     value.location.latitude,
                     value.location.longitude
                 ),

@@ -1,16 +1,21 @@
 package no.vaccsca.amandman.model.domain.service
 
-import kotlinx.datetime.Clock
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.data.repository.AircraftPerformanceData
 import no.vaccsca.amandman.model.domain.exception.EmptyTrajectoryException
+import no.vaccsca.amandman.model.domain.exception.HasLandedException
 import no.vaccsca.amandman.model.domain.exception.NoAssignedRunwayException
 import no.vaccsca.amandman.model.domain.exception.ReachedEndOfRouteException
 import no.vaccsca.amandman.model.domain.exception.UnknownAircraftTypeException
+import no.vaccsca.amandman.model.domain.exception.UnknownRunwayException
+import no.vaccsca.amandman.model.domain.util.NavigationUtils.isBehind
+import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayThreshold
 import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
+import no.vaccsca.amandman.model.domain.valueobjects.distanceTo
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import kotlin.time.Duration.Companion.seconds
@@ -31,6 +36,14 @@ object ArrivalEventService {
 
         if (arrival.assignedRunway == null) {
             throw NoAssignedRunwayException("Arrival has no runway assigned")
+        }
+
+        val runwayInfo = airport.runways[arrival.assignedRunway]
+            ?: throw UnknownRunwayException("Assigned runway ${arrival.assignedRunway} not found at airport ${airport.icao}")
+
+        val hasLanded = hasLanded(arrival.currentPosition, runwayInfo)
+        if (hasLanded) {
+            throw HasLandedException("Aircraft ${arrival.callsign} has already landed")
         }
 
         val trajectory = DescentTrajectoryService.calculateDescentTrajectory(
@@ -82,5 +95,12 @@ object ArrivalEventService {
 
     fun getDescentProfileForCallsign(callsign: String): List<TrajectoryPoint>? {
         return descentTrajectoryCache[callsign]
+    }
+
+    private fun hasLanded(aircraftPosition: AircraftPosition, assignedRunwayThreshold: RunwayThreshold): Boolean {
+        val distanceToRunway = aircraftPosition.latLng.distanceTo(assignedRunwayThreshold.latLng)
+        val thresholdIsBehindAircraft = assignedRunwayThreshold.latLng.isBehind(aircraftPosition.latLng, aircraftPosition.trackDeg)
+
+        return thresholdIsBehindAircraft && distanceToRunway < 3 && aircraftPosition.groundspeedKts < 160
     }
 }

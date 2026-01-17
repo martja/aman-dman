@@ -56,7 +56,7 @@ object DescentTrajectoryService {
         val trajectoryPoints = mutableListOf<TrajectoryPoint>()
 
         // Starts at the airports and works backwards
-        var probePosition = runwayInfo.location
+        var probePosition = runwayInfo.latLng
         var probeAltitude = runwayInfo.elevation.roundToInt()
         var probingDistance = 0f
         var accumulatedTimeFromDestination = 0.seconds
@@ -70,7 +70,7 @@ object DescentTrajectoryService {
             ) + remainingWaypoints.filter { it.id != airport.icao } + listOf(
                 Waypoint(
                     id = assignedRunway,
-                    latLng = runwayInfo.location,
+                    latLng = runwayInfo.latLng,
                 )
             )
 
@@ -153,7 +153,7 @@ object DescentTrajectoryService {
 
         return DescentTrajectoryResult(
             trajectoryPoints = trajectoryPoints.reversed(),
-            runway = runwayInfo,
+            runwayThreshold = runwayInfo,
             star = starInfo,
         )
     }

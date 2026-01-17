@@ -45,7 +45,7 @@ class DescentTrajectoryServiceTest {
                 Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
                 Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
                 Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
-                Waypoint(id="19L", latLng=rwy19L.location),
+                Waypoint(id="19L", latLng=rwy19L.latLng),
             ),
             arrivalAirportIcao="ENGM",
             flightPlanTas=450,
@@ -83,7 +83,7 @@ class DescentTrajectoryServiceTest {
                 Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
                 Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
                 Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
-                Waypoint(id="19L", latLng=rwy19L.location),
+                Waypoint(id="19L", latLng=rwy19L.latLng),
             ),
             arrivalAirportIcao="ENGM",
             flightPlanTas=450,
@@ -111,7 +111,7 @@ class DescentTrajectoryServiceTest {
             Waypoint(id="OSPAD", latLng=LatLng(60.40099194444444, 11.238730833333333)),
             Waypoint(id="XIVTA", latLng=LatLng(60.34008277777778, 11.203132777777776)),
             Waypoint(id="GME40", latLng=LatLng(60.26238277777778, 11.157691944444444)),
-            Waypoint(id="19L", latLng=rwy19L.location),
+            Waypoint(id="19L", latLng=rwy19L.latLng),
         ),
         arrivalAirportIcao="ENGM",
         flightPlanTas = 450,
@@ -140,8 +140,8 @@ class DescentTrajectoryServiceTest {
 
         // Ensure that the last point in the descent trajectory is the runway threshold
         assertNotEquals(illegal = testArrival1.arrivalAirportIcao, actual = arrivalWithoutAirportInWaypointsList.remainingWaypoints.last().id)
-        assertEquals(expected = rwy19L.location.lat, actual = descentTrajectory.last().latLng.lat)
-        assertEquals(expected = rwy19L.location.lon, actual = descentTrajectory.last().latLng.lon)
+        assertEquals(expected = rwy19L.latLng.lat, actual = descentTrajectory.last().latLng.lat)
+        assertEquals(expected = rwy19L.latLng.lon, actual = descentTrajectory.last().latLng.lon)
         assertEquals(expected = rwy19L.elevation.toInt(), actual = descentTrajectory.last().altitude)
     }
 

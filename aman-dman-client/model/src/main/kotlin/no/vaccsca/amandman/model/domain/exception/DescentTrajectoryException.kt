@@ -6,6 +6,10 @@ class ReachedEndOfRouteException(override val msg: String) : DescentTrajectoryEx
 
 class NoAssignedRunwayException(override val msg: String) : DescentTrajectoryException(msg)
 
+class UnknownRunwayException(override val msg: String) : DescentTrajectoryException(msg)
+
 class UnknownAircraftTypeException(override val msg: String) : DescentTrajectoryException(msg)
 
 class EmptyTrajectoryException(override val msg: String) : DescentTrajectoryException(msg)
+
+class HasLandedException(override val msg: String) : DescentTrajectoryException(msg)

@@ -1,6 +1,6 @@
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPerformance
 import no.vaccsca.amandman.model.domain.valueobjects.LatLng
-import no.vaccsca.amandman.model.domain.valueobjects.Runway
+import no.vaccsca.amandman.model.domain.valueobjects.RunwayThreshold
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
 
@@ -74,9 +74,9 @@ val star19LInrex4M = Star(
     )
 )
 
-val rwy19L = Runway(
+val rwy19L = RunwayThreshold(
     "19L",
-    location = LatLng(60.20116653568569,11.12244616482607),
+    latLng = LatLng(60.20116653568569,11.12244616482607),
     elevation = 681f,
     trueHeading = 194f,
     stars=listOf(star19LInrex4M, star19LEseba4M, star19LAdopi3M)
