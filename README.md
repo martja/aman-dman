@@ -1,6 +1,8 @@
 # AMAN for EuroScope
 
-An advanced arrival manager for EuroScope. Features:
+AMAN is an Arrival Management tool designed to help approach and en-route controllers build stable, predictable arrival sequences into busy airports. It works as a decision-support tool: it does not control aircraft, but continuously analyzes inbound traffic and advises controllers how to keep the flow smooth. The system is inspired by real-world AMAN concepts used in Europe, but simplified and adapted for virtual ATC environments like VATSIM.
+
+Features:
 
 - **Custom trajectory prediction**: Utilizes aircraft performance data and wind information to predict arrival times accurately.
 - **Automatic sequencing**: Automatically sequences incoming aircraft based on their optimal arrival times and required separation.
@@ -20,12 +22,136 @@ An advanced arrival manager for EuroScope. Features:
 3. Load the EuroScope bridge plugin `Aman.dll` file from the extracted folder.
 4. Run the .jar file to start the AMAN application.
 
+When the application starts, right click on the window bar and select "Start new timeline group".
+
+
+## High-Level System Overview
+
+### 1. Data collection (EuroScope Plugin)
+
+A EuroScope plugin continuously collects information about **all inbound aircraft**, including:
+- Current position and altitude  
+- Assigned STAR and runway  
+- Aircraft type  
+
+This data is sent to the AMAN application in real time.
+
+---
+
+### 2. Trajectory prediction
+
+For each inbound aircraft, AMAN estimates the remaining flight from **current position to runway threshold**:
+
+- The route is split into **10-second segments**
+- For each segment, AMAN calculates:
+  - Expected position
+  - Altitude
+  - Airspeed
+- Using **wind and temperature data above the airport**, airspeed is converted to **ground speed**
+
+From this, AMAN computes an **Estimated Landing Time (ELDT)** for every aircraft.
+
+---
+
+### 3. Arrival sequencing & horizons
+
+Once all inbound aircraft have an estimated landing time, AMAN builds and manages the arrival sequence using **three planning horizons**.
+
+#### 3.1 Eligibility Horizon  
+**Purpose:** Traffic awareness and early planning  
+
+- Aircraft are sequenced using **first-come, first-served**
+- No active spacing advice yet
+- Gives controllers an early picture of:
+  - Expected landing order
+  - Sector and runway load  
+
+---
+
+#### 3.2 Sequencing Horizon (≈ 30 minutes before landing)  
+**Purpose:** Active arrival management  
+
+- AMAN schedules **target landing times**
+- Aircraft may be **re-sequenced** if predictions change
+- Controllers receive advisories such as:
+  - *“Aircraft needs to lose 2 minutes”*
+  - *“Aircraft needs to gain 1 minute”*
+
+This is where controllers:
+- Adjust speeds
+- Apply minor path stretching
+- Prepare holding **before it becomes necessary**
+
+---
+
+#### 3.3 Locked Horizon (≈ 10 minutes before landing)  
+**Purpose:** Stability close to touchdown  
+
+- The arrival sequence is **frozen**
+- No further resequencing occurs
+- Focus shifts to tactical control and final spacing  
+
+---
+
+### 4. Timeline & Controller Advisories
+
+Each aircraft is placed on a **runway timeline** based on its scheduled landing time.
+
+If two aircraft are predicted to land too close together:
+- AMAN calculates the required spacing
+- The **latter aircraft** receives a delay advisory:
+  - Example: *“Lose 1 minute 30 seconds”*
+
+How this delay is achieved is **entirely up to the controller**, using:
+- Speed control
+- Minor vectoring
+- STAR path stretching
+- Holding (if required)
+
+AMAN never issues control instructions - it only advises.
+
+---
+
+## What AMAN Is (and Is Not)
+
+**AMAN is:**
+- A planning and sequencing tool  
+- A workload reducer during high traffic  
+- A realistic simulation of real-world arrival management  
+
+**AMAN is not:**
+- An autopilot  
+- A replacement for ATC judgement  
+- A rigid or mandatory system  
+
+Controllers are always in charge.
+
+---
+
+## Who Is This For?
+
+- VATSIM approach and en-route controllers  
+- ATC trainees wanting better situational awareness  
+- Developers interested in realistic ATM tools  
+- Anyone curious about how real airports manage arrival flows  
+
+---
+
+### ⚠️ Current Limitations
+
+- Supported aircraft types are limited to those listed [here](https://github.com/EvenAR/aman-dman/blob/main/aman-dman-client/config/aircraft-performance.yaml). If no performance data exists for an aircraft type, an ETA cannot be calculated and the aircraft will not appear on the timeline.
+- The application assumes that all pilots are using **live real-world weather** in their simulator.
+- Currently, only timelines based on **landing time** are supported. In the future, it might also be possible to create timelines for inbound **fixes**.
+- Local QNH and air temperature are not currently accounted for in the descent trajectory. This is expected to have only a minor impact on ETA accuracy.
+
 
 ### Screenshots
 
-<img width="468" height="831" alt="image" src="https://github.com/user-attachments/assets/7955e095-cab4-4e4c-b841-42854d2e5113" />
+<img width="784" height="790" alt="image" src="https://github.com/user-attachments/assets/482f24b2-2aab-427d-9371-3388335e988d" />
 
-<img width="795" height="590" alt="Screenshot 2025-10-04 130229" src="https://github.com/user-attachments/assets/f02cc2ed-b19c-464a-b01d-afaabd515384" />
+Descent profile visualization used for debugging:
+
+<img width="798" height="599" alt="image" src="https://github.com/user-attachments/assets/9586e09d-173e-40ae-94ba-1db908f5ea60" />
 
 
 ## Development
