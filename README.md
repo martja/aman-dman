@@ -24,6 +24,16 @@ Features:
 
 When the application starts, right click on the window bar and select "Start new timeline group".
 
+### Configuration
+
+See example configuration [here](https://github.com/EvenAR/aman-dman/tree/main/aman-dman-client/config). When downloading the release files you will find `*.schema.yaml`-files where all possible values are listed. 
+
+- `airports.yaml`: To be able to connect the AMAN to an airport, the airport location and all its runway thresholds must be defined in this file.
+- `settings.yaml`: This defines the available timeline configurations for each airport.
+- `stars/<airport-icao>`: (optional) For improved accuracy you can define all available STARs for each airport and the "typical" altitude and airspeed at some of the waypoint.
+
+💡Tip: Use the schema files to automatically validate your custom config files.
+
 
 ## High-Level System Overview
 
