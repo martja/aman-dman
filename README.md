@@ -40,7 +40,7 @@ This data is sent to the AMAN application in real time.
 
 ### 2. Trajectory prediction
 
-For each inbound aircraft, AMAN estimates the remaining flight from **current position to runway threshold**:
+For each inbound aircraft, AMAN estimates the remaining flight time from **current position to runway threshold**:
 
 - The route is split into **10-second segments**
 - For each segment, AMAN calculates:
@@ -74,8 +74,8 @@ Once all inbound aircraft have an estimated landing time, AMAN builds and manage
 - AMAN schedules **target landing times**
 - Aircraft may be **re-sequenced** if predictions change
 - Controllers receive advisories such as:
-  - *“Aircraft needs to lose 2 minutes”*
-  - *“Aircraft needs to gain 1 minute”*
+  - *“Aircraft needs to lose 2 minutes”* (eg. reduce speed or fly more trackmiles)
+  - *“Aircraft needs to gain 1 minute”* (eg. incerase speed or get a shortcut)
 
 This is where controllers:
 - Adjust speeds
@@ -100,7 +100,7 @@ Each aircraft is placed on a **runway timeline** based on its scheduled landing 
 If two aircraft are predicted to land too close together:
 - AMAN calculates the required spacing
 - The **latter aircraft** receives a delay advisory:
-  - Example: *“Lose 1 minute 30 seconds”*
+  - Example: `+1` meaning this flight must be delayed by 1 minute to hit the scheduled arrival time.
 
 How this delay is achieved is **entirely up to the controller**, using:
 - Speed control
@@ -125,15 +125,6 @@ AMAN never issues control instructions - it only advises.
 - A rigid or mandatory system  
 
 Controllers are always in charge.
-
----
-
-## Who Is This For?
-
-- VATSIM approach and en-route controllers  
-- ATC trainees wanting better situational awareness  
-- Developers interested in realistic ATM tools  
-- Anyone curious about how real airports manage arrival flows  
 
 ---
 
