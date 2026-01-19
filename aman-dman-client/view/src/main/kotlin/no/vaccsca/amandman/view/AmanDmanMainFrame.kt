@@ -6,7 +6,7 @@ import no.vaccsca.amandman.model.domain.TimelineGroup
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.presenter.ViewInterface
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
-import no.vaccsca.amandman.model.data.dto.TabData
+import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
@@ -17,6 +17,8 @@ import no.vaccsca.amandman.view.dialogs.RunwayDialog
 import no.vaccsca.amandman.view.dialogs.SpacingDialog
 import no.vaccsca.amandman.view.dialogs.LogViewerDialog
 import no.vaccsca.amandman.view.dialogs.RoleSelectionDialog
+import no.vaccsca.amandman.view.entity.AirportViewState
+import no.vaccsca.amandman.view.entity.MainViewState
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.Point
@@ -24,7 +26,8 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.*
 import kotlin.math.roundToInt
-import kotlin.time.Duration.Companion.seconds
+
+
 
 class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
@@ -34,19 +37,20 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
 
     private var newTimelineForm: JDialog? = null
     private var descentProfileDialog: JDialog? = null
-    private var logsDialog: JDialog? = null
     private var airportViewsPanel: AirportViewsPanel? = null
-    private var currentTime: Instant? = null
+    private var mainViewState = MainViewState()
+    private val logsDialog: JDialog
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
         layout = BorderLayout()
+        logsDialog = LogViewerDialog(this)
     }
 
     override fun openWindow() {
 
         presenterInterface.onReloadSettingsRequested()
-        airportViewsPanel = AirportViewsPanel(presenterInterface)
+        airportViewsPanel = AirportViewsPanel(presenterInterface, mainViewState)
 
         setSize(1000, 800)
         setLocationRelativeTo(null)
@@ -61,7 +65,7 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     private fun setupContextMenu() {
         val contextMenu = JPopupMenu()
 
-        val startMenuItem = JMenuItem("Start New Timeline Group")
+        val startMenuItem = JMenuItem("New airport view")
         val logsMenuItem = JMenuItem("Open Logs")
 
         startMenuItem.addActionListener {
@@ -95,7 +99,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     }
 
     override fun updateMinimumSpacing(airportIcao: String, minimumSpacingNm: Double) = runOnUiThread {
-        airportViewsPanel?.updateMinimumSpacing(airportIcao, minimumSpacingNm)
+        mainViewState.airportViewStates.value.forEach { viewModel ->
+            if (viewModel.airportIcao == airportIcao) {
+                viewModel.minimumSpacingNm.value = minimumSpacingNm
+            }
+        }
     }
 
     override fun openSelectRunwayDialog(
@@ -112,18 +120,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     }
 
     override fun showTimelineGroup(airportIcao: String) = runOnUiThread {
-        airportViewsPanel?.changeVisibleGroup(airportIcao)
+        mainViewState.currentTab.value = airportIcao
     }
 
     override fun updateTime(currentTime: Instant) = runOnUiThread {
-        val previousTime = this.currentTime
-        this.currentTime = currentTime
-        val delta = if (previousTime != null) {
-            currentTime - previousTime
-        } else {
-            0.seconds
-        }
-        airportViewsPanel?.updateTime(currentTime, delta)
+        mainViewState.currentClock.value = currentTime
     }
 
     override fun showAirportContextMenu(
@@ -134,12 +135,45 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         airportViewsPanel?.openPopupMenu(airportIcao, availableTimelines, screenPos)
     }
 
-    override fun updateTab(airportIcao: String, tabData: TabData) = runOnUiThread {
-        airportViewsPanel?.updateTab(airportIcao, tabData)
+    override fun updateTab(airportIcao: String, timelineEvents: List<TimelineEvent>, nonSequencedList: List<NonSequencedEvent>) = runOnUiThread {
+        mainViewState.airportViewStates.value.forEach { viewModel ->
+            if (viewModel.airportIcao == airportIcao) {
+                viewModel.events.value = timelineEvents
+                viewModel.nonSequencedList.value = nonSequencedList
+            }
+        }
     }
 
     override fun updateTimelineGroups(timelineGroups: List<TimelineGroup>) = runOnUiThread {
-        airportViewsPanel?.updateTimelineGroups(timelineGroups)
+        val existingIcaos = mainViewState.airportViewStates.value.map { it.airportIcao }.toSet()
+        val newIcaos = timelineGroups.map { it.airport.icao }.toSet()
+
+        val updatedAirportViewModels = mainViewState.airportViewStates.value.toMutableList()
+
+        // Add new airport view models
+        for (group in timelineGroups) {
+            if (group.airport.icao !in existingIcaos) {
+                val newViewModel = AirportViewState(
+                    airportIcao = group.airport.icao,
+                    userRole = group.userRole,
+                    availableTimelines = group.availableTimelines
+                )
+                updatedAirportViewModels.add(newViewModel)
+            }
+        }
+
+        // Update existing airport view models' user roles
+        for (group in timelineGroups) {
+            val viewModel = updatedAirportViewModels.find { it.airportIcao == group.airport.icao }
+            if (viewModel != null) {
+                viewModel.openTimelines.value = group.availableTimelines.map { it.title }
+            }
+        }
+
+        // Remove airport view models for removed timeline groups
+        updatedAirportViewModels.removeIf { it.airportIcao !in newIcaos }
+
+        mainViewState.airportViewStates.value = updatedAirportViewModels
     }
 
     override fun updateDraggedLabel(
@@ -154,7 +188,11 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         airportIcao: String,
         runwayModes: List<Pair<String, Boolean>>
     ) = runOnUiThread {
-        airportViewsPanel?.updateRunwayModes(airportIcao, runwayModes)
+        mainViewState.airportViewStates.value.forEach { viewModel ->
+            if (viewModel.airportIcao == airportIcao) {
+                viewModel.runwayModes.value = runwayModes
+            }
+        }
     }
 
     override fun openTimelineConfigForm(
@@ -216,20 +254,18 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
     }
 
     override fun openLogsWindow() = runOnUiThread {
-        if (logsDialog != null) {
-            logsDialog?.isVisible = true
-        } else {
-            logsDialog = LogViewerDialog(this).apply {
-                isVisible = true
-            }
-        }
+        logsDialog.isVisible = true
     }
 
     override fun updateWeatherData(
         airportIcao: String,
         weather: VerticalWeatherProfile?
     ) = runOnUiThread {
-        airportViewsPanel?.updateWeatherData(airportIcao, weather)
+        mainViewState.airportViewStates.value.forEach { viewModel ->
+            if (viewModel.airportIcao == airportIcao) {
+                viewModel.weatherProfile.value = weather
+            }
+        }
     }
 
     override fun openDescentProfileWindow(callsign: String) = runOnUiThread {

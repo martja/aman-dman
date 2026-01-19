@@ -5,9 +5,8 @@ import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.UserRole
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
-import no.vaccsca.amandman.model.data.dto.TabData
 import no.vaccsca.amandman.model.data.integration.AtcClientEuroScope
-import no.vaccsca.amandman.model.data.integration.SharedStateHttpClient
+import no.vaccsca.amandman.model.data.integration.MasterSlaveSharedStateHttpClient
 import no.vaccsca.amandman.model.data.repository.CdmClient
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
 import no.vaccsca.amandman.model.data.repository.WeatherDataRepository
@@ -20,7 +19,6 @@ import no.vaccsca.amandman.model.domain.service.PlannerServiceMaster
 import no.vaccsca.amandman.model.domain.service.PlannerServiceSlave
 import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
-import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
@@ -64,7 +62,7 @@ class Presenter(
     }
 
     private val sharedState by lazy {
-        SharedStateHttpClient()
+        MasterSlaveSharedStateHttpClient()
     }
 
     private val dataUpdatesServerSender by lazy {
@@ -248,18 +246,13 @@ class Presenter(
         try {
             timelineGroups.toList().forEach { group ->
                 val relevantDataForTab = timelineEventsSnapshot.filter { occurrence ->
-                    group.timelines.any { it.airportIcao == occurrence.airportIcao }
+                    group.availableTimelines.any { it.airportIcao == occurrence.airportIcao }
                 }
-                view.updateTab(group.airport.icao, TabData(
-                    timelinesData = group.timelines.map { timeline ->
-                        TimelineData(
-                            timelineId = timeline.title,
-                            left = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysLeft.contains(it.runway) },
-                            right = relevantDataForTab.filter { (it is RunwayFlightEvent) && timeline.runwaysRight.contains(it.runway) }
-                        )
-                    },
-                    nonSequencedList = nonSequencedSnapshot.get(group.airport.icao) ?: emptyList()
-                ))
+                view.updateTab(
+                    airportIcao = group.airport.icao,
+                    timelineEvents = relevantDataForTab,
+                    nonSequencedList = nonSequencedSnapshot[group.airport.icao] ?: emptyList()
+                )
             }
 
             selectedCallsign?.let { callsign ->
@@ -305,7 +298,7 @@ class Presenter(
             TimelineGroup(
                 airport = airport,
                 name = airport.icao,
-                timelines = mutableListOf(),
+                availableTimelines = mutableListOf(),
                 userRole = userRole
             )
         )
@@ -466,7 +459,7 @@ class Presenter(
 
     override fun onRemoveTimelineClicked(timelineConfig: TimelineConfig) {
         timelineGroups.forEach { group ->
-            group.timelines.removeIf { it.title == timelineConfig.title }
+            group.availableTimelines.removeIf { it.title == timelineConfig.title }
         }
         view.updateTimelineGroups(timelineGroups)
         // TODO: unsubscribe from inbounds if no timelines left
@@ -513,7 +506,7 @@ class Presenter(
 
                 PlannerServiceSlave(
                     airportIcao = timelineGroup.airport.icao,
-                    sharedState = sharedState,
+                    masterSlaveSharedState = sharedState,
                     dataUpdateListener = guiUpdater,
                 )
             }
@@ -539,7 +532,7 @@ class Presenter(
     private fun registerTimeline(airportIcao: String, timelineConfig: TimelineConfig) {
         val group = timelineGroups.find { it.airport.icao == airportIcao }
         if (group != null) {
-            group.timelines += timelineConfig
+            group.availableTimelines += timelineConfig
             view.updateTimelineGroups(timelineGroups)
             view.closeTimelineForm()
         }
@@ -548,7 +541,7 @@ class Presenter(
     override fun onEditTimelineRequested(groupId: String, timelineTitle: String) {
         val group = timelineGroups.find { it.airport.icao == groupId }
         if (group != null) {
-            val existingConfig = group.timelines.find { it.title == timelineTitle }
+            val existingConfig = group.availableTimelines.find { it.title == timelineTitle }
             if (existingConfig != null) {
                 view.openTimelineConfigForm(
                     groupId = groupId,

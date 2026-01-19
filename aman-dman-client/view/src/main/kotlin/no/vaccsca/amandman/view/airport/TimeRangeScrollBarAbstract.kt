@@ -78,8 +78,8 @@ abstract class TimeRangeScrollBarAbstract(
         drawScrollBar(g2)
     }
 
-    fun updateTimelineEvents(list: List<TimelineData>) {
-        this.timelineEvents = list.flatMap { it.left + it.right }
+    fun updateTimelineEvents(list: List<TimelineEvent>) {
+        this.timelineEvents = list
         repaint()
     }
 

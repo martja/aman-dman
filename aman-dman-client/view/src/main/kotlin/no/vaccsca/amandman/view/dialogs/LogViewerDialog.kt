@@ -232,6 +232,7 @@ class LogViewerDialog(parent: JFrame) : JDialog(parent, "Application Logs", fals
         try {
             document.insertString(document.length, logEntry.formattedMessage, style)
         } catch (e: Exception) {
+            println(e)
             // Ignore errors when inserting text
         }
     }

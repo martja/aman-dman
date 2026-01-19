@@ -2,6 +2,7 @@ package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.components.WrapLayout
+import no.vaccsca.amandman.view.entity.AirportViewState
 import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
@@ -9,7 +10,7 @@ import javax.swing.*
 
 class TopBar(
     private val presenter: PresenterInterface,
-    private val airportIcao: String,
+    private val airportViewState: AirportViewState,
 ) : JPanel() {
     private val showDepartures = JCheckBox("Departures")
     private val nonSequencedButton = JButton("NonSeq")
@@ -21,15 +22,27 @@ class TopBar(
         layout = BorderLayout()
 
         showDepartures.addActionListener {
-            presenter.onToggleShowDepartures(airportIcao, showDepartures.isSelected)
+            presenter.onToggleShowDepartures(airportViewState.airportIcao, showDepartures.isSelected)
         }
 
         landingRatesButton.addActionListener {
-            presenter.onOpenLandingRatesWindow(airportIcao)
+            presenter.onOpenLandingRatesWindow(airportViewState.airportIcao)
         }
 
         nonSequencedButton.addActionListener {
-            presenter.onOpenNonSequencedWindow(airportIcao)
+            presenter.onOpenNonSequencedWindow(airportViewState.airportIcao)
+        }
+
+        airportViewState.runwayModes.addListener {
+            setRunwayModes(it)
+        }
+
+        airportViewState.nonSequencedList.addListener {
+            updateNonSeqNumbers(it.size)
+        }
+
+        airportViewState.showDepartures.addListener {
+            showDepartures.isSelected = it
         }
 
         // Right-aligned controls
@@ -51,7 +64,7 @@ class TopBar(
         })
     }
 
-    fun updateNonSeqNumbers(numberOfNonSeq: Int) {
+    private fun updateNonSeqNumbers(numberOfNonSeq: Int) {
         this.nonSequencedButton.apply {
             background = if (numberOfNonSeq > 0) Color.YELLOW else null
             text = "NonSeq ($numberOfNonSeq)"
@@ -59,7 +72,7 @@ class TopBar(
         }
     }
 
-    fun setRunwayModes(runwayModes: List<Pair<String, Boolean>>) {
+    private fun setRunwayModes(runwayModes: List<Pair<String, Boolean>>) {
         runwayModeList.removeAll()
         runwayModes.forEach { (modeName, isActive) ->
             val label = JLabel(modeName)

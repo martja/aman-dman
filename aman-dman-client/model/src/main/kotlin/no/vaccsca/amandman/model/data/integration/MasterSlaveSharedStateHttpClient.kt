@@ -32,7 +32,7 @@ import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 import kotlin.time.toKotlinDuration
 
-class SharedStateHttpClient : SharedState {
+class MasterSlaveSharedStateHttpClient : MasterSlaveSharedState {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 

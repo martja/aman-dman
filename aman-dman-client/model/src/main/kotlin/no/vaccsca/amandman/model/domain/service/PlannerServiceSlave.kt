@@ -2,7 +2,7 @@ package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.coroutines.*
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.data.integration.SharedState
+import no.vaccsca.amandman.model.data.integration.MasterSlaveSharedState
 import no.vaccsca.amandman.model.domain.exception.UnsupportedInSlaveModeException
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 class PlannerServiceSlave(
     airportIcao: String,
-    private val sharedState: SharedState,
+    private val masterSlaveSharedState: MasterSlaveSharedState,
     private val dataUpdateListener: DataUpdateListener
 ) : PlannerService(airportIcao) {
 
@@ -46,36 +46,37 @@ class PlannerServiceSlave(
     }
 
     private fun fetchAmanData(airportIcao: String) {
+        logger.info("Fetching shared AMAN data for $airportIcao")
         try {
-            val data = sharedState.getTimelineEvents(airportIcao)
+            val data = masterSlaveSharedState.getTimelineEvents(airportIcao)
             dataUpdateListener.onTimelineEventsUpdated(airportIcao, data)
         } catch (e: Exception) {
             logger.error("Failed to fetch timeline events for $airportIcao: ${e.message}")
         }
 
         try {
-            val runwayStatuses = sharedState.getRunwayStatuses(airportIcao)
+            val runwayStatuses = masterSlaveSharedState.getRunwayStatuses(airportIcao)
             dataUpdateListener.onRunwayModesUpdated(airportIcao, runwayStatuses)
         } catch (e: Exception) {
             logger.error("Failed to fetch runway statuses for $airportIcao: ${e.message}")
         }
 
         try {
-            val weatherData = sharedState.getWeatherData(airportIcao)
+            val weatherData = masterSlaveSharedState.getWeatherData(airportIcao)
             dataUpdateListener.onWeatherDataUpdated(airportIcao, weatherData)
         } catch (e: Exception) {
             logger.error("Failed to fetch weather data for $airportIcao: ${e.message}")
         }
 
         try {
-            val minimumSpacingNm = sharedState.getMinimumSpacing(airportIcao)
+            val minimumSpacingNm = masterSlaveSharedState.getMinimumSpacing(airportIcao)
             dataUpdateListener.onMinimumSpacingUpdated(airportIcao, minimumSpacingNm)
         } catch (e: Exception) {
             logger.error("Failed to fetch minimum spacing data for $airportIcao: ${e.message}")
         }
 
         try {
-            val nonSequencedList = sharedState.getNonSequencedList(airportIcao)
+            val nonSequencedList = masterSlaveSharedState.getNonSequencedList(airportIcao)
             dataUpdateListener.onNonSequencedListUpdated(airportIcao, nonSequencedList)
         } catch (e: Exception) {
             logger.error("Failed to fetch non-sequenced list for $airportIcao: ${e.message}")

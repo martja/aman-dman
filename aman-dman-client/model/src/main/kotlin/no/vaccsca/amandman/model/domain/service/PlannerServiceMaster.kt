@@ -66,7 +66,7 @@ class PlannerServiceMaster(
 
     init {
         // Periodic refresh of CDM data
-        scope.runEvery(2.minutes) {
+        scope.runEvery(1.minutes) {
             if (fetchCdmData) {
                 logger.info("Refreshing CDM data for $airportIcao")
                 refreshCdmData()
@@ -79,7 +79,7 @@ class PlannerServiceMaster(
             refreshWeatherData()
         }
 
-        // Periodic cleanup of old cached weather data
+        // Periodic cleanup of old cached data
         scope.runEvery(1.seconds) {
             val cutoff = NtpClock.now().minus(5.seconds)
             withStateLock {
@@ -278,6 +278,7 @@ class PlannerServiceMaster(
 
     override fun refreshCdmData(): Result<Unit> {
         scope.launch {
+            logger.info("Fetching CDM departures for $airportIcao")
             cdmDepartures = cdmClient.fetchCdmDepartures(airportIcao)
         }
         return Result.success(Unit)

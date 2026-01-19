@@ -1,11 +1,9 @@
 package no.vaccsca.amandman.view
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.model.data.dto.TabData
-import no.vaccsca.amandman.model.domain.TimelineGroup
-import no.vaccsca.amandman.model.domain.valueobjects.Airport
+import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.presenter.PresenterInterface
@@ -15,7 +13,7 @@ import no.vaccsca.amandman.view.airport.TimelineScrollPane
 import no.vaccsca.amandman.view.airport.TopBar
 import no.vaccsca.amandman.view.airport.timeline.TimelineView
 import no.vaccsca.amandman.view.components.ReloadButton
-import no.vaccsca.amandman.view.entity.SharedValue
+import no.vaccsca.amandman.view.entity.MainViewState
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.visualizations.LandingRatesGraph
 import no.vaccsca.amandman.view.visualizations.NonSeqView
@@ -29,52 +27,39 @@ import javax.swing.JInternalFrame
 import javax.swing.JPanel
 import javax.swing.WindowConstants
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 class AirportView(
     private val presenter: PresenterInterface,
-    val airport: Airport,
+    val airportIcao: String,
+    mainViewState: MainViewState
 ) : JDesktopPane() {
 
-    private val maxHistory = 20.minutes
-    private val maxFuture = 2.hours
+    private val airportViewState = mainViewState.airportViewStates.value.find { it.airportIcao == airportIcao }
+        ?: throw IllegalStateException("No AirportViewModel found for airport ${airportIcao}")
 
-    private val availableTimeRange = SharedValue(
-        initialValue = TimeRange(
-            NtpClock.now() - maxHistory,
-            NtpClock.now() + maxFuture,
-        )
-    )
-
-    private val selectedTimeRange = SharedValue(
-        initialValue = TimeRange(
-            NtpClock.now() - 10.minutes,
-            NtpClock.now() + 60.minutes,
-        )
-    )
-
-    val timeWindowScrollbar = TimeRangeScrollBarVertical(selectedTimeRange, availableTimeRange)
+    val timeWindowScrollbar = TimeRangeScrollBarVertical(airportViewState.selectedTimeRange, airportViewState.availableTimeRange)
     val reloadButton = ReloadButton("Recalculate sequence for all arrivals") {
-        presenter.onRecalculateSequenceClicked(airport.icao)
+        presenter.onRecalculateSequenceClicked(airportIcao)
     }
     val westPanel = JPanel(BorderLayout()).apply {
         add(timeWindowScrollbar, BorderLayout.CENTER)
         add(reloadButton, BorderLayout.SOUTH)
     }
 
-    val timelineScrollPane = TimelineScrollPane(selectedTimeRange, availableTimeRange, presenter, airport)
-    val topBar = TopBar(presenter, airport.icao)
-    val footer = Footer()
+    val timelineScrollPane = TimelineScrollPane(airportViewState, presenter)
+    val topBar = TopBar(presenter, airportViewState)
+    val footer = Footer(mainViewState)
 
     private val landingRatesGraph = LandingRatesGraph()
     private var landingRatesFrame: JInternalFrame? = null
 
-    private val nonSeqView = NonSeqView()
+    private val nonSeqView = NonSeqView(airportViewState)
     private var nonSeqFrame: JInternalFrame? = null
 
-    private val verticalWindView = VerticalWindView(presenter, airport.icao)
+    private val verticalWindView = VerticalWindView(presenter, airportIcao)
     private var windFrame: JInternalFrame? = null
+
+    private var currentTime: Instant? = null
 
     private val contentPanel = JPanel(BorderLayout()).apply {
         add(topBar, BorderLayout.NORTH)
@@ -92,27 +77,54 @@ class AirportView(
                 contentPanel.setSize(width, height)
             }
         })
+
+        mainViewState.currentClock.addListener { currentTime ->
+            updateTime(currentTime)
+        }
+
+        airportViewState.openTimelines.addListener {
+            updateVisibleTimelines(it)
+        }
+
+        airportViewState.events.addListener { tabData ->
+            updateAmanData(tabData)
+        }
     }
 
-    fun updateTime(currentTime: Instant, delta: Duration) {
-        selectedTimeRange.value = TimeRange(
-            selectedTimeRange.value.start + delta,
-            selectedTimeRange.value.end + delta,
+    private fun updateTime(currentTime: Instant) {
+        val delta = if (this.currentTime != null) {
+            currentTime - this.currentTime!!
+        } else {
+            Duration.ZERO
+        }
+        airportViewState.selectedTimeRange.value = TimeRange(
+            airportViewState.selectedTimeRange.value.start + delta,
+            airportViewState.selectedTimeRange.value.end + delta,
         )
-        availableTimeRange.value = TimeRange(
-            currentTime - maxHistory,
-            currentTime + maxFuture,
+        airportViewState.availableTimeRange.value = TimeRange(
+            currentTime - airportViewState.maxHistory,
+            currentTime + airportViewState.maxFuture,
         )
+        this.currentTime = currentTime
     }
 
-    fun updateAmanData(tabData: TabData) {
-        timeWindowScrollbar.updateTimelineEvents(tabData.timelinesData)
-        timelineScrollPane.updateTimelineEvents(tabData.timelinesData)
-        topBar.updateNonSeqNumbers(tabData.nonSequencedList.size)
+    private fun updateAmanData(timelineEvents: List<TimelineEvent>) {
+        timeWindowScrollbar.updateTimelineEvents(timelineEvents)
+        val runwayArrivals = timelineEvents.filterIsInstance<RunwayArrivalEvent>()
 
-        val allArrivalEvents = tabData.timelinesData.flatMap { it.left + it.right }
-        landingRatesGraph.updateData(allArrivalEvents)
-        nonSeqView.updateNonSeqData(tabData.nonSequencedList)
+        val timelineData = airportViewState.availableTimelines.filter { it.title in airportViewState.openTimelines.value }
+            .map { timelineConfig ->
+                val leftEvents = runwayArrivals.filter { it.runway in timelineConfig.runwaysLeft }
+                val rightEvents = runwayArrivals.filter { it.runway in timelineConfig.runwaysRight }
+                TimelineData(
+                    timelineId = timelineConfig.title,
+                    left = leftEvents,
+                    right = rightEvents
+                )
+            }
+
+        timelineScrollPane.updateTimelineEvents(timelineData)
+        landingRatesGraph.updateData(runwayArrivals)
     }
 
     fun updateDraggedLabel(
@@ -128,7 +140,7 @@ class AirportView(
         }
     }
 
-    fun updateVisibleTimelines(timelineGroup: TimelineGroup) {
+    private fun updateVisibleTimelines(openIds: List<String>) {
         // Clear existing timelines
         val items = timelineScrollPane.viewport.view as JPanel
         items.components
@@ -136,18 +148,13 @@ class AirportView(
             .forEach { component -> items.remove(component) }
 
         // Add the current timelines
-        timelineGroup.timelines.forEach { timelineConfig ->
-            timelineScrollPane.insertTimeline(timelineConfig)
+        openIds.forEach { timelineId ->
+            val timelineConfig = airportViewState.availableTimelines.find { it.title == timelineId }
+            if (timelineConfig != null) {
+                timelineScrollPane.insertTimeline(timelineConfig)
+            }
         }
         repaint()
-    }
-
-    fun updateMinSpacingNM(minSpacingNm: Double) {
-        timelineScrollPane.updateMinimumSpacingSelection(minSpacingNm)
-    }
-
-    fun updateRunwayModes(runwayModes: List<Pair<String, Boolean>>) {
-        topBar.setRunwayModes(runwayModes)
     }
 
     fun openPopupMenu(availableTimelines: List<TimelineConfig>, screenPos: Point) {
@@ -156,7 +163,7 @@ class AirportView(
 
     fun openLandingRatesWindow() {
         if (landingRatesFrame == null) {
-            landingRatesFrame = JInternalFrame("Landing Rates - ${airport.icao}", true, true, true, true).apply {
+            landingRatesFrame = JInternalFrame("Landing Rates - $airportIcao", true, true, true, true).apply {
                 add(landingRatesGraph)
                 setSize(500, 300)
                 setLocation(50, 50)
@@ -174,7 +181,7 @@ class AirportView(
 
     fun openNonSequencedWindow() {
         if (nonSeqFrame == null) {
-            nonSeqFrame = JInternalFrame("Non-Sequenced Flights - ${airport.icao}", true, true, true, true).apply {
+            nonSeqFrame = JInternalFrame("Non-Sequenced Flights - $airportIcao", true, true, true, true).apply {
                 add(nonSeqView)
                 setSize(450, 300)
                 setLocation(100, 100)
@@ -192,7 +199,7 @@ class AirportView(
 
     fun openMetWindow() {
         if (windFrame == null) {
-            windFrame = JInternalFrame("Vertical Wind Profile - ${airport.icao}", true, true, true, true).apply {
+            windFrame = JInternalFrame("Vertical Wind Profile - $airportIcao", true, true, true, true).apply {
                 add(verticalWindView)
                 setSize(330, 700)
                 setLocation(150, 150)
