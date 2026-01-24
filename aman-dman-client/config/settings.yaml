@@ -63,4 +63,4 @@ connectionConfig:
   masterSlaveApi:
     host: "https://aman-dman-api.fly.dev"
 
-theme: "FlatLaf"
+theme: "JTattoo"
