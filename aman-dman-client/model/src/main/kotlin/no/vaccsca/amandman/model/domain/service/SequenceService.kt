@@ -1,50 +1,18 @@
 package no.vaccsca.amandman.model.domain.service
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.AircraftSequenceCandidate
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.Sequence
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequenceCandidate
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequencePlace
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-data class Sequence(
-    /**
-     * A map that tracks whether an aircraft is currently within the Sequencing Horizon.
-     * Once an aircraft is in the sequencing horizon, it will be sequenced automatically and given a final scheduled time.
-     */
-    //val sequencingHorizon: Map<String, Boolean>,
-    /**
-     * A map that holds the current sequence of aircraft, where the key is the callsign
-     * and the value is the scheduled time for that aircraft.
-     */
-    val sequecencePlaces: List<SequencePlace>
-)
-
-data class SequencePlace(
-    val item: SequenceCandidate,
-    val scheduledTime: Instant,
-    val isManuallyAssigned: Boolean = false
-)
-
-sealed class SequenceCandidate(
-    open val id: String,
-    open val preferredTime: Instant,
-)
-
-data class AircraftSequenceCandidate(
-    val callsign: String,
-    override val preferredTime: Instant,
-    val landingIas: Int,
-    val wakeCategory: Char,
-    val assignedRunway: String?
-) : SequenceCandidate(
-    id = callsign,
-    preferredTime = preferredTime,
-)
-
-object AmanDmanSequenceService {
+object SequenceService {
 
     val SEQUENCING_HORIZON: Duration = 30.minutes // When aircraft enter active sequencing management
     val LOCKED_HORIZON: Duration = 10.minutes // When aircraft positions become locked/unchangeable

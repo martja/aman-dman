@@ -1,10 +1,9 @@
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
-import no.vaccsca.amandman.model.domain.service.AircraftSequenceCandidate
-import no.vaccsca.amandman.model.domain.service.AmanDmanSequenceService
-import no.vaccsca.amandman.model.domain.service.Sequence
-import no.vaccsca.amandman.model.domain.service.SequencePlace
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.Sequence
+import no.vaccsca.amandman.model.domain.service.SequenceService
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.AircraftSequenceCandidate
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequencePlace
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,7 +11,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-class AmanDmanSequenceServiceTest {
+class SequenceServiceTest {
 
     // Test 1: Aircraft entering AAH should be sequenced
     @Test
@@ -20,12 +19,12 @@ class AmanDmanSequenceServiceTest {
         val sequence = Sequence(emptyList())
         val now = NtpClock.now()
 
-        val aircraft = makeAircraft(
+        val aircraft = makeSequenceCandidate(
             callsign = "TEST123",
             preferredTime = now + 15.minutes // Within AAH (30 min threshold)
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
 
         assertEquals(1, updatedSequence.sequecencePlaces.size)
         assertEquals("TEST123", updatedSequence.sequecencePlaces[0].item.id)
@@ -37,12 +36,12 @@ class AmanDmanSequenceServiceTest {
         val sequence = Sequence(emptyList())
         val now = NtpClock.now()
 
-        val aircraft = makeAircraft(
+        val aircraft = makeSequenceCandidate(
             callsign = "TEST123",
             preferredTime = now + 35.minutes // Outside sequencing horizon (30 min threshold)
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
 
         assertEquals(0, updatedSequence.sequecencePlaces.size)
     }
@@ -53,12 +52,12 @@ class AmanDmanSequenceServiceTest {
         val sequence = Sequence(emptyList())
         val now = NtpClock.now()
 
-        val aircraft = makeAircraft(
+        val aircraft = makeSequenceCandidate(
             callsign = "TEST123",
             preferredTime = now + 15.minutes
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
 
         // Should keep preferred time since there are no conflicts
         assertEquals(aircraft.preferredTime, updatedSequence.sequecencePlaces[0].scheduledTime)
@@ -70,7 +69,7 @@ class AmanDmanSequenceServiceTest {
         val now = NtpClock.now()
 
         // First aircraft already in sequence
-        val firstAircraft = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'H')
+        val firstAircraft = makeSequenceCandidate("FIRST", now + 10.minutes, wakeCategory = 'H')
         val sequence = Sequence(
             listOf(
                 SequencePlace(firstAircraft, now + 10.minutes, false)
@@ -78,13 +77,13 @@ class AmanDmanSequenceServiceTest {
         )
 
         // Second aircraft wants to land too close behind heavy aircraft
-        val secondAircraft = makeAircraft(
+        val secondAircraft = makeSequenceCandidate(
             callsign = "SECOND",
             preferredTime = now + 10.minutes + 30.seconds, // Too close behind Heavy
             wakeCategory = 'M'
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(firstAircraft, secondAircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(firstAircraft, secondAircraft), 3.0)
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val secondPlace = updatedSequence.sequecencePlaces.find { it.item.id == "SECOND" }!!
@@ -99,11 +98,11 @@ class AmanDmanSequenceServiceTest {
         val now = NtpClock.now()
         val sequence = Sequence(emptyList())
 
-        val heavy = makeAircraft("HEAVY", now + 10.minutes, wakeCategory = 'H')
-        val medium = makeAircraft("MEDIUM", now + 10.minutes + 1.seconds, wakeCategory = 'M')
-        val light = makeAircraft("LIGHT", now + 10.minutes + 2.seconds, wakeCategory = 'L')
+        val heavy = makeSequenceCandidate("HEAVY", now + 10.minutes, wakeCategory = 'H')
+        val medium = makeSequenceCandidate("MEDIUM", now + 10.minutes + 1.seconds, wakeCategory = 'M')
+        val light = makeSequenceCandidate("LIGHT", now + 10.minutes + 2.seconds, wakeCategory = 'L')
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(heavy, medium, light), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, medium, light), 3.0)
 
         assertEquals(3, updatedSequence.sequecencePlaces.size)
 
@@ -130,7 +129,7 @@ class AmanDmanSequenceServiceTest {
         val now = NtpClock.now()
         val scheduledTime = now + 12.minutes
 
-        val aircraft = makeAircraft("TEST123", now + 15.minutes)
+        val aircraft = makeSequenceCandidate("TEST123", now + 15.minutes)
         val sequence = Sequence(
             listOf(
                 SequencePlace(aircraft, scheduledTime, false)
@@ -138,7 +137,7 @@ class AmanDmanSequenceServiceTest {
         )
 
         // Update with same aircraft - should preserve existing scheduled time
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
 
         assertEquals(1, updatedSequence.sequecencePlaces.size)
         // The current implementation uses findBestInsertionTime which may recalculate
@@ -154,14 +153,14 @@ class AmanDmanSequenceServiceTest {
         val now = NtpClock.now()
         val manualTime = now + 8.minutes
 
-        val aircraft = makeAircraft("MANUAL123", now + 15.minutes)
+        val aircraft = makeSequenceCandidate("MANUAL123", now + 15.minutes)
         val sequence = Sequence(
             listOf(
                 SequencePlace(aircraft, manualTime, isManuallyAssigned = true)
             )
         )
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
 
         assertEquals(1, updatedSequence.sequecencePlaces.size)
         assertEquals(manualTime, updatedSequence.sequecencePlaces[0].scheduledTime)
@@ -173,8 +172,8 @@ class AmanDmanSequenceServiceTest {
     fun `Manual movement should adjust following aircraft when spacing conflict occurs`() {
         val now = NtpClock.now()
 
-        val aircraft1 = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'M')
-        val aircraft2 = makeAircraft("SECOND", now + 20.minutes, wakeCategory = 'L')
+        val aircraft1 = makeSequenceCandidate("FIRST", now + 10.minutes, wakeCategory = 'M')
+        val aircraft2 = makeSequenceCandidate("SECOND", now + 20.minutes, wakeCategory = 'L')
 
         val sequence = Sequence(
             listOf(
@@ -184,7 +183,7 @@ class AmanDmanSequenceServiceTest {
         )
 
         // Manually move FIRST to a later time, creating potential conflict with SECOND
-        val updatedSequence = AmanDmanSequenceService.suggestScheduledTime(
+        val updatedSequence = SequenceService.suggestScheduledTime(
             sequence, "FIRST", now + 19.minutes, 3.0
         )
 
@@ -204,11 +203,11 @@ class AmanDmanSequenceServiceTest {
     fun `Aircraft should return to preferred time when conflict is resolved`() {
         val now = NtpClock.now()
 
-        val aircraft1 = makeAircraft("FIRST", now + 10.minutes)
-        val aircraft2 = makeAircraft("SECOND", now + 10.minutes + 30.seconds) // Initially too close
+        val aircraft1 = makeSequenceCandidate("FIRST", now + 10.minutes)
+        val aircraft2 = makeSequenceCandidate("SECOND", now + 10.minutes + 30.seconds) // Initially too close
 
         // First update creates conflict
-        val sequence1 = AmanDmanSequenceService.updateSequence(Sequence(emptyList()), listOf(aircraft1, aircraft2), 3.0)
+        val sequence1 = SequenceService.updateSequence(Sequence(emptyList()), listOf(aircraft1, aircraft2), 3.0)
         val secondPlace1 = sequence1.sequecencePlaces.find { it.item.id == "SECOND" }!!
 
         // SECOND should be delayed due to conflict
@@ -216,7 +215,7 @@ class AmanDmanSequenceServiceTest {
 
         // Now update FIRST to much earlier time, removing conflict
         val updatedAircraft1 = aircraft1.copy(preferredTime = now + 5.minutes)
-        val sequence2 = AmanDmanSequenceService.updateSequence(
+        val sequence2 = SequenceService.updateSequence(
             sequence1,
             listOf(updatedAircraft1, aircraft2),
             3.0
@@ -234,7 +233,7 @@ class AmanDmanSequenceServiceTest {
         val now = NtpClock.now()
 
         // Aircraft in frozen horizon (within 10 minutes)
-        val frozenAircraft = makeAircraft("FROZEN", now + 5.minutes)
+        val frozenAircraft = makeSequenceCandidate("FROZEN", now + 5.minutes)
         val sequence = Sequence(
             listOf(
                 SequencePlace(frozenAircraft, now + 5.minutes, false)
@@ -242,9 +241,9 @@ class AmanDmanSequenceServiceTest {
         )
 
         // New aircraft wants to land earlier but should be placed after frozen aircraft
-        val newAircraft = makeAircraft("NEW", now + 3.minutes)
+        val newAircraft = makeSequenceCandidate("NEW", now + 3.minutes)
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(
+        val updatedSequence = SequenceService.updateSequence(
             sequence,
             listOf(frozenAircraft, newAircraft),
             3.0
@@ -263,9 +262,9 @@ class AmanDmanSequenceServiceTest {
     fun `Existing aircraft should maintain relative order when possible`() {
         val now = NtpClock.now()
 
-        val aircraft1 = makeAircraft("FIRST", now + 10.minutes)
-        val aircraft2 = makeAircraft("SECOND", now + 15.minutes)
-        val aircraft3 = makeAircraft("THIRD", now + 20.minutes)
+        val aircraft1 = makeSequenceCandidate("FIRST", now + 10.minutes)
+        val aircraft2 = makeSequenceCandidate("SECOND", now + 15.minutes)
+        val aircraft3 = makeSequenceCandidate("THIRD", now + 20.minutes)
 
         val sequence = Sequence(
             listOf(
@@ -276,7 +275,7 @@ class AmanDmanSequenceServiceTest {
         )
 
         // Update with same aircraft - order should be preserved
-        val updatedSequence = AmanDmanSequenceService.updateSequence(
+        val updatedSequence = SequenceService.updateSequence(
             sequence,
             listOf(aircraft1, aircraft2, aircraft3),
             3.0
@@ -293,10 +292,10 @@ class AmanDmanSequenceServiceTest {
     fun `Should be able to calculate TTL when aircraft is delayed`() {
         val now = NtpClock.now()
 
-        val aircraft1 = makeAircraft("LEADER", now + 10.minutes, wakeCategory = 'H')
-        val aircraft2 = makeAircraft("FOLLOWER", now + 10.minutes + 30.seconds, wakeCategory = 'L')
+        val aircraft1 = makeSequenceCandidate("LEADER", now + 10.minutes, wakeCategory = 'H')
+        val aircraft2 = makeSequenceCandidate("FOLLOWER", now + 10.minutes + 30.seconds, wakeCategory = 'L')
 
-        val sequence = AmanDmanSequenceService.updateSequence(
+        val sequence = SequenceService.updateSequence(
             Sequence(emptyList()),
             listOf(aircraft1, aircraft2),
             3.0
@@ -318,8 +317,8 @@ class AmanDmanSequenceServiceTest {
     fun `Should remove aircraft from sequence`() {
         val now = NtpClock.now()
 
-        val aircraft1 = makeAircraft("KEEP", now + 10.minutes)
-        val aircraft2 = makeAircraft("REMOVE", now + 15.minutes)
+        val aircraft1 = makeSequenceCandidate("KEEP", now + 10.minutes)
+        val aircraft2 = makeSequenceCandidate("REMOVE", now + 15.minutes)
 
         val sequence = Sequence(
             listOf(
@@ -328,7 +327,7 @@ class AmanDmanSequenceServiceTest {
             )
         )
 
-        val updatedSequence = AmanDmanSequenceService.removeFromSequence(sequence, "REMOVE")
+        val updatedSequence = SequenceService.removeFromSequence(sequence, "REMOVE")
 
         assertEquals(1, updatedSequence.sequecencePlaces.size)
         assertEquals("KEEP", updatedSequence.sequecencePlaces[0].item.id)
@@ -341,11 +340,11 @@ class AmanDmanSequenceServiceTest {
         val sequence = Sequence(emptyList())
 
         // Create aircraft with slightly different preferred times to ensure deterministic ordering
-        val aircraft1 = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'H')
-        val aircraft2 = makeAircraft("SECOND", now + 10.minutes + 1.seconds, wakeCategory = 'M')
-        val aircraft3 = makeAircraft("THIRD", now + 10.minutes + 2.seconds, wakeCategory = 'L')
+        val aircraft1 = makeSequenceCandidate("FIRST", now + 10.minutes, wakeCategory = 'H')
+        val aircraft2 = makeSequenceCandidate("SECOND", now + 10.minutes + 1.seconds, wakeCategory = 'M')
+        val aircraft3 = makeSequenceCandidate("THIRD", now + 10.minutes + 2.seconds, wakeCategory = 'L')
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(
+        val updatedSequence = SequenceService.updateSequence(
             sequence,
             listOf(aircraft1, aircraft2, aircraft3),
             3.0
@@ -379,8 +378,8 @@ class AmanDmanSequenceServiceTest {
     fun `Should clear all aircraft from sequence`() {
         val now = NtpClock.now()
 
-        val aircraft1 = makeAircraft("FIRST", now + 10.minutes)
-        val aircraft2 = makeAircraft("SECOND", now + 15.minutes)
+        val aircraft1 = makeSequenceCandidate("FIRST", now + 10.minutes)
+        val aircraft2 = makeSequenceCandidate("SECOND", now + 15.minutes)
 
         val sequence = Sequence(
             listOf(
@@ -389,7 +388,7 @@ class AmanDmanSequenceServiceTest {
             )
         )
 
-        val clearedSequence = AmanDmanSequenceService.reSchedule(sequence)
+        val clearedSequence = SequenceService.reSchedule(sequence)
 
         assertEquals(0, clearedSequence.sequecencePlaces.size)
     }
@@ -401,11 +400,11 @@ class AmanDmanSequenceServiceTest {
         val sequence = Sequence(emptyList())
 
         // Heavy aircraft on runway 09L
-        val heavy = makeAircraft("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
+        val heavy = makeSequenceCandidate("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
         // Light aircraft on runway 09R (different runway)
-        val light = makeAircraft("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = "09R")
+        val light = makeSequenceCandidate("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = "09R")
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -428,10 +427,10 @@ class AmanDmanSequenceServiceTest {
         val sequence = Sequence(emptyList())
 
         // Heavy and light aircraft both on runway 09L (same runway)
-        val heavy = makeAircraft("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
-        val light = makeAircraft("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = "09L")
+        val heavy = makeSequenceCandidate("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
+        val light = makeSequenceCandidate("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = "09L")
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -451,10 +450,10 @@ class AmanDmanSequenceServiceTest {
         val sequence = Sequence(emptyList())
 
         // Aircraft without runway assignments
-        val heavy = makeAircraft("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = null)
-        val light = makeAircraft("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = null)
+        val heavy = makeSequenceCandidate("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = null)
+        val light = makeSequenceCandidate("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = null)
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -474,11 +473,11 @@ class AmanDmanSequenceServiceTest {
         val sequence = Sequence(emptyList())
 
         // First aircraft with runway assignment
-        val first = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
+        val first = makeSequenceCandidate("FIRST", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
         // Second aircraft without runway assignment
-        val second = makeAircraft("SECOND", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = null)
+        val second = makeSequenceCandidate("SECOND", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = null)
 
-        val updatedSequence = AmanDmanSequenceService.updateSequence(sequence, listOf(first, second), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(first, second), 3.0)
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -496,8 +495,8 @@ class AmanDmanSequenceServiceTest {
     fun `Manual movement should respect runway-based spacing rules`() {
         val now = NtpClock.now()
 
-        val aircraft1 = makeAircraft("FIRST", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
-        val aircraft2 = makeAircraft("SECOND", now + 20.minutes, wakeCategory = 'L', assignedRunway = "09R")
+        val aircraft1 = makeSequenceCandidate("FIRST", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
+        val aircraft2 = makeSequenceCandidate("SECOND", now + 20.minutes, wakeCategory = 'L', assignedRunway = "09R")
 
         val sequence = Sequence(
             listOf(
@@ -507,7 +506,7 @@ class AmanDmanSequenceServiceTest {
         )
 
         // Manually move FIRST to a later time, creating potential conflict with SECOND
-        val updatedSequence = AmanDmanSequenceService.suggestScheduledTime(
+        val updatedSequence = SequenceService.suggestScheduledTime(
             sequence, "FIRST", now + 19.minutes, 3.0
         )
 
@@ -523,21 +522,18 @@ class AmanDmanSequenceServiceTest {
         assertTrue(spacing >= minimumSpacing, "Should use minimum separation for different runways in manual movement")
     }
 
-    // Helper function to create test aircraft
-    private fun makeAircraft(
+    // Helper function to create test aircraft sequence candidates
+    private fun makeSequenceCandidate(
         callsign: String,
         preferredTime: Instant,
         landingIas: Int = 150,
         wakeCategory: Char = 'M',
         assignedRunway: String? = null
-    ): AircraftSequenceCandidate {
-        return AircraftSequenceCandidate(
-            callsign = callsign,
-            preferredTime = preferredTime,
-            landingIas = landingIas,
-            wakeCategory = wakeCategory,
-            assignedRunway = assignedRunway,
-        )
-    }
-
+    ) = AircraftSequenceCandidate(
+        callsign = callsign,
+        preferredTime = preferredTime,
+        landingIas = landingIas,
+        wakeCategory = wakeCategory,
+        assignedRunway = assignedRunway,
+    )
 }

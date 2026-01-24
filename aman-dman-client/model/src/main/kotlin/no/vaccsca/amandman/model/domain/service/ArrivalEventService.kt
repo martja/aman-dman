@@ -12,7 +12,7 @@ import no.vaccsca.amandman.model.domain.util.NavigationUtils.isBehind
 import no.vaccsca.amandman.model.domain.valueobjects.AircraftPosition
 import no.vaccsca.amandman.model.domain.valueobjects.Airport
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayThreshold
-import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.distanceTo

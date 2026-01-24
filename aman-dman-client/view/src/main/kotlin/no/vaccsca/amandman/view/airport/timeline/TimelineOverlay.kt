@@ -3,7 +3,7 @@ package no.vaccsca.amandman.view.airport.timeline
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.*
 import no.vaccsca.amandman.model.domain.valueobjects.LabelItem
-import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.*
 import no.vaccsca.amandman.presenter.PresenterInterface

@@ -18,6 +18,9 @@ import no.vaccsca.amandman.model.domain.valueobjects.*
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientArrivalData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.AtcClientDepartureData
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.AircraftSequenceCandidate
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.Sequence
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
@@ -166,8 +169,8 @@ class PlannerServiceMaster(
             val aircraftToRemove = sequence.sequecencePlaces.map { it.item.id }
                 .filter { it !in runwayArrivalEvents.map { it.callsign } }
 
-            val cleanedSequence = AmanDmanSequenceService.removeFromSequence(sequence, *aircraftToRemove.toTypedArray())
-            sequence = AmanDmanSequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm)
+            val cleanedSequence = SequenceService.removeFromSequence(sequence, *aircraftToRemove.toTypedArray())
+            sequence = SequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm)
 
             arrivalsCache = runwayArrivalEvents.map { arrivalEvent ->
                 val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
@@ -253,7 +256,7 @@ class PlannerServiceMaster(
             scope.launch {
                 withStateLock {
                     plannerState.minimumSpacingNm = minimumSpacingDistanceNm
-                    plannerState.sequence = AmanDmanSequenceService.reSchedule(plannerState.sequence)
+                    plannerState.sequence = SequenceService.reSchedule(plannerState.sequence)
                 }
                 onSequenceUpdated()
                 // Notify listeners of the spacing change
@@ -296,7 +299,7 @@ class PlannerServiceMaster(
             scope.launch {
                 withStateLock {
                     if (checkTimeSlotAvailable(timelineEvent, scheduledTime)) {
-                        plannerState.sequence = AmanDmanSequenceService.suggestScheduledTime(
+                        plannerState.sequence = SequenceService.suggestScheduledTime(
                             plannerState.sequence, timelineEvent.callsign, scheduledTime, plannerState.minimumSpacingNm
                         )
                         if (newRunway != null) {
@@ -315,9 +318,9 @@ class PlannerServiceMaster(
             scope.launch {
                 withStateLock {
                     plannerState.sequence = if (callSign == null) {
-                        AmanDmanSequenceService.reSchedule(plannerState.sequence)
+                        SequenceService.reSchedule(plannerState.sequence)
                     } else {
-                        AmanDmanSequenceService.removeFromSequence(plannerState.sequence, callSign)
+                        SequenceService.removeFromSequence(plannerState.sequence, callSign)
                     }
                 }
                 onSequenceUpdated()
@@ -329,7 +332,7 @@ class PlannerServiceMaster(
 
     private fun checkTimeSlotAvailable(timelineEvent: TimelineEvent, scheduledTime: Instant): Boolean =
         if (timelineEvent !is RunwayArrivalEvent) false
-        else AmanDmanSequenceService.isTimeSlotAvailable(plannerState.sequence, timelineEvent, scheduledTime, plannerState.minimumSpacingNm)
+        else SequenceService.isTimeSlotAvailable(plannerState.sequence, timelineEvent, scheduledTime, plannerState.minimumSpacingNm)
 
     override fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =
         runCatching { ArrivalEventService.getDescentProfileForCallsign(callsign) }

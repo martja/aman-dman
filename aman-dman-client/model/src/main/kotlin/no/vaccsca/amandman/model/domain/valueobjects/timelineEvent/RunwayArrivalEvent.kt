@@ -1,7 +1,7 @@
 package no.vaccsca.amandman.model.domain.valueobjects.timelineEvent
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequenceStatus
 import kotlin.time.Duration
 
 data class RunwayArrivalEvent(
