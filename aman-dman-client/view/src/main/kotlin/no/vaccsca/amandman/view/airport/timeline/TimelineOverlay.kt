@@ -18,6 +18,7 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
 import java.text.SimpleDateFormat
+import java.util.Date
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
@@ -43,22 +44,17 @@ class TimelineOverlay(
     private val labels = hashMapOf<String, TimelineLabel>()
     private var leftEvents: List<TimelineEvent>? = null
     private var rightEvents: List<TimelineEvent>? = null
-    private var proposedTime: Instant? = null
-    private var proposedTimeIsAvailable = false
     private var isDraggingLabel = false
     private var draggedLabelCopy: TimelineLabel? = null
     private var draggedLabelOriginalX = 0
+    private var draggedLabelState: DraggedLabelState? = null
 
     // --- UI ---
     init {
         isOpaque = false
 
         airportViewState.draggedLabelState.addListener { newDraggedLabelState ->
-            if (newDraggedLabelState == null) {
-                cleanupDraggedLabelCopy()
-            } else if (containsEventLabel(newDraggedLabelState.timelineEvent)) {
-                updateDraggedLabel(newDraggedLabelState)
-            }
+            updateDraggedLabel(newDraggedLabelState)
         }
     }
 
@@ -66,7 +62,7 @@ class TimelineOverlay(
         leftEvents = timelineData.left
         rightEvents = timelineData.right
         val allEvents = (leftEvents ?: emptyList()) + (rightEvents ?: emptyList())
-        syncLabelsWithEvents(labels, allEvents)
+        syncLabelsWithEvents(allEvents)
         repaint()
     }
 
@@ -75,30 +71,56 @@ class TimelineOverlay(
         rearrangeLabels()
     }
 
-    private fun updateDraggedLabel(draggedLabelState: DraggedLabelState) {
-        if (draggedLabelCopy == null) {
-            draggedLabelCopy = labels.values.find { it.timelineEvent == draggedLabelState.timelineEvent }?.let { createLabelCopy(it) }
-            draggedLabelCopy?.let {
-                add(it)
-                setComponentZOrder(it, 0)
-                it.onDragStart()
+    private fun updateDraggedLabel(newState: DraggedLabelState?) {
+        draggedLabelState = newState
+
+        if (newState == null) {
+            // Clear any existing dragged label copy
+            draggedLabelCopy?.let { remove(it) }
+            draggedLabelCopy = null
+            repaint()
+            return
+        }
+
+        val sourceEvent = newState.timelineEvent
+
+        fun reposition(copy: TimelineLabel) {
+            val yOnTimeline = timelineView.calculateYPositionForInstant(newState.proposedTime)
+            val pointInOverlay = SwingUtilities.convertPoint(timelineView, 0, yOnTimeline, this)
+            val targetY = pointInOverlay.y - copy.preferredSize.height / 2
+            copy.setLocation(copy.x, targetY)
+            copy.timelineEvent = sourceEvent
+            copy.updateText()
+            copy.updateColors()
+            copy.repaint()
+        }
+
+        if (draggedLabelCopy != null) {
+            reposition(draggedLabelCopy!!)
+        } else {
+            val original = labels.values.firstOrNull { it.timelineEvent == sourceEvent }
+            if (original != null) {
+                val copy = createLabelCopy(original)
+                if (copy != null) {
+                    add(copy)
+                    setComponentZOrder(copy, 0)
+                    copy.onDragStart()
+                    reposition(copy)
+                    draggedLabelCopy = copy
+                }
             }
         }
-        this.proposedTime = draggedLabelState.proposedTime
-        this.proposedTimeIsAvailable = draggedLabelState.isAvailable
+
         repaint()
     }
 
-    private fun containsEventLabel(timelineEvent: TimelineEvent): Boolean {
-        return labels.values.any { it.timelineEvent == timelineEvent }
-    }
+    private fun containsEventLabel(timelineEvent: TimelineEvent) =
+        labels.values.any { it.timelineEvent.getFlight()?.callsign == timelineEvent.getFlight()?.callsign }
 
-    private fun isDualTimeline(): Boolean {
-        return timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
-    }
+    private fun isDualTimeline() = timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
 
     private fun computedLabelWidth(): Int {
-        val maxLabelLength = Math.max(
+        val maxLabelLength = maxOf(
             arrivalLabelLayout.sumOf { it.width },
             departureLabelLayout.sumOf { it.width }
         )
@@ -116,8 +138,6 @@ class TimelineOverlay(
         } else {
             scaleW + labelWidth + scaleMargin + timelinePadding
         }
-
-        // Height: keep default (could be derived from parent)
         return Dimension(width, super.getPreferredSize().height)
     }
 
@@ -127,14 +147,17 @@ class TimelineOverlay(
         var previousTopRight: Int? = null
         val labelWidth = computedLabelWidth()
 
-        val leftLabels = labels.values.filter { leftEvents?.contains(it.timelineEvent) == true }
-        val rightLabels = labels.values.filter { rightEvents?.contains(it.timelineEvent) == true }
+        val leftSet = (leftEvents ?: emptyList()).toSet()
+        val rightSet = (rightEvents ?: emptyList()).toSet()
+
+        val leftLabels = labels.values.filter { it.timelineEvent in leftSet }
+        val rightLabels = labels.values.filter { it.timelineEvent in rightSet }
 
         leftLabels.sortedBy { it.getTimelinePlacement() }.forEach { label ->
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
             val centerY = dotY - label.preferredSize.height / 2
             val labelX = timelineView.getScaleBounds().x - labelWidth - scaleMargin
-            val labelY = previousTopLeft?.let { kotlin.math.min(it - 3, centerY) } ?: centerY
+            val labelY = previousTopLeft?.let { minOf(it - 3, centerY) } ?: centerY
             label.setBounds(labelX, labelY, labelWidth, label.preferredSize.height)
             previousTopLeft = label.y - label.preferredSize.height
         }
@@ -143,7 +166,7 @@ class TimelineOverlay(
             val dotY = timelineView.calculateYPositionForInstant(label.getTimelinePlacement())
             val centerY = dotY - label.preferredSize.height / 2
             val labelX = timelineView.getScaleBounds().x + timelineView.getScaleBounds().width + scaleMargin
-            val labelY = previousTopRight?.let { kotlin.math.min(it - 3, centerY) } ?: centerY
+            val labelY = previousTopRight?.let { minOf(it - 3, centerY) } ?: centerY
             label.setBounds(labelX, labelY, labelWidth, label.preferredSize.height)
             previousTopRight = label.y - label.preferredSize.height
         }
@@ -163,18 +186,16 @@ class TimelineOverlay(
     private fun drawTimelineTitle(g: Graphics) {
         val scaleBounds = timelineView.getScaleBounds()
         g.color = Color.BLACK
-
-        val isDualTimeline = timelineConfig.runwaysLeft.isNotEmpty() && timelineConfig.runwaysRight.isNotEmpty()
         val vPadding = 2
         val hPadding = 4
         g.drawStringAdvanced(
             text = timelineConfig.title,
-            x = if (isDualTimeline) scaleBounds.x + scaleBounds.width / 2 else scaleBounds.x,
+            x = if (isDualTimeline()) scaleBounds.x + scaleBounds.width / 2 else scaleBounds.x,
             y = scaleBounds.y + scaleBounds.height - g.fontMetrics.height - vPadding * 2,
             backgroundColor = Color.LIGHT_GRAY,
             hPadding = hPadding,
             vPadding = vPadding,
-            hCenter = isDualTimeline,
+            hCenter = isDualTimeline(),
             vCenter = false,
         )
     }
@@ -200,9 +221,11 @@ class TimelineOverlay(
             val labelX = if (isOnRightSide) copy.x else copy.x + copy.width
             val dotX = if (isOnRightSide) scaleBounds.x + scaleBounds.width else scaleBounds.x
             val labelCenterY = copy.y + copy.preferredSize.height / 2
-            proposedTime?.takeIf { proposedTimeIsAvailable }?.let { time ->
+
+            val availableTime = draggedLabelState?.takeIf { it.isAvailable }?.proposedTime
+            if (availableTime != null) {
                 g.color = Color.WHITE
-                paintHourglass(g, dotX, time)
+                paintHourglass(g, dotX, availableTime)
                 g.drawLine(labelX, labelCenterY, dotX, labelCenterY)
             }
         }
@@ -212,19 +235,20 @@ class TimelineOverlay(
         val scaleBounds = timelineView.getScaleBounds()
         val now = NtpClock.now()
         g.color = Color.decode("#ff4800")
-        if (timelineConfig.runwaysLeft.size > 0) {
-            paintHourglass(g, scaleBounds.x, now)
-        }
-        if (timelineConfig.runwaysRight.size > 0) {
-            paintHourglass(g, scaleBounds.x + scaleBounds.width, now)
-        }
+        if (timelineConfig.runwaysLeft.isNotEmpty()) paintHourglass(g, scaleBounds.x, now)
+        if (timelineConfig.runwaysRight.isNotEmpty()) paintHourglass(g, scaleBounds.x + scaleBounds.width, now)
     }
 
     private fun drawProposedTime(g: Graphics) {
-        if (proposedTime != null && proposedTimeIsAvailable) {
+        // If there's a backend-provided draggedLabelState and the event is present, use it.
+        // Otherwise, if we have a dragged label copy, derive the proposed time locally and show it.
+        val state = draggedLabelState
+        val shouldBeVisible = state?.isAvailable == true && containsEventLabel(state.timelineEvent)
+
+        if (shouldBeVisible) {
             val scaleBounds = timelineView.getScaleBounds()
-            val proposedY = timelineView.calculateYPositionForInstant(proposedTime!!)
-            val text = timeFormat.format(proposedTime!!.toEpochMilliseconds())
+            val proposedY = timelineView.calculateYPositionForInstant(state.proposedTime)
+            val text = timeFormat.format(Date(state.proposedTime.toEpochMilliseconds()))
             g.color = Color.YELLOW
             g.drawStringAdvanced(
                 text = text,
@@ -238,40 +262,44 @@ class TimelineOverlay(
     }
 
     // --- Label/Event Sync ---
-    private fun syncLabelsWithEvents(currentLabels: HashMap<String, TimelineLabel>, events: List<TimelineEvent>?) {
-        removeOldLabels(currentLabels, events?.mapNotNull { it.getFlight()?.callsign } ?: emptyList())
-        events?.forEach { event ->
-            event.getFlight()?.let { flight ->
-                val label = currentLabels[flight.callsign]
-                if (label != null) {
-                    label.timelineEvent = event
-                    label.updateText()
-                    label.updateColors()
-                } else {
-                    val newLabel = event.createLabel()
-                    currentLabels[flight.callsign] = newLabel
-                    add(newLabel)
-                }
+    private fun syncLabelsWithEvents(events: List<TimelineEvent>?) {
+        val flights = events?.mapNotNull { it.getFlight() } ?: emptyList()
+        val validCallsigns = flights.map { it.callsign }.toSet()
+
+        val toRemove = labels.keys - validCallsigns
+        toRemove.forEach { cs ->
+            labels.remove(cs)?.let { remove(it) }
+        }
+
+        val eventsByCallsign: Map<String, TimelineEvent> = events
+            ?.mapNotNull { ev -> ev.getFlight()?.callsign?.let { it to ev } }
+            ?.toMap()
+            ?: emptyMap()
+
+        flights.forEach { flight ->
+            val callsign = flight.callsign
+            val event = eventsByCallsign[callsign] ?: return@forEach
+            val existing = labels[callsign]
+            if (existing == null) {
+                val newLabel = event.createLabel()
+                newLabel.font = baseFont
+                newLabel.addMouseListener(labelMouseAdapter(newLabel))
+                newLabel.addMouseMotionListener(labelMouseMotionAdapter(newLabel))
+                labels[callsign] = newLabel
+                add(newLabel)
+            } else {
+                existing.timelineEvent = event
+                existing.updateText()
+                existing.updateColors()
             }
         }
     }
 
-    private fun removeOldLabels(currentLabels: HashMap<String, TimelineLabel>, validCallsigns: List<String>) {
-        val iterator = currentLabels.entries.iterator()
-        while (iterator.hasNext()) {
-            val (callsign, label) = iterator.next()
-            if (callsign !in validCallsigns) {
-                iterator.remove()
-                remove(label)
-            }
-        }
-    }
-
-    // --- Label Creation & Dragging ---
     private fun TimelineEvent.getFlight(): RunwayFlightEvent? = when (this) {
         is DepartureEvent -> this
         is RunwayArrivalEvent -> this
         is RunwayDelayEvent -> null
+        else -> null
     }
 
     private fun TimelineEvent.createLabel(): TimelineLabel {
@@ -281,8 +309,6 @@ class TimelineOverlay(
             else -> throw IllegalArgumentException("Unsupported occurrence type")
         }
         label.font = baseFont
-        label.addMouseListener(labelMouseAdapter(label))
-        label.addMouseMotionListener(labelMouseMotionAdapter(label))
         return label
     }
 
@@ -290,20 +316,14 @@ class TimelineOverlay(
         override fun mousePressed(e: MouseEvent) {
             draggedLabelOriginalX = label.x
         }
-
         override fun mouseClicked(e: MouseEvent?) {
-            if (e?.isLeftButton() == true) {
+            if (e != null && e.isLeftButton()) {
                 label.onDragEnd()
-                cleanupDraggedLabelCopy()
                 handleLabelClick(label)
             }
         }
-
         override fun mouseReleased(e: MouseEvent) {
-            cleanupDraggedLabelCopy()
             if (isDraggingLabel && e.isLeftButton()) {
-                isDraggingLabel = false
-                proposedTime = null
                 val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
                 val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
                 onLabelDropped(label.timelineEvent, newInstant)
@@ -315,11 +335,6 @@ class TimelineOverlay(
     private fun labelMouseMotionAdapter(label: TimelineLabel) = object : MouseMotionAdapter() {
         override fun mouseDragged(e: MouseEvent) {
             isDraggingLabel = true
-            draggedLabelCopy?.let { copy ->
-                val pointInOverlay = SwingUtilities.convertPoint(e.component, e.point, this@TimelineOverlay)
-                copy.setLocation(copy.x, pointInOverlay.y - copy.preferredSize.height / 2)
-                repaint()
-            }
             val pointInView = SwingUtilities.convertPoint(e.component, e.point, timelineView)
             val newInstant = timelineView.calculateInstantForYPosition(pointInView.y)
             presenterInterface.onLabelDrag(timelineConfig.airportIcao, label.timelineEvent, newInstant)
@@ -334,9 +349,6 @@ class TimelineOverlay(
         }
         copy.font = label.font
         copy.bounds = label.bounds
-        copy.isOpaque = true
-        copy.background = label.background.darker()
-        copy.updateText()
         return copy
     }
 
@@ -346,17 +358,11 @@ class TimelineOverlay(
 
     private fun onLabelDropped(timelineEvent: TimelineEvent, newTime: Instant) {
         if (timelineEvent is RunwayArrivalEvent) {
+            isDraggingLabel = false
             presenterInterface.beginRunwaySelection(timelineEvent) { selectedRunway ->
                 presenterInterface.onLabelDragEnd(timelineConfig.airportIcao, timelineEvent, newTime, selectedRunway)
+                airportViewState.draggedLabelState.value = null
             }
-        }
-    }
-
-    private fun cleanupDraggedLabelCopy() {
-        draggedLabelCopy?.let {
-            remove(it)
-            draggedLabelCopy = null
-            repaint()
         }
     }
 
@@ -376,8 +382,6 @@ class TimelineOverlay(
         ))
     }
 
-    private fun MouseEvent.isLeftButton(): Boolean {
-        return this.button == MouseEvent.BUTTON1
-    }
+    private fun MouseEvent.isLeftButton(): Boolean = this.button == MouseEvent.BUTTON1
 
 }
