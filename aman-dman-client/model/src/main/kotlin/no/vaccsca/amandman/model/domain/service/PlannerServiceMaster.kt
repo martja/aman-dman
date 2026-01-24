@@ -68,14 +68,12 @@ class PlannerServiceMaster(
         // Periodic refresh of CDM data
         scope.runEvery(1.minutes) {
             if (fetchCdmData) {
-                logger.info("Refreshing CDM data for $airportIcao")
                 refreshCdmData()
             }
         }
 
         // Periodic refresh of weather data
         scope.runEvery(15.minutes) {
-            logger.info("Refreshing weather data for $airportIcao")
             refreshWeatherData()
         }
 
@@ -267,10 +265,16 @@ class PlannerServiceMaster(
 
     override fun refreshWeatherData(): Result<Unit> {
         scope.launch {
+            logger.info("Fetching weather data for $airportIcao")
             val weather = weatherDataRepository.getWindData(airport.location.lat, airport.location.lon)
             withStateLock { plannerState.weatherData = weather }
             dataUpdateListeners.forEach { listener ->
                 listener.onWeatherDataUpdated(airportIcao, weather)
+            }
+            if (weather != null) {
+                logger.info("Weather data for ${weather.time} updated for $airportIcao")
+            } else {
+                logger.warn("No weather data available for $airportIcao")
             }
         }
         return Result.success(Unit)

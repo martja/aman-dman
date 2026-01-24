@@ -5,7 +5,6 @@ import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.airport.Footer
 import no.vaccsca.amandman.view.airport.TimeRangeScrollBarVertical
@@ -56,7 +55,7 @@ class AirportView(
     private val nonSeqView = NonSeqView(airportViewState)
     private var nonSeqFrame: JInternalFrame? = null
 
-    private val verticalWindView = VerticalWindView(presenter, airportIcao)
+    private val verticalWindView = VerticalWindView(presenter, airportViewState)
     private var windFrame: JInternalFrame? = null
 
     private var currentTime: Instant? = null
@@ -125,19 +124,6 @@ class AirportView(
 
         timelineScrollPane.updateTimelineEvents(timelineData)
         landingRatesGraph.updateData(runwayArrivals)
-    }
-
-    fun updateDraggedLabel(
-        timelineEvent: TimelineEvent,
-        proposedTime: Instant,
-        isAvailable: Boolean,
-    ) {
-        val items = timelineScrollPane.viewport.view as JPanel
-        items.components.filterIsInstance<TimelineView>().forEach { timelineView ->
-            if (timelineView.containsEvent(timelineEvent)) {
-                timelineView.updateDraggedLabel(timelineEvent, proposedTime, isAvailable)
-            }
-        }
     }
 
     private fun updateVisibleTimelines(openIds: List<String>) {
@@ -213,9 +199,5 @@ class AirportView(
         }
         windFrame?.isVisible = true
         windFrame?.toFront()
-    }
-
-    fun updateWeatherData(weather: VerticalWeatherProfile?) {
-        verticalWindView.update(weather)
     }
 }

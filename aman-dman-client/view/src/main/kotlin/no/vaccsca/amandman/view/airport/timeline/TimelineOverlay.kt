@@ -11,6 +11,8 @@ import no.vaccsca.amandman.view.airport.timeline.labels.ArrivalLabel
 import no.vaccsca.amandman.view.airport.timeline.labels.DepartureLabel
 import no.vaccsca.amandman.view.airport.timeline.labels.TimelineLabel
 import no.vaccsca.amandman.view.airport.timeline.utils.GraphicUtils.drawStringAdvanced
+import no.vaccsca.amandman.view.entity.AirportViewState
+import no.vaccsca.amandman.view.entity.DraggedLabelState
 import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -23,6 +25,7 @@ class TimelineOverlay(
     val timelineConfig: TimelineConfig,
     val timelineView: TimelineView,
     val presenterInterface: PresenterInterface,
+    val airportViewState: AirportViewState,
     val arrivalLabelLayout: List<LabelItem>,
     val departureLabelLayout: List<LabelItem>,
 ) : JPanel(null) {
@@ -49,6 +52,14 @@ class TimelineOverlay(
     // --- UI ---
     init {
         isOpaque = false
+
+        airportViewState.draggedLabelState.addListener { newDraggedLabelState ->
+            if (newDraggedLabelState == null) {
+                cleanupDraggedLabelCopy()
+            } else if (containsEventLabel(newDraggedLabelState.timelineEvent)) {
+                updateDraggedLabel(newDraggedLabelState)
+            }
+        }
     }
 
     fun updateTimelineData(timelineData: TimelineData) {
@@ -64,21 +75,21 @@ class TimelineOverlay(
         rearrangeLabels()
     }
 
-    fun updateDraggedLabel(timelineEvent: TimelineEvent, proposedTime: Instant, available: Boolean) {
+    private fun updateDraggedLabel(draggedLabelState: DraggedLabelState) {
         if (draggedLabelCopy == null) {
-            draggedLabelCopy = labels.values.find { it.timelineEvent == timelineEvent }?.let { createLabelCopy(it) }
+            draggedLabelCopy = labels.values.find { it.timelineEvent == draggedLabelState.timelineEvent }?.let { createLabelCopy(it) }
             draggedLabelCopy?.let {
                 add(it)
                 setComponentZOrder(it, 0)
                 it.onDragStart()
             }
         }
-        this.proposedTime = proposedTime
-        this.proposedTimeIsAvailable = available
+        this.proposedTime = draggedLabelState.proposedTime
+        this.proposedTimeIsAvailable = draggedLabelState.isAvailable
         repaint()
     }
 
-    fun containsEventLabel(timelineEvent: TimelineEvent): Boolean {
+    private fun containsEventLabel(timelineEvent: TimelineEvent): Boolean {
         return labels.values.any { it.timelineEvent == timelineEvent }
     }
 

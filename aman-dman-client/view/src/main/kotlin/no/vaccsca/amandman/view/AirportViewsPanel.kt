@@ -75,17 +75,6 @@ class AirportViewsPanel(
         updateTabVisibility()
     }
 
-    /** Updates dragged label for a flight */
-    fun updateDraggedLabel(
-        timelineEvent: no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent,
-        proposedTime: kotlinx.datetime.Instant,
-        isAvailable: Boolean,
-    ) {
-        visibleTabs
-            .firstOrNull { it.airportIcao == timelineEvent.airportIcao }
-            ?.updateDraggedLabel(timelineEvent, proposedTime, isAvailable)
-    }
-
     /** Switch to a specific airport tab */
     private fun changeVisibleGroup(airportIcao: String) {
         if (components.contains(tabPane)) {
@@ -140,9 +129,5 @@ class AirportViewsPanel(
 
     fun openMetWindow(airportIcao: String) {
         visibleTabs.find { it.airportIcao == airportIcao }?.openMetWindow()
-    }
-
-    fun updateWeatherData(airportIcao: String, weather: VerticalWeatherProfile?) {
-        visibleTabs.find { it.airportIcao == airportIcao }?.updateWeatherData(weather)
     }
 }

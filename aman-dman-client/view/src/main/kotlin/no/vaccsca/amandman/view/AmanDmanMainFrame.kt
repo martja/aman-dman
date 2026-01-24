@@ -18,6 +18,7 @@ import no.vaccsca.amandman.view.dialogs.SpacingDialog
 import no.vaccsca.amandman.view.dialogs.LogViewerDialog
 import no.vaccsca.amandman.view.dialogs.RoleSelectionDialog
 import no.vaccsca.amandman.view.entity.AirportViewState
+import no.vaccsca.amandman.view.entity.DraggedLabelState
 import no.vaccsca.amandman.view.entity.MainViewState
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -181,7 +182,16 @@ class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {
         newInstant: Instant,
         isAvailable: Boolean
     ) = runOnUiThread {
-        airportViewsPanel?.updateDraggedLabel(timelineEvent, newInstant, isAvailable)
+        mainViewState.airportViewStates.value.forEach {
+            viewModel ->
+            if (viewModel.airportIcao == timelineEvent.airportIcao) {
+                viewModel.draggedLabelState.value = DraggedLabelState(
+                    timelineEvent = timelineEvent,
+                    proposedTime = newInstant,
+                    isAvailable = isAvailable
+                )
+            }
+        }
     }
 
     override fun updateRunwayModes(

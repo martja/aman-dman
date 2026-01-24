@@ -52,7 +52,7 @@ class TimelineScrollPane(
     }
 
     fun insertTimeline(timelineConfig: TimelineConfig) {
-        val tl = TimelineView(timelineConfig, airportViewState.selectedTimeRange, presenterInterface)
+        val tl = TimelineView(timelineConfig, airportViewState, airportViewState.selectedTimeRange, presenterInterface)
         val items = viewport.view as JPanel
 
         // Remove the previous glue (assumes it’s always the last component and a JLabel)

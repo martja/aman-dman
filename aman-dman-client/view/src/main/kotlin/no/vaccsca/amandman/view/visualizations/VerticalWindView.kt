@@ -4,6 +4,7 @@ import no.vaccsca.amandman.common.util.NumberUtils.format
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.components.ReloadButton
+import no.vaccsca.amandman.view.entity.AirportViewState
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Graphics
@@ -13,14 +14,14 @@ import kotlin.math.roundToInt
 
 class VerticalWindView(
     private val presenter: PresenterInterface,
-    private val airportIcao: String
+    private val viewState: AirportViewState
 ): JPanel(BorderLayout()) {
 
     private var weatherProfile: VerticalWeatherProfile? = null
 
     private val contentPanel = ContentPanel()
     private val reloadButton = ReloadButton("Reload winds for airport") {
-        presenter.onReloadWindsClicked(airportIcao = airportIcao)
+        presenter.onReloadWindsClicked(airportIcao = viewState.airportIcao)
     }
 
     init {
@@ -29,11 +30,11 @@ class VerticalWindView(
 
         add(contentPanel, BorderLayout.CENTER)
         add(bottomPanel, BorderLayout.SOUTH)
-    }
 
-    fun update(weatherProfile: VerticalWeatherProfile?) {
-        this.weatherProfile = weatherProfile
-        contentPanel.repaint()
+        viewState.weatherProfile.addListener { newWeatherProfile ->
+            this.weatherProfile = newWeatherProfile
+            contentPanel.repaint()
+        }
     }
 
     private inner class ContentPanel : JPanel() {

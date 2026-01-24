@@ -8,6 +8,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.airport.timeline.enums.TimelineAlignment
+import no.vaccsca.amandman.view.entity.AirportViewState
 import no.vaccsca.amandman.view.entity.SharedValue
 import java.awt.Dimension
 import java.awt.Rectangle
@@ -17,6 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class TimelineView(
     val timelineConfig: TimelineConfig,
+    val airportViewState: AirportViewState,
     private val selectedTimeRange: SharedValue<TimeRange>,
     private val presenterInterface: PresenterInterface,
 ) : JLayeredPane() {
@@ -26,7 +28,7 @@ class TimelineView(
     private val basePanel = JPanel(null)
     private val labelLayout = SettingsRepository.getSettings().arrivalLabelLayouts[timelineConfig.arrLabelLayout]!!
 
-    private val labelContainer = TimelineOverlay(timelineConfig, this, presenterInterface, labelLayout, labelLayout)
+    private val labelContainer = TimelineOverlay(timelineConfig, this, presenterInterface, airportViewState, labelLayout, labelLayout)
     private val timeScale = TimeScale(this, selectedTimeRange, !isDual, presenterInterface)
 
     private val leftSequence = if (isDual) SequenceStack(this, TimelineAlignment.RIGHT) else null
@@ -100,15 +102,6 @@ class TimelineView(
 
     fun getScaleBounds(): Rectangle {
         return timeScale.bounds
-    }
-
-
-    fun updateDraggedLabel(timelineEvent: TimelineEvent, proposedTime: Instant, available: Boolean) {
-        labelContainer.updateDraggedLabel(timelineEvent, proposedTime, available)
-    }
-
-    fun containsEvent(timelineEvent: TimelineEvent): Boolean {
-        return labelContainer.containsEventLabel(timelineEvent)
     }
 
     fun getScaleWidth(): Int = scaleWidth
