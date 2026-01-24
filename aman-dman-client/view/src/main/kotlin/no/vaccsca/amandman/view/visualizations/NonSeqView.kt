@@ -1,15 +1,15 @@
 package no.vaccsca.amandman.view.visualizations
 
 import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
-import no.vaccsca.amandman.model.domain.valueobjects.SequenceStatus
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
+import no.vaccsca.amandman.view.entity.AirportViewState
 import java.awt.BorderLayout
 import javax.swing.*
 import javax.swing.border.TitledBorder
 import javax.swing.table.DefaultTableModel
 
-class NonSeqView : JPanel() {
+class NonSeqView(
+    airportViewState: AirportViewState,
+) : JPanel() {
     private val columnNames = arrayOf("Call Sign", "A/C", "WVC", "Reason")
     private val tableModel = object : DefaultTableModel(columnNames, 0) {
         override fun isCellEditable(row: Int, column: Int): Boolean = false
@@ -42,6 +42,10 @@ class NonSeqView : JPanel() {
             column.preferredWidth = 80
             column.maxWidth = 80
         }
+
+        airportViewState.nonSequencedList.addListener {
+            updateNonSeqData(it)
+        }
     }
 
     // Helper to ensure EDT usage
@@ -58,7 +62,7 @@ class NonSeqView : JPanel() {
         return -1
     }
 
-    fun updateNonSeqData(data: List<NonSequencedEvent>) {
+    private fun updateNonSeqData(data: List<NonSequencedEvent>) {
         runOnUiThread {
             // Process items in the new order, inserting/moving/updating as needed
             for (i in data.indices) {

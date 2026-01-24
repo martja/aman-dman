@@ -2,7 +2,7 @@ package no.vaccsca.amandman.model.domain.service
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
-import no.vaccsca.amandman.model.data.integration.SharedState
+import no.vaccsca.amandman.model.data.integration.MasterSlaveSharedState
 import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
@@ -43,7 +43,7 @@ class GuiDataHandler : DataUpdateListener {
  * Responsible for sending data updates to HTTP server.
  */
 class DataUpdatesServerSender(
-    private val sharedState: SharedState
+    private val masterSlaveSharedState: MasterSlaveSharedState
 ) : DataUpdateListener {
 
     val sendUpdateMem = mutableMapOf<String, Instant>()
@@ -53,27 +53,27 @@ class DataUpdatesServerSender(
         sendUpdateMem[airportIcao]
             ?.takeIf { now - it <= 2.seconds }
             ?: run {
-                sharedState.sendTimelineEvents(airportIcao, timelineEvents)
+                masterSlaveSharedState.sendTimelineEvents(airportIcao, timelineEvents)
                 sendUpdateMem[airportIcao] = now
             }
     }
 
     override fun onRunwayModesUpdated(airportIcao: String, runwayStatuses: Map<String, RunwayStatus>) {
-        sharedState.sendRunwayStatuses(airportIcao, runwayStatuses)
+        masterSlaveSharedState.sendRunwayStatuses(airportIcao, runwayStatuses)
     }
 
     override fun onWeatherDataUpdated(airportIcao: String, data: VerticalWeatherProfile?) {
-        sharedState.sendWeatherData(airportIcao, data)
+        masterSlaveSharedState.sendWeatherData(airportIcao, data)
     }
 
     override fun onNonSequencedListUpdated(
         airportIcao: String,
         nonSequencedList: List<NonSequencedEvent>
     ) {
-        sharedState.sendNonSequencedList(airportIcao, nonSequencedList)
+        masterSlaveSharedState.sendNonSequencedList(airportIcao, nonSequencedList)
     }
 
     override fun onMinimumSpacingUpdated(airportIcao: String, minimumSpacingNm: Double) {
-        sharedState.sendMinimumSpacing(airportIcao, minimumSpacingNm)
+        masterSlaveSharedState.sendMinimumSpacing(airportIcao, minimumSpacingNm)
     }
 }

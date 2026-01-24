@@ -6,7 +6,7 @@ import no.vaccsca.amandman.model.domain.valueobjects.VersionCompatibilityResult
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 
-interface SharedState {
+interface MasterSlaveSharedState {
     fun sendTimelineEvents(airportIcao: String, timelineEvents: List<TimelineEvent>)
     fun getTimelineEvents(airportIcao: String): List<TimelineEvent>
     fun getRunwayStatuses(airportIcao: String): Map<String, RunwayStatus>
