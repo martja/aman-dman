@@ -28,12 +28,14 @@ import no.vaccsca.amandman.model.domain.valueobjects.Timeline
 import no.vaccsca.amandman.model.domain.valueobjects.RunwayThreshold
 import no.vaccsca.amandman.model.domain.valueobjects.Star
 import no.vaccsca.amandman.model.domain.valueobjects.StarFix
+import no.vaccsca.amandman.model.domain.valueobjects.Theme
 
 fun AmanDmanSettingsYaml.toDomain(): AmanDmanSettings = AmanDmanSettings(
     timelines = timelines.mapValues { entry -> entry.value.map { it.toDomain() } },
     connectionConfig = connectionConfig.toDomain(),
     arrivalLabelLayouts = arrivalLabelLayouts.mapValues { entry -> entry.value.map { it.toDomain() } },
-    departureLabelLayouts = departureLabelLayouts?.mapValues { entry -> entry.value.map { it.toDomain() } } ?: emptyMap()
+    departureLabelLayouts = departureLabelLayouts?.mapValues { entry -> entry.value.map { it.toDomain() } } ?: emptyMap(),
+    theme = theme?.toDomain() ?: Theme.FLATLAF_DARK,
 )
 
 fun TimelineYaml.toDomain() = Timeline(

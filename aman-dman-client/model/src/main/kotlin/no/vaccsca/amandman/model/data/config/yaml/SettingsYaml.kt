@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import jakarta.validation.Valid
 import jakarta.validation.constraints.*
+import no.vaccsca.amandman.model.domain.valueobjects.Theme
 
 data class AmanDmanSettingsYaml(
     @field:NotEmpty
@@ -25,7 +26,9 @@ data class AmanDmanSettingsYaml(
     val departureLabelLayouts: Map<
             @Pattern(regexp = "^[a-zA-Z0-9_-]+$") String,
             @Valid List<@Valid LabelItemYaml>
-            >? = null
+            >? = null,
+
+    val theme: ThemeYaml?,
 )
 
 data class TimelineYaml(
@@ -135,5 +138,28 @@ enum class LabelItemSourceEnumYaml(@JsonValue val value: String) {
 
     override fun toString(): String {
         return value
+    }
+}
+
+enum class ThemeYaml(@JsonValue val value: String) {
+    JTATTOO("JTattoo"),
+    FLATLAF_DARK("FlatLaf"),
+    MOTIF("Motif");
+
+    companion object {
+        @JsonCreator
+        @JvmStatic
+        fun fromValue(value: String) =
+            entries.find { it.value.equals(value, ignoreCase = true) }
+    }
+
+    override fun toString(): String {
+        return value
+    }
+
+    fun toDomain(): Theme = when(this) {
+        JTATTOO -> Theme.JTATTOO
+        FLATLAF_DARK -> Theme.FLATLAF_DARK
+        MOTIF -> Theme.MOTIF
     }
 }

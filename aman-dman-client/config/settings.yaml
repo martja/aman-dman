@@ -62,3 +62,5 @@ connectionConfig:
     port: 12345
   masterSlaveApi:
     host: "https://aman-dman-api.fly.dev"
+
+theme: "FlatLaf"

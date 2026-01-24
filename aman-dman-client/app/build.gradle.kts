@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":common"))
 
     implementation("com.jtattoo:JTattoo:1.6.13")
+    implementation("com.formdev:flatlaf:3.7")
     implementation("ch.qos.logback:logback-classic:1.5.24")
 }
 

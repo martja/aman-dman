@@ -4,7 +4,8 @@ data class AmanDmanSettings(
     val timelines: Map<String, List<Timeline>>,
     val connectionConfig: ConnectionConfig,
     val arrivalLabelLayouts: Map<String, List<LabelItem>>,
-    val departureLabelLayouts: Map<String, List<LabelItem>>
+    val departureLabelLayouts: Map<String, List<LabelItem>>,
+    val theme: Theme,
 )
 
 data class Timeline(
@@ -62,4 +63,10 @@ enum class LabelItemSource {
     GROUND_SPEED_10,
     ALTITUDE,
     TTL_TTG
+}
+
+enum class Theme {
+    FLATLAF_DARK,
+    MOTIF,
+    JTATTOO,
 }
