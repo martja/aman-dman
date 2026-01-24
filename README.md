@@ -30,9 +30,9 @@ See example configuration [here](https://github.com/EvenAR/aman-dman/tree/main/a
 
 - `airports.yaml`: To be able to connect the AMAN to an airport, the airport location and all its runway thresholds must be defined in this file.
 - `settings.yaml`: This defines the available timeline configurations for each airport.
-- `stars/<airport-icao>`: (optional) For improved accuracy you can define all available STARs for each airport and the "typical" altitude and airspeed at some of the waypoint.
+- `stars/<airport-icao>`: (optional) These files should define typical altitudes and airspeed along each STAR for an airport. This will make descent trajectories and estimated landing times more accurate.
 
-💡Tip: Use the schema files to automatically validate your custom config files.
+💡 Tip: Install the [VSCode YAML extension from Red Hat](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) to get help writing valid config files.
 
 
 ## High-Level System Overview
@@ -159,7 +159,7 @@ Descent profile visualization used for debugging:
 
 ### Java Application
 
-[IntelliJ IDEA](https://www.jetbrains.com/idea/download/?section=windows) (Community Edition) is recommended as the IDE.
+[IntelliJ IDEA](https://www.jetbrains.com/idea/download/?section=windows) (Community Edition) is a great IDE for Kotlin development.
 
 **Running the application from IntelliJ:**
 
@@ -173,7 +173,7 @@ Descent profile visualization used for debugging:
 
 ### EuroScope Bridge
 
-If you need to make changes to the EuroScope bridge C++ plugin, [Visual Studio Community](https://visualstudio.microsoft.com/vs/community/) is the recommended IDE.
+If you need to make changes to the EuroScope bridge C++ plugin you should use [Visual Studio Community](https://visualstudio.microsoft.com/vs/community/).
 
 **Debugging with Visual Studio:**
 
