@@ -9,29 +9,39 @@ import kotlin.math.sqrt
 import kotlin.times
 
 object SpeedConversionUtils {
+    private const val P0_INHG = 29.92126          // Sea-level pressure [inHg]
+    private const val CS0 = 661.4786               // Speed of sound at SL [kt]
+    private const val LAPSE = 6.8755856e-6         // T'/T0
+    private const val EXP_P = 5.2558797
+
     /**
-     * Convert Indicated Airspeed (IAS) to True Airspeed (TAS)
+     * Convert IAS (≈CAS) to TAS using compressible flow equations
+     * and true ambient temperature (OAT).
+     *
+     * @param iasKnots Indicated airspeed [kt]
+     * @param pressureAltitudeFt Pressure altitude [ft]
+     * @param oatC Outside / static air temperature [°C] (NOAA)
      */
-    fun iasToTAS(ias: Int, altitudeFt: Int, tempCelsius: Int): Int {
-        val tempKelvin = tempCelsius + 273.15
-        val altitudeMeters = altitudeFt * 0.3048
+    fun iasToTAS(
+        iasKnots: Int,
+        pressureAltitudeFt: Int,
+        oatC: Int
+    ): Int {
+        // --- Pressure at altitude (inHg)
+        val pressureRatio = 1.0 - LAPSE * pressureAltitudeFt
+        val pressure = P0_INHG * pressureRatio.pow(EXP_P)
 
-        // Constants
-        val P0 = 101325.0 // Sea level pressure in Pascals
-        val T0 = 288.15   // Sea level temperature in Kelvin
-        val L = 0.0065    // Temperature lapse rate (K/m)
-        val R = 287.05    // Specific gas constant for dry air (J/kg·K)
-        val g = 9.80665   // Gravity (m/s²)
+        // --- Dynamic pressure from IAS
+        val dp = P0_INHG * ((1.0 + 0.2 * (iasKnots / CS0).pow(2.0)).pow(3.5) - 1.0)
 
-        // ISA Pressure at altitude
-        val pressure = P0 * (1 - (L * altitudeMeters) / T0).pow(g / (R * L))
+        // --- Mach number (subsonic pitot equation)
+        val mach = sqrt(5.0 * ((dp / pressure + 1.0).pow(2.0 / 7.0) - 1.0))
 
-        // Air density at altitude
-        val rho = pressure / (R * tempKelvin)
-        val rho0 = P0 / (R * T0)
+        // --- Speed of sound at altitude (from OAT)
+        val cs = 38.967854 * sqrt(oatC + 273.15)
 
-        // TAS estimation
-        return (ias * sqrt(rho0 / rho)).roundToInt()
+        // --- True airspeed
+        return (mach * cs).roundToInt()
     }
 
     /**
@@ -88,28 +98,39 @@ object SpeedConversionUtils {
     }
 
     /**
-     * Convert True Airspeed (TAS) to Indicated Airspeed (IAS)
+     * Convert TAS to IAS (≈CAS) using compressible flow equations
+     * and true ambient temperature (OAT).
+     *
+     * @param tasKnots True airspeed [kt]
+     * @param pressureAltitudeFt Pressure altitude [ft]
+     * @param oatC Outside / static air temperature [°C] (NOAA)
      */
-    fun tasToIAS(tas: Int, altitudeFt: Int, tempCelsius: Int): Int {
-        val tempKelvin = tempCelsius + 273.15
-        val altitudeMeters = altitudeFt * 0.3048
+    fun tasToIAS(
+        tasKnots: Int,
+        pressureAltitudeFt: Int,
+        oatC: Int
+    ): Int {
 
-        // Constants
-        val P0 = 101325.0
-        val T0 = 288.15
-        val L = 0.0065
-        val R = 287.05
-        val g = 9.80665
+        // --- Speed of sound at altitude
+        val cs = 38.967854 * sqrt(oatC + 273.15)
 
-        // ISA pressure at altitude
-        val pressure = P0 * (1 - (L * altitudeMeters) / T0).pow(g / (R * L))
+        // --- Mach number
+        val mach = tasKnots / cs
 
-        // Air density
-        val rho = pressure / (R * tempKelvin)
-        val rho0 = P0 / (R * T0)
+        require(mach <= 1.0) {
+            "Supersonic TAS→IAS not supported (M=$mach)"
+        }
 
-        // IAS = TAS * sqrt(ρ / ρ0)
-        return (tas * sqrt(rho / rho0)).roundToInt()
+        // --- Pressure ratio term
+        val x = (1.0 - LAPSE * pressureAltitudeFt).pow(EXP_P)
+
+        // --- IAS from Mach (subsonic pitot equation)
+        return (CS0 * sqrt(
+            5.0 * (
+                    (1.0 + x * ((1.0 + mach * mach / 5.0).pow(3.5) - 1.0))
+                        .pow(2.0 / 7.0) - 1.0
+                    )
+        )).roundToInt()
     }
 
     /**

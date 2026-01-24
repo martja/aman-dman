@@ -12,12 +12,27 @@ class SpeedConversionTest {
 
         assertEquals(
             107,
-            SpeedConversionUtils.iasToTAS(ias = 100, altitudeFt = 3000, tempCelsius = 20)
+            SpeedConversionUtils.iasToTAS(iasKnots = 100, pressureAltitudeFt = 3000, oatC = 20)
         )
 
         assertEquals(
-            318,
-            SpeedConversionUtils.iasToTAS(ias = 250, altitudeFt = 15000, tempCelsius = -10)
+            314,
+            SpeedConversionUtils.iasToTAS(iasKnots = 250, pressureAltitudeFt = 15000, oatC = -10)
+        )
+
+        assertEquals(
+            481,
+            SpeedConversionUtils.iasToTAS(iasKnots = 275, pressureAltitudeFt = 37000, oatC = -58)
+        )
+
+        assertEquals(
+            452,
+            SpeedConversionUtils.iasToTAS(iasKnots = 244, pressureAltitudeFt = 39000, oatC = -57)
+        )
+
+        assertEquals(
+            374,
+            SpeedConversionUtils.iasToTAS(iasKnots = 279, pressureAltitudeFt = 20450, oatC = -28)
         )
     }
 
@@ -25,12 +40,22 @@ class SpeedConversionTest {
     fun`Convert TAS to IAS`() {
         assertEquals(
             100,
-            SpeedConversionUtils.tasToIAS(tas = 107, altitudeFt = 3000, tempCelsius = 20)
+            SpeedConversionUtils.tasToIAS(tasKnots = 107, pressureAltitudeFt = 3000, oatC = 20)
         )
 
         assertEquals(
-            250,
-            SpeedConversionUtils.tasToIAS(tas = 318, altitudeFt = 15000, tempCelsius = -10)
+            253,
+            SpeedConversionUtils.tasToIAS(tasKnots = 318, pressureAltitudeFt = 15000, oatC = -10)
+        )
+
+        assertEquals(
+            296,
+            SpeedConversionUtils.tasToIAS(tasKnots = 364, pressureAltitudeFt = 15625, oatC = -24)
+        )
+
+        assertEquals(
+            257,
+            SpeedConversionUtils.tasToIAS(tasKnots = 444, pressureAltitudeFt = 36000, oatC = -58)
         )
     }
 
