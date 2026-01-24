@@ -11,6 +11,7 @@ import no.vaccsca.amandman.view.airport.TimeRangeScrollBarVertical
 import no.vaccsca.amandman.view.airport.TimelineScrollPane
 import no.vaccsca.amandman.view.airport.TopBar
 import no.vaccsca.amandman.view.airport.timeline.TimelineView
+import no.vaccsca.amandman.view.components.BoundedDesktopManager
 import no.vaccsca.amandman.view.components.ReloadButton
 import no.vaccsca.amandman.view.entity.MainViewState
 import no.vaccsca.amandman.view.entity.TimeRange
@@ -70,10 +71,12 @@ class AirportView(
     init {
         add(contentPanel)
         contentPanel.setBounds(0, 0, 800, 600)
+        this.desktopManager = BoundedDesktopManager()
 
         addComponentListener(object : ComponentAdapter() {
             override fun componentResized(e: ComponentEvent?) {
                 contentPanel.setSize(width, height)
+                forceInternalFramesToStayInBounds()
             }
         })
 
@@ -199,5 +202,20 @@ class AirportView(
         }
         windFrame?.isVisible = true
         windFrame?.toFront()
+    }
+
+    private fun forceInternalFramesToStayInBounds() {
+        for (frame in allFrames) {
+            val bounds = frame.bounds
+            var x = bounds.x
+            var y = bounds.y
+
+            if (bounds.x < 0) x = 0
+            if (bounds.y < 0) y = 0
+            if (bounds.x + bounds.width > width) x = width - bounds.width
+            if (bounds.y + bounds.height > height) y = height - bounds.height
+
+            frame.setLocation(x, y)
+        }
     }
 }
