@@ -154,7 +154,6 @@ Descent profile visualization used for debugging:
 
 <img width="798" height="599" alt="image" src="https://github.com/user-attachments/assets/9586e09d-173e-40ae-94ba-1db908f5ea60" />
 
-
 ## Development
 
 ### Java Application
@@ -183,3 +182,11 @@ If you need to make changes to the EuroScope bridge C++ plugin you should use [V
 4. Run **Local Windows Debugger**.  
    If everything works correctly, a `.dll` file is written to `euroscope-bridge\Debug`.
 5. Load the `.dll` plugin in EuroScope.
+
+## Contributing
+
+This project benefits most when behavioral changes are shared.
+
+If you fork the repository to experiment, that’s great — but if you change sequencing logic, trajectory modeling, or AMAN behavior, please consider submitting a Pull Request so improvements can be shared and discussed.
+
+The goal is not to be “perfect”, but to converge on realistic and understandable behavior.
