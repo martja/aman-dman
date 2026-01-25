@@ -1,7 +1,6 @@
 package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.presenter.PresenterInterface
-import no.vaccsca.amandman.view.components.WrapLayout
 import no.vaccsca.amandman.view.entity.AirportViewState
 import java.awt.*
 import java.awt.event.ComponentAdapter
@@ -11,18 +10,46 @@ import javax.swing.*
 class TopBar(
     private val presenter: PresenterInterface,
     private val airportViewState: AirportViewState,
-) : JPanel() {
-    private val showDepartures = JCheckBox("Departures")
+) : JPanel(BorderLayout()) {
+
+    private val departuresCheckbox = JCheckBox("Departures")
     private val nonSequencedButton = JButton("NonSeq")
     private val landingRatesButton = JButton("Landing Rates")
-    // Use WrapLayout so the labels wrap based on available width
-    private val runwayModeList = JPanel(WrapLayout(FlowLayout.LEFT, 10, 5))
+
+    /** Row 1 container */
+    private val topRow = JPanel(BorderLayout())
+
+    /** Runway modes */
+    private val runwayModePanel = JPanel().apply {
+        layout = BoxLayout(this, BoxLayout.X_AXIS)
+        border = null
+    }
+
+    /** Buttons – can move to second row */
+    private val buttonsPanel = JPanel().apply {
+        layout = FlowLayout(FlowLayout.RIGHT, 5, 0)
+        border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+    }
+
+    /** Row 2 container (buttons overflow) */
+    private val bottomRow = JPanel().apply {
+        layout = FlowLayout(FlowLayout.RIGHT, 5, 0)
+        border = BorderFactory.createEmptyBorder(5, 0, 5, -5)
+    }
 
     init {
-        layout = BorderLayout()
+        initActions()
+        initStateListeners()
+        initLayout()
+        initResizeHandling()
+    }
 
-        showDepartures.addActionListener {
-            presenter.onToggleShowDepartures(airportViewState.airportIcao, showDepartures.isSelected)
+    private fun initActions() {
+        departuresCheckbox.addActionListener {
+            presenter.onToggleShowDepartures(
+                airportViewState.airportIcao,
+                departuresCheckbox.isSelected
+            )
         }
 
         landingRatesButton.addActionListener {
@@ -32,7 +59,9 @@ class TopBar(
         nonSequencedButton.addActionListener {
             presenter.onOpenNonSequencedWindow(airportViewState.airportIcao)
         }
+    }
 
+    private fun initStateListeners() {
         airportViewState.runwayModes.addListener {
             setRunwayModes(it)
         }
@@ -42,44 +71,72 @@ class TopBar(
         }
 
         airportViewState.showDepartures.addListener {
-            showDepartures.isSelected = it
+            departuresCheckbox.isSelected = it
         }
+    }
 
-        // Right-aligned controls
-        val rightPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 10, 5))
-        rightPanel.add(showDepartures)
-        rightPanel.add(nonSequencedButton)
-        rightPanel.add(landingRatesButton)
+    private fun initLayout() {
+        buttonsPanel.add(departuresCheckbox)
+        buttonsPanel.add(nonSequencedButton)
+        buttonsPanel.add(landingRatesButton)
 
-        // Place runwayModeList in CENTER so it can expand vertically/horizontally
-        add(runwayModeList, BorderLayout.CENTER)
-        add(rightPanel, BorderLayout.EAST)
+        topRow.add(runwayModePanel, BorderLayout.CENTER)
+        topRow.add(buttonsPanel, BorderLayout.EAST)
 
-        // Revalidate/repaint the runwayModeList on resize to force WrapLayout recalculation
+        add(topRow, BorderLayout.NORTH)
+        add(bottomRow, BorderLayout.SOUTH)
+    }
+
+    private fun initResizeHandling() {
         addComponentListener(object : ComponentAdapter() {
             override fun componentResized(e: ComponentEvent?) {
-                runwayModeList.revalidate()
-                runwayModeList.repaint()
+                SwingUtilities.invokeLater {
+                    updateButtonsRowPlacement()
+                }
             }
         })
     }
 
+    private fun updateButtonsRowPlacement() {
+        val availableWidth = topRow.width
+        val requiredWidth = runwayModePanel.preferredSize.width + buttonsPanel.preferredSize.width
+
+        val shouldWrap = requiredWidth > availableWidth
+
+        if (shouldWrap && buttonsPanel.parent !== bottomRow) {
+            topRow.remove(buttonsPanel)
+            bottomRow.add(buttonsPanel)
+            border = BorderFactory.createEmptyBorder(5, 5, 0, 0)
+        } else if (!shouldWrap && buttonsPanel.parent !== topRow) {
+            bottomRow.remove(buttonsPanel)
+            topRow.add(buttonsPanel, BorderLayout.EAST)
+            border = BorderFactory.createEmptyBorder(5, 5, -5, 0)
+        }
+
+        revalidate()
+        repaint()
+    }
+
     private fun updateNonSeqNumbers(numberOfNonSeq: Int) {
-        this.nonSequencedButton.apply {
+        nonSequencedButton.apply {
             background = if (numberOfNonSeq > 0) Color.YELLOW else null
-            text = "NonSeq ($numberOfNonSeq)"
             foreground = if (numberOfNonSeq > 0) Color.BLACK else Color.WHITE
+            text = "NonSeq ($numberOfNonSeq)"
         }
     }
 
     private fun setRunwayModes(runwayModes: List<Pair<String, Boolean>>) {
-        runwayModeList.removeAll()
+        runwayModePanel.removeAll()
+
         runwayModes.forEach { (modeName, isActive) ->
-            val label = JLabel(modeName)
-            label.foreground = if (isActive) Color.WHITE else Color.GRAY
-            runwayModeList.add(label)
+            val label = JLabel(modeName).apply {
+                foreground = if (isActive) Color.WHITE else Color.GRAY
+                border = BorderFactory.createEmptyBorder(0, 0, 0, 6)
+            }
+            runwayModePanel.add(label)
         }
-        runwayModeList.revalidate()
-        runwayModeList.repaint()
+
+        runwayModePanel.revalidate()
+        runwayModePanel.repaint()
     }
 }
