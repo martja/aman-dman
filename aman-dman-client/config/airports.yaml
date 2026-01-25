@@ -48,3 +48,23 @@ airports:
           longitude: 5.214462654076689
         elevation: 166
         trueHeading: 350
+  EDDF:
+    location:
+      latitude: 50.037054
+      longitude: 8.570456
+    runwayThresholds:
+      07L:
+        location:
+          latitude: 50.037054
+          longitude: 8.497078
+        elevation: 304
+        trueHeading: 69
+      07R:
+        location:
+          latitude: 50.027542
+          longitude: 8.534174
+        elevation: 327
+        trueHeading: 69
+    independentRunwaySystems:
+      - ["07L"]
+      - ["07R"]
