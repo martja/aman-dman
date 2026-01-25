@@ -8,6 +8,24 @@ Features:
 - **Automatic sequencing**: Automatically sequences incoming aircraft based on their optimal arrival times and required separation.
 - **Master and slave mode**: Supports master-slave configuration for shared AMAN data between multiple controllers.
 
+---
+
+## What AMAN Is (and Is Not)
+
+**AMAN is:**
+- A planning and sequencing tool  
+- A workload reducer during high traffic  
+- A realistic simulation of real-world arrival management  
+
+**AMAN is not:**
+- An autopilot  
+- A replacement for ATC judgement  
+- A rigid or mandatory system  
+
+Controllers are always in charge.
+
+---
+
 ## Getting started
 
 ### Prerequisites
@@ -34,107 +52,7 @@ See example configuration [here](https://github.com/EvenAR/aman-dman/tree/main/a
 
 💡 Tip: Install the [VSCode YAML extension from Red Hat](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) to get help writing valid config files.
 
-
-## High-Level System Overview
-
-### 1. Data collection (EuroScope Plugin)
-
-A EuroScope plugin continuously collects information about **all inbound aircraft**, including:
-- Current position and altitude  
-- Assigned STAR and runway  
-- Aircraft type  
-
-This data is sent to the AMAN application in real time.
-
----
-
-### 2. Trajectory prediction
-
-For each inbound aircraft, AMAN estimates the remaining flight time from **current position to runway threshold**:
-
-- The route is split into **10-second segments**
-- For each segment, AMAN calculates:
-  - Expected position
-  - Altitude
-  - Airspeed
-- Using **wind and temperature data above the airport**, airspeed is converted to **ground speed**
-
-From this, AMAN computes an **Estimated Landing Time (ELDT)** for every aircraft.
-
----
-
-### 3. Arrival sequencing & horizons
-
-Once all inbound aircraft have an estimated landing time, AMAN builds and manages the arrival sequence using **three planning horizons**.
-
-#### 3.1 Eligibility Horizon  
-**Purpose:** Traffic awareness and early planning  
-
-- Aircraft are sequenced using **first-come, first-served**
-- No active spacing advice yet
-- Gives controllers an early picture of:
-  - Expected landing order
-  - Sector and runway load  
-
----
-
-#### 3.2 Sequencing Horizon (≈ 30 minutes before landing)  
-**Purpose:** Active arrival management  
-
-- AMAN schedules **target landing times**
-- Aircraft may be **re-sequenced** if predictions change
-- Controllers receive advisories such as:
-  - *“Aircraft needs to lose 2 minutes”* (eg. reduce speed or fly more trackmiles)
-  - *“Aircraft needs to gain 1 minute”* (eg. incerase speed or get a shortcut)
-
-This is where controllers:
-- Adjust speeds
-- Apply minor path stretching
-- Prepare holding **before it becomes necessary**
-
----
-
-#### 3.3 Locked Horizon (≈ 10 minutes before landing)  
-**Purpose:** Stability close to touchdown  
-
-- The arrival sequence is **frozen**
-- No further resequencing occurs
-- Focus shifts to tactical control and final spacing  
-
----
-
-### 4. Timeline & Controller Advisories
-
-Each aircraft is placed on a **runway timeline** based on its scheduled landing time.
-
-If two aircraft are predicted to land too close together:
-- AMAN calculates the required spacing
-- The **latter aircraft** receives a delay advisory:
-  - Example: `+1` meaning this flight must be delayed by 1 minute to hit the scheduled arrival time.
-
-How this delay is achieved is **entirely up to the controller**, using:
-- Speed control
-- Minor vectoring
-- STAR path stretching
-- Holding (if required)
-
-AMAN never issues control instructions - it only advises.
-
----
-
-## What AMAN Is (and Is Not)
-
-**AMAN is:**
-- A planning and sequencing tool  
-- A workload reducer during high traffic  
-- A realistic simulation of real-world arrival management  
-
-**AMAN is not:**
-- An autopilot  
-- A replacement for ATC judgement  
-- A rigid or mandatory system  
-
-Controllers are always in charge.
+Please visit [the wiki](https://github.com/EvenAR/aman-dman/wiki) for more information.
 
 ---
 
@@ -144,6 +62,7 @@ Controllers are always in charge.
 - The application assumes that all pilots are using **live real-world weather** in their simulator.
 - Currently, only timelines based on **landing time** are supported. In the future, it might also be possible to create timelines for inbound **fixes**.
 - Local QNH and air temperature are not currently accounted for in the descent trajectory. This is expected to have only a minor impact on ETA accuracy.
+- Each airport has only one arrival sequence. It currently supports single runway operation and segregated parallel approaches.
 
 
 ### Screenshots
@@ -153,7 +72,6 @@ Controllers are always in charge.
 Descent profile visualization used for debugging:
 
 <img width="798" height="599" alt="image" src="https://github.com/user-attachments/assets/9586e09d-173e-40ae-94ba-1db908f5ea60" />
-
 
 ## Development
 
@@ -183,3 +101,11 @@ If you need to make changes to the EuroScope bridge C++ plugin you should use [V
 4. Run **Local Windows Debugger**.  
    If everything works correctly, a `.dll` file is written to `euroscope-bridge\Debug`.
 5. Load the `.dll` plugin in EuroScope.
+
+## Contributing
+
+This project benefits most when behavioral changes are shared.
+
+If you fork the repository to experiment, that’s great — but if you change sequencing logic, trajectory modeling, or AMAN behavior, please consider submitting a Pull Request so improvements can be shared and discussed.
+
+The goal is not to be “perfect”, but to converge on realistic and understandable behavior.
