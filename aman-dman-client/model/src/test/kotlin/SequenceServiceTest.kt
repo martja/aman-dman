@@ -184,7 +184,7 @@ class SequenceServiceTest {
 
         // Manually move FIRST to a later time, creating potential conflict with SECOND
         val updatedSequence = SequenceService.suggestScheduledTime(
-            sequence, "FIRST", now + 19.minutes, 3.0
+            sequence, "FIRST", now + 19.minutes, 3.0, emptyList()
         )
 
         val firstPlace = updatedSequence.sequecencePlaces.find { it.item.id == "FIRST" }!!
@@ -507,7 +507,7 @@ class SequenceServiceTest {
 
         // Manually move FIRST to a later time, creating potential conflict with SECOND
         val updatedSequence = SequenceService.suggestScheduledTime(
-            sequence, "FIRST", now + 19.minutes, 3.0
+            sequence, "FIRST", now + 19.minutes, 3.0, emptyList()
         )
 
         val firstPlace = updatedSequence.sequecencePlaces.find { it.item.id == "FIRST" }!!

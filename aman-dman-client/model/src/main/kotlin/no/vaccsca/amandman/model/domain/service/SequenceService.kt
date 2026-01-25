@@ -36,7 +36,8 @@ object SequenceService {
         currentSequence: Sequence,
         callsign: String,
         scheduledTime: Instant,
-        minimumSeparationNm: Double
+        minimumSeparationNm: Double,
+        independentRunwaySystems: List<Set<String>>
     ): Sequence {
         val oldIdx = currentSequence.sequecencePlaces.indexOfFirst { it.item.id == callsign }
         if (oldIdx == -1) return currentSequence // Not found
@@ -56,7 +57,8 @@ object SequenceService {
                 referenceTime = prev.scheduledTime,
                 leader = prev.item as AircraftSequenceCandidate,
                 follower = oldPlace.item as AircraftSequenceCandidate,
-                minimumSeparationNm = minimumSeparationNm
+                minimumSeparationNm = minimumSeparationNm,
+                independentRunwaySystems = independentRunwaySystems
             )
             if (newTime < minTime) newTime = minTime
         }
@@ -71,7 +73,8 @@ object SequenceService {
                 referenceTime = leader.scheduledTime,
                 leader = leader.item as AircraftSequenceCandidate,
                 follower = follower.item as AircraftSequenceCandidate,
-                minimumSeparationNm = minimumSeparationNm
+                minimumSeparationNm = minimumSeparationNm,
+                independentRunwaySystems = independentRunwaySystems
             )
 
             // Always move following aircraft if there's a spacing conflict, regardless of manual assignment
@@ -146,7 +149,8 @@ object SequenceService {
             referenceTime = closestLeader.scheduledTime,
             leader = closestLeader.item as AircraftSequenceCandidate,
             follower = arrivalToCheck as AircraftSequenceCandidate,
-            minimumSeparationNm = minimumSeparationNm
+            minimumSeparationNm = minimumSeparationNm,
+            independentRunwaySystems = independentRunwaySystems
         )
 
         return requestedTime >= safeLandingTime
