@@ -92,7 +92,7 @@ fun AirportJson.toDomain(icao: String, stars: StarYamlFile) =
     Airport(
         icao = icao,
         location = LatLng(location.latitude, location.longitude),
-        independentRunwaySystems = independentParallelRunways?.map { it.toSet() } ?: emptyList(),
+        independentRunwaySystems = independentRunwaySystems?.map { it.toSet() } ?: emptyList(),
         runways = runwayThresholds.mapValues { (id, value) ->
             RunwayThreshold(
                 id = id,

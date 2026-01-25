@@ -300,7 +300,7 @@ class PlannerServiceMaster(
                 withStateLock {
                     if (checkTimeSlotAvailable(timelineEvent, scheduledTime)) {
                         plannerState.sequence = SequenceService.suggestScheduledTime(
-                            plannerState.sequence, timelineEvent.callsign, scheduledTime, plannerState.minimumSpacingNm
+                            plannerState.sequence, timelineEvent.callsign, scheduledTime, plannerState.minimumSpacingNm, airport.independentRunwaySystems
                         )
                         if (newRunway != null) {
                             atcClient.assignRunway(timelineEvent.callsign, newRunway)
@@ -332,7 +332,7 @@ class PlannerServiceMaster(
 
     private fun checkTimeSlotAvailable(timelineEvent: TimelineEvent, scheduledTime: Instant): Boolean =
         if (timelineEvent !is RunwayArrivalEvent) false
-        else SequenceService.isTimeSlotAvailable(plannerState.sequence, timelineEvent, scheduledTime, plannerState.minimumSpacingNm)
+        else SequenceService.isTimeSlotAvailable(plannerState.sequence, timelineEvent, scheduledTime, plannerState.minimumSpacingNm, airport.independentRunwaySystems)
 
     override fun getDescentProfileForCallsign(callsign: String): Result<List<TrajectoryPoint>?> =
         runCatching { ArrivalEventService.getDescentProfileForCallsign(callsign) }

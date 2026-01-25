@@ -119,7 +119,8 @@ object SequenceService {
         currentSequence: Sequence,
         timelineEvent: TimelineEvent,
         requestedTime: Instant,
-        minimumSeparationNm: Double
+        minimumSeparationNm: Double,
+        independentRunwaySystems: List<Set<String>>
     ): Boolean {
         if (timelineEvent !is RunwayArrivalEvent) return false
 
