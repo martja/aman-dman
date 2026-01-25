@@ -21,6 +21,8 @@ data class AirportJson(
     @field:NotNull
     @field:Valid
     val runwayThresholds: Map<@NotEmpty String, @Valid RunwayThresholdJson>,
+
+    val independentRunwaySystems: List<List<String>>? = null
 )
 
 data class LocationJson(
