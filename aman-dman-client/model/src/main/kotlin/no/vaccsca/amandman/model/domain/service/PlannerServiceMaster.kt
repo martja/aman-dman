@@ -170,7 +170,7 @@ class PlannerServiceMaster(
                 .filter { it !in runwayArrivalEvents.map { it.callsign } }
 
             val cleanedSequence = SequenceService.removeFromSequence(sequence, *aircraftToRemove.toTypedArray())
-            sequence = SequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm)
+            sequence = SequenceService.updateSequence(cleanedSequence, sequenceItems, minimumSpacingNm, airport.independentRunwaySystems)
 
             arrivalsCache = runwayArrivalEvents.map { arrivalEvent ->
                 val sequenceSchedule = sequence.sequecencePlaces.find { it.item.id == arrivalEvent.callsign }?.scheduledTime
