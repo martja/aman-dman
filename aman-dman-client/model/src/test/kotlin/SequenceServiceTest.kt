@@ -24,7 +24,7 @@ class SequenceServiceTest {
             preferredTime = now + 15.minutes // Within AAH (30 min threshold)
         )
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0, emptyList())
 
         assertEquals(1, updatedSequence.sequecencePlaces.size)
         assertEquals("TEST123", updatedSequence.sequecencePlaces[0].item.id)
@@ -41,7 +41,7 @@ class SequenceServiceTest {
             preferredTime = now + 35.minutes // Outside sequencing horizon (30 min threshold)
         )
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0, emptyList())
 
         assertEquals(0, updatedSequence.sequecencePlaces.size)
     }
@@ -57,7 +57,7 @@ class SequenceServiceTest {
             preferredTime = now + 15.minutes
         )
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0, emptyList())
 
         // Should keep preferred time since there are no conflicts
         assertEquals(aircraft.preferredTime, updatedSequence.sequecencePlaces[0].scheduledTime)
@@ -83,7 +83,7 @@ class SequenceServiceTest {
             wakeCategory = 'M'
         )
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(firstAircraft, secondAircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(firstAircraft, secondAircraft), 3.0, emptyList())
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val secondPlace = updatedSequence.sequecencePlaces.find { it.item.id == "SECOND" }!!
@@ -102,7 +102,7 @@ class SequenceServiceTest {
         val medium = makeSequenceCandidate("MEDIUM", now + 10.minutes + 1.seconds, wakeCategory = 'M')
         val light = makeSequenceCandidate("LIGHT", now + 10.minutes + 2.seconds, wakeCategory = 'L')
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, medium, light), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, medium, light), 3.0, emptyList())
 
         assertEquals(3, updatedSequence.sequecencePlaces.size)
 
@@ -137,7 +137,7 @@ class SequenceServiceTest {
         )
 
         // Update with same aircraft - should preserve existing scheduled time
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0, emptyList())
 
         assertEquals(1, updatedSequence.sequecencePlaces.size)
         // The current implementation uses findBestInsertionTime which may recalculate
@@ -160,7 +160,7 @@ class SequenceServiceTest {
             )
         )
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(aircraft), 3.0, emptyList())
 
         assertEquals(1, updatedSequence.sequecencePlaces.size)
         assertEquals(manualTime, updatedSequence.sequecencePlaces[0].scheduledTime)
@@ -207,7 +207,7 @@ class SequenceServiceTest {
         val aircraft2 = makeSequenceCandidate("SECOND", now + 10.minutes + 30.seconds) // Initially too close
 
         // First update creates conflict
-        val sequence1 = SequenceService.updateSequence(Sequence(emptyList()), listOf(aircraft1, aircraft2), 3.0)
+        val sequence1 = SequenceService.updateSequence(Sequence(emptyList()), listOf(aircraft1, aircraft2), 3.0, emptyList())
         val secondPlace1 = sequence1.sequecencePlaces.find { it.item.id == "SECOND" }!!
 
         // SECOND should be delayed due to conflict
@@ -218,7 +218,8 @@ class SequenceServiceTest {
         val sequence2 = SequenceService.updateSequence(
             sequence1,
             listOf(updatedAircraft1, aircraft2),
-            3.0
+            3.0,
+            emptyList()
         )
 
         val secondPlace2 = sequence2.sequecencePlaces.find { it.item.id == "SECOND" }!!
@@ -246,7 +247,8 @@ class SequenceServiceTest {
         val updatedSequence = SequenceService.updateSequence(
             sequence,
             listOf(frozenAircraft, newAircraft),
-            3.0
+            3.0,
+            emptyList()
         )
 
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -278,7 +280,8 @@ class SequenceServiceTest {
         val updatedSequence = SequenceService.updateSequence(
             sequence,
             listOf(aircraft1, aircraft2, aircraft3),
-            3.0
+            3.0,
+            emptyList()
         )
 
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -298,7 +301,8 @@ class SequenceServiceTest {
         val sequence = SequenceService.updateSequence(
             Sequence(emptyList()),
             listOf(aircraft1, aircraft2),
-            3.0
+            3.0,
+            emptyList()
         )
 
         val followerPlace = sequence.sequecencePlaces.find { it.item.id == "FOLLOWER" }!!
@@ -347,7 +351,8 @@ class SequenceServiceTest {
         val updatedSequence = SequenceService.updateSequence(
             sequence,
             listOf(aircraft1, aircraft2, aircraft3),
-            3.0
+            3.0,
+            emptyList()
         )
 
         assertEquals(3, updatedSequence.sequecencePlaces.size)
@@ -404,7 +409,7 @@ class SequenceServiceTest {
         // Light aircraft on runway 09R (different runway)
         val light = makeSequenceCandidate("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = "09R")
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0, emptyList())
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -430,7 +435,7 @@ class SequenceServiceTest {
         val heavy = makeSequenceCandidate("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = "09L")
         val light = makeSequenceCandidate("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = "09L")
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0, emptyList())
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -453,7 +458,7 @@ class SequenceServiceTest {
         val heavy = makeSequenceCandidate("HEAVY", now + 10.minutes, wakeCategory = 'H', assignedRunway = null)
         val light = makeSequenceCandidate("LIGHT", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = null)
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(heavy, light), 3.0, emptyList())
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
@@ -477,7 +482,7 @@ class SequenceServiceTest {
         // Second aircraft without runway assignment
         val second = makeSequenceCandidate("SECOND", now + 10.minutes + 30.seconds, wakeCategory = 'L', assignedRunway = null)
 
-        val updatedSequence = SequenceService.updateSequence(sequence, listOf(first, second), 3.0)
+        val updatedSequence = SequenceService.updateSequence(sequence, listOf(first, second), 3.0, emptyList())
 
         assertEquals(2, updatedSequence.sequecencePlaces.size)
         val sortedPlaces = updatedSequence.sequecencePlaces.sortedBy { it.scheduledTime }
