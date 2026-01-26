@@ -1,18 +1,18 @@
 package no.vaccsca.amandman.view.dialogs
 
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.AppenderBase
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.AppenderBase
 import org.slf4j.LoggerFactory
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
 import javax.swing.*
-import javax.swing.text.StyleConstants
 import javax.swing.text.DefaultStyledDocument
+import javax.swing.text.StyleConstants
 
 /**
  * Data class to hold log event information

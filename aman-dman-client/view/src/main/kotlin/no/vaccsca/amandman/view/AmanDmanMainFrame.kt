@@ -3,23 +3,23 @@ package no.vaccsca.amandman.view
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.domain.TimelineGroup
-import no.vaccsca.amandman.presenter.PresenterInterface
-import no.vaccsca.amandman.presenter.ViewInterface
-import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
+import no.vaccsca.amandman.model.domain.valueobjects.TrajectoryPoint
 import no.vaccsca.amandman.model.domain.valueobjects.atcClient.ControllerInfoData
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
-import no.vaccsca.amandman.view.forms.NewTimelineForm
-import no.vaccsca.amandman.view.visualizations.DescentProfileVisualization
-import no.vaccsca.amandman.view.dialogs.RunwayDialog
-import no.vaccsca.amandman.view.dialogs.SpacingDialog
+import no.vaccsca.amandman.presenter.PresenterInterface
+import no.vaccsca.amandman.presenter.ViewInterface
 import no.vaccsca.amandman.view.dialogs.LogViewerDialog
 import no.vaccsca.amandman.view.dialogs.RoleSelectionDialog
+import no.vaccsca.amandman.view.dialogs.RunwayDialog
+import no.vaccsca.amandman.view.dialogs.SpacingDialog
 import no.vaccsca.amandman.view.entity.AirportViewState
 import no.vaccsca.amandman.view.entity.DraggedLabelState
 import no.vaccsca.amandman.view.entity.MainViewState
+import no.vaccsca.amandman.view.forms.NewTimelineForm
+import no.vaccsca.amandman.view.visualizations.DescentProfileVisualization
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.Point
@@ -27,7 +27,6 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.*
 import kotlin.math.roundToInt
-
 
 
 class AmanDmanMainFrame : ViewInterface, JFrame("AMAN") {

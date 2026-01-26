@@ -3,20 +3,8 @@ package no.vaccsca.amandman.view.forms
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.data.dto.CreateOrUpdateTimelineDto
 import no.vaccsca.amandman.presenter.PresenterInterface
-import java.awt.Dialog
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
-import java.awt.Insets
-import java.awt.Window
-import javax.swing.BorderFactory
-import javax.swing.JButton
-import javax.swing.JComboBox
-import javax.swing.JComponent
-import javax.swing.JDialog
-import javax.swing.JLabel
-import javax.swing.JOptionPane
-import javax.swing.JPanel
-import javax.swing.JTextField
+import java.awt.*
+import javax.swing.*
 
 class NewTimelineForm(
     private val presenterInterface: PresenterInterface,

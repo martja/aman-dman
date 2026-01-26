@@ -1,12 +1,6 @@
 package no.vaccsca.amandman.view
 
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JMenu
-import javax.swing.JMenuItem
-import javax.swing.JPopupMenu
-import javax.swing.JSeparator
-import javax.swing.SwingConstants
+import javax.swing.*
 
 class AmanPopupMenu(title: String, vararg itemGroups: AmanMenuItemData) : JPopupMenu() {
     init {

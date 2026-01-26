@@ -3,13 +3,12 @@ package no.vaccsca.amandman.view.airport.timeline
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.data.repository.SettingsRepository
-import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.view.entity.TimeRange
+import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.airport.timeline.enums.TimelineAlignment
 import no.vaccsca.amandman.view.entity.AirportViewState
 import no.vaccsca.amandman.view.entity.SharedValue
+import no.vaccsca.amandman.view.entity.TimeRange
 import java.awt.Dimension
 import java.awt.Rectangle
 import javax.swing.JLayeredPane

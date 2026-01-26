@@ -2,7 +2,9 @@ package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.entity.AirportViewState
-import java.awt.*
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.FlowLayout
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import javax.swing.*

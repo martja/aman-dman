@@ -246,7 +246,7 @@ class Presenter(
         try {
             timelineGroups.toList().forEach { group ->
                 val relevantDataForTab = timelineEventsSnapshot.filter { occurrence ->
-                    group.availableTimelines.any { it.airportIcao == occurrence.airportIcao }
+                    group.airport.icao == occurrence.airportIcao
                 }
                 view.updateTab(
                     airportIcao = group.airport.icao,

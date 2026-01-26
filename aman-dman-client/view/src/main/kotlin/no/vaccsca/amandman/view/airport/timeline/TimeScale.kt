@@ -1,6 +1,5 @@
 package no.vaccsca.amandman.view.airport.timeline
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.common.util.NumberUtils.format
@@ -10,8 +9,8 @@ import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.AmanPopupMenu
 import no.vaccsca.amandman.view.airport.timeline.utils.GraphicUtils.drawStringAdvanced
-import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.entity.SharedValue
+import no.vaccsca.amandman.view.entity.TimeRange
 import java.awt.Color
 import java.awt.Graphics
 import java.awt.event.MouseEvent

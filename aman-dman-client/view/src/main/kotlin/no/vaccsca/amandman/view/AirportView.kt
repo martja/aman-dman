@@ -2,9 +2,6 @@ package no.vaccsca.amandman.view
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
-import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.airport.Footer
 import no.vaccsca.amandman.view.airport.TimeRangeScrollBarVertical
@@ -37,7 +34,7 @@ class AirportView(
     private val airportViewState = mainViewState.airportViewStates.value.find { it.airportIcao == airportIcao }
         ?: throw IllegalStateException("No AirportViewModel found for airport ${airportIcao}")
 
-    val timeWindowScrollbar = TimeRangeScrollBarVertical(airportViewState.selectedTimeRange, airportViewState.availableTimeRange)
+    val timeWindowScrollbar = TimeRangeScrollBarVertical(airportViewState)
     val reloadButton = ReloadButton("Recalculate sequence for all arrivals") {
         presenter.onRecalculateSequenceClicked(airportIcao)
     }
@@ -50,7 +47,7 @@ class AirportView(
     val topBar = TopBar(presenter, airportViewState)
     val footer = Footer(mainViewState)
 
-    private val landingRatesGraph = LandingRatesGraph()
+    private val landingRatesGraph = LandingRatesGraph(airportViewState)
     private var landingRatesFrame: JInternalFrame? = null
 
     private val nonSeqView = NonSeqView(airportViewState)
@@ -87,10 +84,6 @@ class AirportView(
         airportViewState.openTimelines.addListener {
             updateVisibleTimelines(it)
         }
-
-        airportViewState.events.addListener { tabData ->
-            updateAmanData(tabData)
-        }
     }
 
     private fun updateTime(currentTime: Instant) {
@@ -108,25 +101,6 @@ class AirportView(
             currentTime + airportViewState.maxFuture,
         )
         this.currentTime = currentTime
-    }
-
-    private fun updateAmanData(timelineEvents: List<TimelineEvent>) {
-        timeWindowScrollbar.updateTimelineEvents(timelineEvents)
-        val runwayArrivals = timelineEvents.filterIsInstance<RunwayArrivalEvent>()
-
-        val timelineData = airportViewState.availableTimelines.filter { it.title in airportViewState.openTimelines.value }
-            .map { timelineConfig ->
-                val leftEvents = runwayArrivals.filter { it.runway in timelineConfig.runwaysLeft }
-                val rightEvents = runwayArrivals.filter { it.runway in timelineConfig.runwaysRight }
-                TimelineData(
-                    timelineId = timelineConfig.title,
-                    left = leftEvents,
-                    right = rightEvents
-                )
-            }
-
-        timelineScrollPane.updateTimelineEvents(timelineData)
-        landingRatesGraph.updateData(runwayArrivals)
     }
 
     private fun updateVisibleTimelines(openIds: List<String>) {

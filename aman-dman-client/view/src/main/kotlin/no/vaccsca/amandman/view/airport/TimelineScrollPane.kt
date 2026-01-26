@@ -2,11 +2,12 @@ package no.vaccsca.amandman.view.airport
 
 import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
+import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayEvent
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.AmanPopupMenu
 import no.vaccsca.amandman.view.airport.timeline.TimelineView
-import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.entity.AirportViewState
+import no.vaccsca.amandman.view.entity.TimeRange
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Point
@@ -36,6 +37,11 @@ class TimelineScrollPane(
 
         airportViewState.minimumSpacingNm.addListener { newValue ->
             minSpacingSelectionNm = newValue
+        }
+
+        airportViewState.events.addListener { newValue ->
+            val runwayEvents = newValue.filterIsInstance<RunwayEvent>()
+            updateTimelineEvents(runwayEvents)
         }
 
         viewport.view.addMouseListener(object : java.awt.event.MouseAdapter() {
@@ -87,7 +93,18 @@ class TimelineScrollPane(
     }
 
 
-    fun updateTimelineEvents(timelineData: List<TimelineData>) {
+    private fun updateTimelineEvents(runwayEvents: List<RunwayEvent>) {
+        val timelineData = airportViewState.availableTimelines.filter { it.title in airportViewState.openTimelines.value }
+            .map { timelineConfig ->
+                val leftEvents = runwayEvents.filter { it.runway in timelineConfig.runwaysLeft }
+                val rightEvents = runwayEvents.filter { it.runway in timelineConfig.runwaysRight }
+                TimelineData(
+                    timelineId = timelineConfig.title,
+                    left = leftEvents,
+                    right = rightEvents
+                )
+            }
+
         val items = viewport.view as JPanel
         timelineData.forEach {
            items.components.filterIsInstance<TimelineView>().forEach { timelineView ->

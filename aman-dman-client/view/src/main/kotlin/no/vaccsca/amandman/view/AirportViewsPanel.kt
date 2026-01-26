@@ -1,12 +1,13 @@
 package no.vaccsca.amandman.view
 
 import no.vaccsca.amandman.common.TimelineConfig
-import no.vaccsca.amandman.model.domain.valueobjects.weather.VerticalWeatherProfile
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.entity.AirportViewState
 import no.vaccsca.amandman.view.entity.MainViewState
-import java.awt.*
-import javax.swing.*
+import java.awt.BorderLayout
+import java.awt.Point
+import javax.swing.JPanel
+import javax.swing.JTabbedPane
 
 /**
  * Panel that holds multiple AirportView(s).

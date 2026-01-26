@@ -4,9 +4,8 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayDelayEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
-import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.entity.SharedValue
+import no.vaccsca.amandman.view.entity.TimeRange
 import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -23,6 +22,7 @@ import kotlin.time.Duration.Companion.seconds
 abstract class TimeRangeScrollBarAbstract(
     protected val selectedRange: SharedValue<TimeRange>,
     protected val availableRange: SharedValue<TimeRange>,
+    protected val timelineEvents: SharedValue<List<TimelineEvent>>? = null,
     protected val scrollbarWidth: Int = 28,
     protected val inverted: Boolean = true
 ) : JComponent() {
@@ -31,7 +31,7 @@ abstract class TimeRangeScrollBarAbstract(
     protected var resizingStart = false
     protected var resizingEnd = false
     protected var lastMouseAxisPos = 0
-    protected var timelineEvents: List<TimelineEvent> = emptyList()
+    protected var timelineEventsCache: Set<TimelineEvent> = emptySet()
 
     protected val scrollHandleMargin = 5
     protected val scrollHandleWidth = scrollbarWidth - scrollHandleMargin * 2
@@ -44,6 +44,11 @@ abstract class TimeRangeScrollBarAbstract(
         selectedRange.addListener { repaint() }
         availableRange.addListener { repaint() }
         border = BorderFactory.createLineBorder(foreground)
+
+        timelineEvents?.addListener { newTimlineData ->
+            this.timelineEventsCache = newTimlineData.toSet()
+            repaint()
+        }
 
         setupMouseListeners()
     }
@@ -67,7 +72,7 @@ abstract class TimeRangeScrollBarAbstract(
 
         g.color = foreground
         drawNowIndicator(g2)
-        timelineEvents.toSet().forEach { item ->
+        timelineEventsCache.forEach { item ->
             when (item) {
                 is RunwayDelayEvent -> drawHighlight(g2, item.scheduledTime, item.delay, Color.RED)
                 is DepartureEvent -> drawEvent(g2, item.scheduledTime, Color.decode("#83989B"))
@@ -76,11 +81,6 @@ abstract class TimeRangeScrollBarAbstract(
         }
 
         drawScrollBar(g2)
-    }
-
-    fun updateTimelineEvents(list: List<TimelineEvent>) {
-        this.timelineEvents = list
-        repaint()
     }
 
     protected fun availableTimelineSeconds(): Long =

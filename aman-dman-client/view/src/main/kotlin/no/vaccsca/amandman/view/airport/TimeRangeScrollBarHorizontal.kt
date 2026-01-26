@@ -2,8 +2,8 @@ package no.vaccsca.amandman.view.airport
 
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
-import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.entity.SharedValue
+import no.vaccsca.amandman.view.entity.TimeRange
 import java.awt.*
 import java.awt.event.MouseEvent
 import kotlin.math.roundToInt
@@ -11,7 +11,7 @@ import kotlin.time.Duration
 
 class TimeRangeScrollBarHorizontal(
     selectedRange: SharedValue<TimeRange>,
-    availableRange: SharedValue<TimeRange>
+    availableRange: SharedValue<TimeRange>,
 ) : TimeRangeScrollBarAbstract(selectedRange, availableRange, inverted = false) {
 
     override fun getInitialSize(): Dimension {
@@ -44,10 +44,6 @@ class TimeRangeScrollBarHorizontal(
         g2.fillRect(barEnd, 0, barStart - barEnd, height)
         g2.color = foreground
         g2.drawRect(barEnd, 0, barStart - barEnd - 1, height - 1)
-
-        timelineEvents.forEach { occurrence ->
-            drawEvent(g2, occurrence.scheduledTime, foreground)
-        }
 
         val handleTop = scrollHandleMargin
 

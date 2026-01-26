@@ -4,13 +4,17 @@ import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.RunwayArrivalEvent
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.TimelineEvent
-import no.vaccsca.amandman.view.entity.TimeRange
 import no.vaccsca.amandman.view.airport.TimeRangeScrollBarHorizontal
+import no.vaccsca.amandman.view.entity.AirportViewState
 import no.vaccsca.amandman.view.entity.SharedValue
+import no.vaccsca.amandman.view.entity.TimeRange
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.ChartPanel
 import org.jfree.chart.JFreeChart
-import org.jfree.chart.axis.*
+import org.jfree.chart.axis.DateAxis
+import org.jfree.chart.axis.DateTickUnit
+import org.jfree.chart.axis.DateTickUnitType
+import org.jfree.chart.axis.NumberAxis
 import org.jfree.chart.labels.ItemLabelAnchor
 import org.jfree.chart.labels.ItemLabelPosition
 import org.jfree.chart.labels.StandardXYItemLabelGenerator
@@ -34,7 +38,9 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 
-class LandingRatesGraph : JPanel() {
+class LandingRatesGraph(
+    val airportViewState: AirportViewState
+) : JPanel() {
 
     private val timeSeries = TimeSeries("Landings")
     private val dataset = TimeSeriesCollection(timeSeries)
@@ -86,6 +92,11 @@ class LandingRatesGraph : JPanel() {
 
         selectedTimeRange.addListener {
             updateXAxisRange()
+        }
+
+        airportViewState.events.addListener { updatedEvents ->
+            currentEvents = updatedEvents.filterIsInstance<RunwayArrivalEvent>()
+            showEvents(updatedEvents)
         }
 
         add(controlPanel, BorderLayout.NORTH)
@@ -168,11 +179,6 @@ class LandingRatesGraph : JPanel() {
     private fun updateChartBarWidth() {
         barDataset = XYBarDataset(dataset, currentBucketMillis.toDouble())
         plot?.dataset = barDataset
-    }
-
-    fun updateData(allArrivalEvents: List<RunwayArrivalEvent>) {
-        currentEvents = allArrivalEvents
-        showEvents(allArrivalEvents)
     }
 
     private fun showEvents(events: List<TimelineEvent>) {

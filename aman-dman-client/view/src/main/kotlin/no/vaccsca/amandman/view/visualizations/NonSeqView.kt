@@ -3,7 +3,10 @@ package no.vaccsca.amandman.view.visualizations
 import no.vaccsca.amandman.model.domain.valueobjects.NonSequencedEvent
 import no.vaccsca.amandman.view.entity.AirportViewState
 import java.awt.BorderLayout
-import javax.swing.*
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTable
+import javax.swing.SwingUtilities
 import javax.swing.border.TitledBorder
 import javax.swing.table.DefaultTableModel
 

@@ -7,8 +7,8 @@ import no.vaccsca.amandman.view.components.ReloadButton
 import no.vaccsca.amandman.view.entity.AirportViewState
 import java.awt.BorderLayout
 import java.awt.Color
-import java.awt.Graphics
 import java.awt.FlowLayout
+import java.awt.Graphics
 import javax.swing.JPanel
 import kotlin.math.roundToInt
 

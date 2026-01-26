@@ -1,10 +1,11 @@
 package no.vaccsca.amandman.view.airport.timeline
 
 import kotlinx.datetime.Instant
-import no.vaccsca.amandman.common.*
+import no.vaccsca.amandman.common.NtpClock
+import no.vaccsca.amandman.common.TimelineConfig
 import no.vaccsca.amandman.model.domain.valueobjects.LabelItem
-import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.TimelineData
+import no.vaccsca.amandman.model.domain.valueobjects.sequence.SequenceStatus
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.*
 import no.vaccsca.amandman.presenter.PresenterInterface
 import no.vaccsca.amandman.view.airport.timeline.labels.ArrivalLabel
@@ -18,7 +19,7 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.*
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 

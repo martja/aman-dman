@@ -3,17 +3,15 @@ package no.vaccsca.amandman.view.airport
 import kotlinx.datetime.Instant
 import no.vaccsca.amandman.common.NtpClock
 import no.vaccsca.amandman.model.domain.valueobjects.timelineEvent.DepartureEvent
-import no.vaccsca.amandman.view.entity.TimeRange
-import no.vaccsca.amandman.view.entity.SharedValue
+import no.vaccsca.amandman.view.entity.AirportViewState
 import java.awt.*
 import java.awt.event.MouseEvent
 import kotlin.math.roundToInt
 import kotlin.time.Duration
 
 class TimeRangeScrollBarVertical(
-    selectedRange: SharedValue<TimeRange>,
-    availableRange: SharedValue<TimeRange>,
-) : TimeRangeScrollBarAbstract(selectedRange, availableRange) {
+    val airportViewState: AirportViewState
+) : TimeRangeScrollBarAbstract(airportViewState.selectedTimeRange, airportViewState.availableTimeRange, airportViewState.events) {
 
     override fun getInitialSize(): Dimension {
         return Dimension(scrollbarWidth, 0) // Default height, can be adjusted
@@ -47,7 +45,7 @@ class TimeRangeScrollBarVertical(
         val barStart = getBarStart()
         val barEnd = getBarEnd()
 
-        timelineEvents.forEach { occurrence ->
+        airportViewState.events.value.toList().forEach { occurrence ->
             when (occurrence) {
                 is DepartureEvent ->
                     // Hex

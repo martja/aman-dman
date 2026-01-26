@@ -1,11 +1,7 @@
 package no.vaccsca.amandman.view.dialogs
 
 import java.awt.Frame
-import javax.swing.JLabel
-import javax.swing.JOptionPane
-import javax.swing.JPanel
-import javax.swing.JSpinner
-import javax.swing.SpinnerNumberModel
+import javax.swing.*
 
 object SpacingDialog {
     fun open(parent: Frame, airportIcao: String, default: Double, onSubmit: (Double) -> Unit) {
