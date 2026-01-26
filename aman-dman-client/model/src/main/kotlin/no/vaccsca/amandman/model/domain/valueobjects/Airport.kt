@@ -4,6 +4,7 @@ data class Airport(
     val icao: String,
     val location: LatLng,
     val runways: Map<String, RunwayThreshold>,
+    val independentRunwaySystems: List<Set<String>> = emptyList(),
 )
 
 data class RunwayThreshold(
