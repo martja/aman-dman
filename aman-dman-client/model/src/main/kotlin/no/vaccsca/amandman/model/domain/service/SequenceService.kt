@@ -161,7 +161,7 @@ object SequenceService {
         currentSequence: Sequence,
         candidates: List<SequenceCandidate>,
         minimumSeparationNm: Double,
-        independentRunwaySystems: List<Set<String>>
+        independentRunwaySystems: List<Set<String>> = emptyList(),
     ): Sequence {
         // Build a map of the latest candidate data by ID
         val latestCandidateData = candidates.associateBy { it.id }
