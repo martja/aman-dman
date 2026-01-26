@@ -18,13 +18,14 @@ class TopBar(
     private val nonSequencedButton = JButton("NonSeq")
     private val landingRatesButton = JButton("Landing Rates")
 
+    private val initialBorder = BorderFactory.createEmptyBorder(5, 5, -5, 0)
+
     /** Row 1 container */
     private val topRow = JPanel(BorderLayout())
 
     /** Runway modes */
     private val runwayModePanel = JPanel().apply {
         layout = BoxLayout(this, BoxLayout.X_AXIS)
-        border = null
     }
 
     /** Buttons – can move to second row */
@@ -44,6 +45,7 @@ class TopBar(
         initStateListeners()
         initLayout()
         initResizeHandling()
+        border = initialBorder
     }
 
     private fun initActions() {
@@ -112,7 +114,7 @@ class TopBar(
         } else if (!shouldWrap && buttonsPanel.parent !== topRow) {
             bottomRow.remove(buttonsPanel)
             topRow.add(buttonsPanel, BorderLayout.EAST)
-            border = BorderFactory.createEmptyBorder(5, 5, -5, 0)
+            border = initialBorder
         }
 
         revalidate()
